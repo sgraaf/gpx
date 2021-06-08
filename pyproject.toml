@@ -30,3 +30,6 @@ dev = [
     "pytest >= 6.2.3",
     "tox >= 3.23.0",
 ]
+
+[tool.black]
+line-length = 88

@@ -2,6 +2,10 @@
 
 PyGPX is a python package that brings support for reading, writing and converting GPX files.
 
+[![PyPI Version][pypi-image]][pypi-url]
+[![Build Status][build-image]][build-url]
+[![License][license-image]][license-url]
+
 ## Installation
 ### From PyPI
 PyGPX is available on [PyPI](https://pypi.org/project/gpx/). Install with `pip` or your package manager of choice:
@@ -23,3 +27,11 @@ Feel free to submit a PR for any bug fixes, enhancements, etc. For any major / b
 
 ### License
 PyGPX is open-source and licensed under GNU GPL, Version 3.
+
+<!-- Badges -->
+[pypi-image]: https://img.shields.io/pypi/v/gpx
+[pypi-url]: https://pypi.org/project/gpx/
+[build-image]: https://github.com/sgraaf/PyGPX/actions/workflows/build.yml/badge.svg
+[build-url]: https://github.com/sgraaf/PyGPX/actions/workflows/build.yml
+[license-image]: https://img.shields.io/github/license/sgraaf/PyGPX.svg?color=blue
+[license-url]: https://github.com/sgraaf/PyGPX/blob/master/LICENSE

@@ -1,0 +1,4 @@
+[flake8]
+max-line-length = 88
+extend-ignore = D107, E203, E501, E741, W503
+docstring-convention=google
