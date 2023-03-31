@@ -1,30 +1,50 @@
 """This module provides a Track object to contain GPX routes - an ordered list of points describing a path."""
-from typing import Dict, List, Optional, Tuple
+from __future__ import annotations
 
 from lxml import etree
 
-from .waypoint import Waypoint
 from ._parsers import parse_links
+from .waypoint import Waypoint
 
 
 class Track:
     """A track class for the GPX data format.
 
     Args:
-        trk (etree.Element, optional): The track XML element. Defaults to None.
+        trk: The track XML element. Defaults to `None`.
     """
 
-    def __init__(self, trk: Optional[etree._Element] = None) -> None:
+    def __init__(self, trk: etree._Element | None = None) -> None:
         self._trk: etree._Element = trk
-        self._nsmap: Optional[Dict[str, str]] = None
-        self.name: Optional[str] = None
-        self.cmt: Optional[str] = None
-        self.desc: Optional[str] = None
-        self.src: Optional[str] = None
-        self.links: List[Dict[str, str]] = []
-        self.number: Optional[int] = None
-        self.type: Optional[str] = None
-        self.segments: List[List[Waypoint]] = []
+        self._nsmap: dict[str, str] | None = None
+
+        #: GPS name of track.
+        self.name: str | None = None
+
+        #: GPS comment for track.
+        self.cmt: str | None = None
+
+        #: User description of track.
+        self.desc: str | None = None
+
+        #: Source of data. Included to give user some idea of reliability and
+        #: accuracy of data.
+        self.src: str | None = None
+
+        #: Links to external information about track.
+        self.links: list[dict[str, str]] = []
+
+        #: GPS track number.
+        self.number: int | None = None
+
+        #: Type (classification) of track.
+        self.type: str | None = None
+
+        #: A Track Segment holds a list of Track Points which are logically
+        #: connected in order. To represent a single GPS track where GPS
+        #: reception was lost, or the GPS receiver was turned off, start a new
+        #: Track Segment for each continuous span of track data.
+        self.segments: list[list[Waypoint]] = []
 
         if self._trk is not None:
             self._parse()
@@ -63,7 +83,7 @@ class Track:
                 ]
             )
 
-    def _build(self) -> etree._Element:
+    def _build(self) -> etree._Element:  # noqa: C901
         track = etree.Element("trk", nsmap=self._nsmap)
 
         if self.name is not None:
@@ -108,7 +128,7 @@ class Track:
         return track
 
     @property
-    def bounds(self) -> Tuple[float, float, float, float]:
+    def bounds(self) -> tuple[float, float, float, float]:
         """Returns the bounds of the track."""
         return (
             min(point.lat for segment in self.segments for point in segment),

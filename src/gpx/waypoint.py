@@ -1,9 +1,8 @@
-"""This module provides a Wapoint object to contain GPX waypoints."""
+"""This module provides a Waypoint object to contain GPX waypoints."""
 from __future__ import annotations
 
 import datetime
 from math import atan2, cos, radians, sin, sqrt
-from typing import Dict, List, Optional
 
 from dateutil.parser import isoparse
 from lxml import etree
@@ -15,37 +14,88 @@ class Waypoint:
     """A waypoint class for the GPX data format.
 
     Args:
-        wpt (etree.Element, optional): The waypoint XML element. Defaults to None.
+        wpt: The waypoint XML element. Defaults to `None`.
     """
 
-    def __init__(self, wpt: Optional[etree._Element] = None) -> None:
+    def __init__(self, wpt: etree._Element | None = None) -> None:
         self._wpt: etree._Element = wpt
-        self._nsmap: Optional[Dict[str, str]] = None
+        self._nsmap: dict[str, str] | None = None
+
+        #: The latitude of the point. Decimal degrees, WGS84 datum.
         self.lat: float
+
+        #: The longitude of the point. Decimal degrees, WGS84 datum.
         self.lon: float
-        self.ele: Optional[float] = None
-        self.time: Optional[datetime.datetime] = None
-        self.magvar: Optional[float] = None
-        self.geoidheight: Optional[float] = None
-        self.name: Optional[str] = None
-        self.cmt: Optional[str] = None
-        self.desc: Optional[str] = None
-        self.src: Optional[str] = None
-        self.links: List[Dict[str, str]] = []
-        self.sym: Optional[str] = None
-        self.type: Optional[str] = None
-        self.fix: Optional[str] = None
-        self.sat: Optional[int] = None
-        self.hdop: Optional[float] = None
-        self.vdop: Optional[float] = None
-        self.pdop: Optional[float] = None
-        self.ageofdgpsdata: Optional[float] = None
-        self.dgpsid: Optional[int] = None
+
+        #: Elevation (in meters) of the point.
+        self.ele: float | None = None
+
+        #: Creation/modification timestamp for element. Date and time in are in
+        #: Universal Coordinated Time (UTC), not local time! Conforms to ISO 8601
+        #: specification for date/time representation. Fractional seconds are
+        #: allowed for millisecond timing in tracklogs.
+        self.time: datetime.datetime | None = None
+
+        #: Magnetic variation (in degrees) at the point
+        self.magvar: float | None = None
+
+        #: Height (in meters) of geoid (mean sea level) above WGS84 earth
+        #: ellipsoid. As defined in NMEA GGA message.
+        self.geoidheight: float | None = None
+
+        #: The GPS name of the waypoint. This field will be transferred to and
+        #: from the GPS. GPX does not place restrictions on the length of this
+        #: field or the characters contained in it. It is up to the receiving
+        #: application to validate the field before sending it to the GPS.
+        self.name: str | None = None
+
+        #: GPS waypoint comment. Sent to GPS as comment.
+        self.cmt: str | None = None
+
+        #: A text description of the element. Holds additional information about
+        #: the element intended for the user, not the GPS.
+        self.desc: str | None = None
+
+        #: Source of data. Included to give user some idea of reliability and
+        #: accuracy of data. "Garmin eTrex", "USGS quad Boston North", e.g.
+        self.src: str | None = None
+
+        #: Link to additional information about the waypoint.
+        self.links: list[dict[str, str]] = []
+
+        #: Text of GPS symbol name. For interchange with other programs, use the
+        #: exact spelling of the symbol as displayed on the GPS. If the GPS
+        #: abbreviates words, spell them out.
+        self.sym: str | None = None
+
+        #: Type (classification) of the waypoint.
+        self.type: str | None = None
+
+        #: Type of GPX fix.
+        self.fix: str | None = None
+
+        #: Number of satellites used to calculate the GPX fix.
+        self.sat: int | None = None
+
+        #: Horizontal dilution of precision.
+        self.hdop: float | None = None
+
+        #: Vertical dilution of precision.
+        self.vdop: float | None = None
+
+        #: Position dilution of precision.
+        self.pdop: float | None = None
+
+        #: Number of seconds since last DGPS update.
+        self.ageofdgpsdata: float | None = None
+
+        #: ID of DGPS station used in differential correction.
+        self.dgpsid: int | None = None
 
         if self._wpt is not None:
             self._parse()
 
-    def _parse(self) -> None:
+    def _parse(self) -> None:  # noqa: C901
         # namespaces
         self._nsmap = self._wpt.nsmap
 
@@ -116,7 +166,7 @@ class Waypoint:
         if (dgpsid := self._wpt.find("dgpsid", namespaces=self._nsmap)) is not None:
             self.dgpsid = int(dgpsid.text)
 
-    def _build(self, tag: Optional[str] = "wpt") -> etree._Element:
+    def _build(self, tag: str | None = "wpt") -> etree._Element:  # noqa: C901
         waypoint = etree.Element(tag, nsmap=self._nsmap)
         waypoint.set("lat", str(self.lat))
         waypoint.set("lon", str(self.lon))
@@ -204,9 +254,17 @@ class Waypoint:
         return waypoint
 
     def distance_to(self, other: Waypoint, radius: int = 6_378_137) -> float:
-        """Returns the distance to the other waypoint (in metres) using a simple spherical earth model.
+        """Returns the distance to the other waypoint (in metres) using a simple
+        spherical earth model.
 
-        Adapted from: https://github.com/chrisveness/geodesy/blob/33d1bf53c069cd7dd83c6bf8531f5f3e0955c16e/latlon-spherical.js#L187
+        Args:
+            other: The other waypoint.
+            radius: The radius of the earth (defaults to 6,378,137 metres).
+
+        Returns:
+            The distance to the other waypoint (in metres).
+
+        Adapted from: https://github.com/chrisveness/geodesy/blob/33d1bf53c069cd7dd83c6bf8531f5f3e0955c16e/latlon-spherical.js#L187-L205
         """
         R = radius
         φ1, λ1 = radians(self.lat), radians(self.lon)
@@ -218,7 +276,14 @@ class Waypoint:
         return R * δ
 
     def duration_to(self, other: Waypoint) -> float:
-        """Returns the duration to the other waypoint (in seconds)."""
+        """Returns the duration to the other waypoint (in seconds).
+
+        Args:
+            other: The other waypoint.
+
+        Returns:
+            The duration to the other waypoint (in seconds).
+        """
         if self.time is None or other.time is None:
             return 0
         return (other.time - self.time).total_seconds()
