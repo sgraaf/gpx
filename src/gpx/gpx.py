@@ -3,42 +3,66 @@ from __future__ import annotations
 
 import datetime
 import pathlib
-from typing import Any, Dict, List, Optional, Tuple, Union
+from typing import Any
 
 from dateutil.parser import isoparse
 from lxml import etree
 
 from . import gpx_schema
+from ._parsers import parse_links
 from .errors import InvalidGPXError
 from .route import Route
 from .track import Track
 from .utils import remove_encoding_from_string
 from .waypoint import Waypoint
-from ._parsers import parse_links
 
 
 class GPX:
     """A GPX class for the GPX data format.
 
     Args:
-        gpx (etree.Element, optional): The GPX XML element. Defaults to None.
+        gpx: The GPX XML element. Defaults to `None`.
     """
 
-    def __init__(self, gpx: Optional[etree._Element] = None) -> None:
+    def __init__(self, gpx: etree._Element | None = None) -> None:
         self._gpx: etree._Element = gpx
-        self._nsmap: Optional[Dict[str, str]] = None
-        self.creator: Optional[str] = "PyGPX"
-        self.name: Optional[str] = None
-        self.desc: Optional[str] = None
-        self.author: Dict[str, Any] = {}
-        self.copyright: Dict[str, Union[str, int]] = {}
-        self.links: List[Dict[str, str]] = []
-        self.time: Optional[datetime.datetime] = None
-        self.keywords: Optional[str] = None
-        self.bounds: Optional[Tuple[float, float, float, float]] = None
-        self.waypoints: List[Waypoint] = []
-        self.routes: List[Route] = []
-        self.tracks: List[Track] = []
+        self._nsmap: dict[str, str] | None = None
+
+        #: The name or URL of the software that created your GPX document. Defaults to "PyGPX".
+        self.creator: str | None = "PyGPX"
+
+        #: The name of the GPX file.
+        self.name: str | None = None
+
+        #: A description of the contents of the GPX file.
+        self.desc: str | None = None
+
+        #: The person or organization who created the GPX file.
+        self.author: dict[str, Any] = {}
+
+        #: Copyright and license information governing use of the file.
+        self.copyright: dict[str, str | int] = {}
+
+        #: URLs associated with the location described in the file.
+        self.links: list[dict[str, str]] = []
+
+        #: The creation date of the file.
+        self.time: datetime.datetime | None = None
+
+        #: Keywords associated with the file. Search engines or databases can use this information to classify the data.
+        self.keywords: str | None = None
+
+        #: Minimum and maximum coordinates which describe the extent of the coordinates in the file.
+        self.bounds: tuple[float, float, float, float] | None = None
+
+        #: A list of waypoints.
+        self.waypoints: list[Waypoint] = []
+
+        #: A list of routes.
+        self.routes: list[Route] = []
+
+        #: A list of tracks.
+        self.tracks: list[Track] = []
 
         if self._gpx is not None:
             self._parse()
@@ -56,7 +80,7 @@ class GPX:
             or self.bounds is not None
         )
 
-    def _parse(self) -> None:
+    def _parse(self) -> None:  # noqa: C901
         # namespaces
         self._nsmap = self._gpx.nsmap
 
@@ -130,7 +154,7 @@ class GPX:
         for trk in self._gpx.iterfind("trk", namespaces=self._nsmap):
             self.tracks.append(Track(trk))
 
-    def _build(self) -> etree._Element:
+    def _build(self) -> etree._Element:  # noqa: C901
         gpx = etree.Element("gpx", nsmap=self._nsmap)
 
         # set version and creator attributes
@@ -221,14 +245,22 @@ class GPX:
         return gpx
 
     @classmethod
-    def from_string(cls, gpx_str: str, validate: Optional[bool] = False) -> GPX:
+    def from_string(cls, gpx_str: str, validate: bool = False) -> GPX:
         """Create an GPX instance from a string.
 
+            >>> from gpx import GPX
+            >>> gpx = GPX.from_str(\"\"\"<?xml version="1.0" encoding="UTF-8" ?>
+            ... <gpx xmlns="http://www.topografix.com/GPX/1/1" creator="PyGPX" version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
+            ...     [...]
+            ... </gpx>\"\"\")
+            >>> print(gpx.bounds)
+
         Args:
-            gpx_str (str). The string containing the GPX data.
+            gpx_str: The string containing the GPX data.
+            validate: Whether to validate the GPX data.
 
         Returns:
-            GPX: the GPX instance.
+            The GPX instance.
         """
         # etree.fromstring() does not support encoding declarations in the string itself.
         gpx_str = remove_encoding_from_string(gpx_str)
@@ -239,16 +271,19 @@ class GPX:
         return cls(gpx)
 
     @classmethod
-    def from_file(
-        cls, gpx_file: Union[str, pathlib.Path], validate: Optional[bool] = False
-    ) -> GPX:
+    def from_file(cls, gpx_file: str | pathlib.Path, validate: bool = False) -> GPX:
         """Create an GPX instance from a file.
 
+            >>> from gpx import GPX
+            >>> gpx = GPX.from_file("path/to/file.gpx")
+            >>> print(gpx.bounds)
+
         Args:
-            gpx_file (Union[str, pathlib.Path]). The file containing the GPX data.
+            gpx_file: The file containing the GPX data.
+            validate: Whether to validate the GPX data.
 
         Returns:
-            GPX: the GPX instance.
+            The GPX instance.
         """
         gpx_tree = etree.parse(str(gpx_file))
         gpx = gpx_tree.getroot()
@@ -258,13 +293,21 @@ class GPX:
         return cls(gpx)
 
     def to_string(self) -> str:
-        """Serialize the GPX instance to a string."""
+        """Serialize the GPX instance to a string.
+
+        Returns:
+            The GPX data as a string.
+        """
         gpx = self._build()
         gpx_tree = etree.ElementTree(gpx)
         return etree.tostring(gpx_tree, encoding="unicode", pretty_print=True)
 
-    def to_file(self, gpx_file: Union[str, pathlib.Path]) -> None:
-        """Serialize the GPX instance to a file."""
+    def to_file(self, gpx_file: str | pathlib.Path) -> None:
+        """Serialize the GPX instance to a file.
+
+        Args:
+            gpx_file: The file to write the GPX data to.
+        """
         gpx = self._build()
         gpx_tree = etree.ElementTree(gpx)
         gpx_tree.write(
