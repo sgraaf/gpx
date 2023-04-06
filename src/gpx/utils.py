@@ -3,7 +3,9 @@ import re
 
 
 def remove_encoding_from_string(s: str) -> str:
-    """Removes encoding declarations (e.g. encoding="utf-8") from the string, if any.
+    """
+    Removes encoding declarations (e.g. encoding="utf-8") from the string, if
+    any.
 
     Args:
         s: The string.

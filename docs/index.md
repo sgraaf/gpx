@@ -18,7 +18,7 @@ usage
 
 ```{toctree}
 ---
-maxdepth: 4
+maxdepth: 3
 ---
 
 api

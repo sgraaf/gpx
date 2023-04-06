@@ -1,81 +1,88 @@
-"""This module provides a Route object to contain GPX routes - ordered lists of waypoints representing a series of turn points leading to a destination."""
+"""
+This module provides a Route object to contain GPX routes - ordered lists of
+waypoints representing a series of turn points leading to a destination.
+"""
 from __future__ import annotations
 
 from lxml import etree
 
-from ._parsers import parse_links
+from .element import Element
+from .link import Link
+from .mixins import PointsMutableSequenceMixin
+from .types import Latitude, Longitude
 from .waypoint import Waypoint
 
 
-class Route:
+class Route(Element, PointsMutableSequenceMixin):
     """A route class for the GPX data format.
 
+    A route represents an ordered list of waypoints representing a series of
+    turn points leading to a destination.
+
     Args:
-        rte: The route XML element. Defaults to `None`.
+        element: The route XML element. Defaults to `None`.
     """
 
-    def __init__(self, rte: etree._Element | None = None) -> None:
-        self._rte: etree._Element = rte
-        self._nsmap: dict[str, str] | None = None
+    #: GPS name of route.
+    name: str | None = None
 
-        #: GPS name of route.
-        self.name: str | None = None
+    #: GPS comment for route.
+    cmt: str | None = None
 
-        #: GPS comment for route.
-        self.cmt: str | None = None
+    #: Text description of route for user. Not sent to GPS.
+    desc: str | None = None
 
-        #: Text description of route for user. Not sent to GPS.
-        self.desc: str | None = None
+    #: Source of data. Included to give user some idea of reliability and
+    #: accuracy of data.
+    src: str | None = None
 
-        #: Source of data. Included to give user some idea of reliability and accuracy of data.
-        self.src: str | None = None
+    #: Links to external information about the route.
+    links: list[Link] = []
 
-        #: Links to external information about the route.
-        self.links: list[dict[str, str]] = []
+    #: GPS route number.
+    number: int | None = None
 
-        #: GPS route number.
-        self.number: int | None = None
+    #: Type (classification) of route.
+    type: str | None = None
 
-        #: Type (classification) of route.
-        self.type: str | None = None
-
-        #: A list of route points.
-        self.points: list[Waypoint] = []
-
-        if self._rte is not None:
-            self._parse()
+    #: A list of route points.
+    rtepts: list[Waypoint] = []
+    points = rtepts  #: Alias of :attr:`rtepts`.
 
     def _parse(self) -> None:
-        # namespaces
-        self._nsmap = self._rte.nsmap
+        super()._parse()
+
+        # assertion to satisfy mypy
+        assert self._element is not None
 
         # name
-        if (name := self._rte.find("name", namespaces=self._nsmap)) is not None:
+        if (name := self._element.find("name", namespaces=self._nsmap)) is not None:
             self.name = name.text
         # comment
-        if (cmt := self._rte.find("cmt", namespaces=self._nsmap)) is not None:
+        if (cmt := self._element.find("cmt", namespaces=self._nsmap)) is not None:
             self.cmt = cmt.text
         # description
-        if (desc := self._rte.find("desc", namespaces=self._nsmap)) is not None:
+        if (desc := self._element.find("desc", namespaces=self._nsmap)) is not None:
             self.desc = desc.text
         # source of data
-        if (src := self._rte.find("src", namespaces=self._nsmap)) is not None:
+        if (src := self._element.find("src", namespaces=self._nsmap)) is not None:
             self.src = src.text
-        # links to additional info
-        self.links = parse_links(self._rte)
+        # links
+        for link in self._element.iterfind("link", namespaces=self._nsmap):
+            self.links.append(Link(link))
         # GPS route number
-        if (number := self._rte.find("number", namespaces=self._nsmap)) is not None:
+        if (number := self._element.find("number", namespaces=self._nsmap)) is not None:
             self.number = int(number.text)
         # track type (classification)
-        if (_type := self._rte.find("type", namespaces=self._nsmap)) is not None:
+        if (_type := self._element.find("type", namespaces=self._nsmap)) is not None:
             self.type = _type.text
 
         # route points
-        for rtept in self._rte.iterfind("rtept", namespaces=self._nsmap):
-            self.points.append(Waypoint(rtept))
+        for rtept in self._element.iterfind("rtept", namespaces=self._nsmap):
+            self.rtepts.append(Waypoint(rtept))
 
-    def _build(self) -> etree._Element:  # noqa: C901
-        route = etree.Element("rte", nsmap=self._nsmap)
+    def _build(self, tag: str = "rte") -> etree._Element:
+        route = super()._build(tag)
 
         if self.name is not None:
             name = etree.SubElement(route, "name", nsmap=self._nsmap)
@@ -93,15 +100,8 @@ class Route:
             src = etree.SubElement(route, "src", nsmap=self._nsmap)
             src.text = self.src
 
-        for _link in self.links:
-            link = etree.SubElement(route, "link", nsmap=self._nsmap)
-            link.set("href", _link["href"])
-            if (tag := "text") in _link:
-                text = etree.SubElement(link, tag, nsmap=self._nsmap)
-                text.text = _link[tag]
-            if (tag := "type") in _link:
-                _type = etree.SubElement(link, tag, nsmap=self._nsmap)
-                _type.text = _link[tag]
+        for link in self.links:
+            route.append(link._build())
 
         if self.number is not None:
             number = etree.SubElement(route, "number", nsmap=self._nsmap)
@@ -111,17 +111,17 @@ class Route:
             _type = etree.SubElement(route, "type", nsmap=self._nsmap)
             _type.text = self.type
 
-        for _rtept in self.points:
+        for _rtept in self.rtepts:
             route.append(_rtept._build(tag="rtept"))
 
         return route
 
     @property
-    def bounds(self) -> tuple[float, float, float, float]:
-        """Returns the bounds of the route."""
+    def bounds(self) -> tuple[Latitude, Longitude, Latitude, Longitude]:
+        """The bounds of the route."""
         return (
-            min(point.lat for point in self.points),
-            min(point.lon for point in self.points),
-            max(point.lat for point in self.points),
-            max(point.lon for point in self.points),
+            min(point.lat for point in self.rtepts),
+            min(point.lon for point in self.rtepts),
+            max(point.lat for point in self.rtepts),
+            max(point.lon for point in self.rtepts),
         )
