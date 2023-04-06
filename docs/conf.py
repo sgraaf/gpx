@@ -37,6 +37,10 @@ intersphinx_mapping = {
 }
 
 # move type hints into the description block, instead of the signature
+autodoc_member_order = "bysource"
+autodoc_default_options = {
+    "show-inheritance": True,
+}
 autodoc_typehints = "description"
 autodoc_typehints_description_target = "documented"
 

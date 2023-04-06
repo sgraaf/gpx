@@ -1,173 +1,175 @@
 """This module provides a Waypoint object to contain GPX waypoints."""
 from __future__ import annotations
 
-import datetime
+from datetime import datetime, timedelta
+from decimal import Decimal
 from math import atan2, cos, radians, sin, sqrt
 
 from dateutil.parser import isoparse
 from lxml import etree
 
-from ._parsers import parse_links
+from .element import Element
+from .link import Link
+from .types import Degrees, DGPSStation, Fix, Latitude, Longitude
 
 
-class Waypoint:
+class Waypoint(Element):
     """A waypoint class for the GPX data format.
 
+    A waypoint represents a waypoint, point of interest, or named feature on a
+    map.
+
     Args:
-        wpt: The waypoint XML element. Defaults to `None`.
+        element: The waypoint XML element. Defaults to `None`.
     """
 
-    def __init__(self, wpt: etree._Element | None = None) -> None:
-        self._wpt: etree._Element = wpt
-        self._nsmap: dict[str, str] | None = None
+    #: The latitude of the point. Decimal degrees, WGS84 datum.
+    lat: Latitude
 
-        #: The latitude of the point. Decimal degrees, WGS84 datum.
-        self.lat: float
+    #: The longitude of the point. Decimal degrees, WGS84 datum.
+    lon: Longitude
 
-        #: The longitude of the point. Decimal degrees, WGS84 datum.
-        self.lon: float
+    #: Elevation (in meters) of the point.
+    ele: Decimal | None = None
 
-        #: Elevation (in meters) of the point.
-        self.ele: float | None = None
+    #: Creation/modification timestamp for element. Date and time in are in
+    #: Universal Coordinated Time (UTC), not local time! Conforms to ISO 8601
+    #: specification for date/time representation. Fractional seconds are
+    #: allowed for millisecond timing in tracklogs.
+    time: datetime | None = None
 
-        #: Creation/modification timestamp for element. Date and time in are in
-        #: Universal Coordinated Time (UTC), not local time! Conforms to ISO 8601
-        #: specification for date/time representation. Fractional seconds are
-        #: allowed for millisecond timing in tracklogs.
-        self.time: datetime.datetime | None = None
+    #: Magnetic variation (in degrees) at the point
+    magvar: Degrees | None = None
 
-        #: Magnetic variation (in degrees) at the point
-        self.magvar: float | None = None
+    #: Height (in meters) of geoid (mean sea level) above WGS84 earth
+    #: ellipsoid. As defined in NMEA GGA message.
+    geoidheight: Decimal | None = None
 
-        #: Height (in meters) of geoid (mean sea level) above WGS84 earth
-        #: ellipsoid. As defined in NMEA GGA message.
-        self.geoidheight: float | None = None
+    #: The GPS name of the waypoint. This field will be transferred to and
+    #: from the GPS. GPX does not place restrictions on the length of this
+    #: field or the characters contained in it. It is up to the receiving
+    #: application to validate the field before sending it to the GPS.
+    name: str | None = None
 
-        #: The GPS name of the waypoint. This field will be transferred to and
-        #: from the GPS. GPX does not place restrictions on the length of this
-        #: field or the characters contained in it. It is up to the receiving
-        #: application to validate the field before sending it to the GPS.
-        self.name: str | None = None
+    #: GPS waypoint comment. Sent to GPS as comment.
+    cmt: str | None = None
 
-        #: GPS waypoint comment. Sent to GPS as comment.
-        self.cmt: str | None = None
+    #: A text description of the element. Holds additional information about
+    #: the element intended for the user, not the GPS.
+    desc: str | None = None
 
-        #: A text description of the element. Holds additional information about
-        #: the element intended for the user, not the GPS.
-        self.desc: str | None = None
+    #: Source of data. Included to give user some idea of reliability and
+    #: accuracy of data. "Garmin eTrex", "USGS quad Boston North", e.g.
+    src: str | None = None
 
-        #: Source of data. Included to give user some idea of reliability and
-        #: accuracy of data. "Garmin eTrex", "USGS quad Boston North", e.g.
-        self.src: str | None = None
+    #: Link to additional information about the waypoint.
+    links: list[Link] = []
 
-        #: Link to additional information about the waypoint.
-        self.links: list[dict[str, str]] = []
+    #: Text of GPS symbol name. For interchange with other programs, use the
+    #: exact spelling of the symbol as displayed on the GPS. If the GPS
+    #: abbreviates words, spell them out.
+    sym: str | None = None
 
-        #: Text of GPS symbol name. For interchange with other programs, use the
-        #: exact spelling of the symbol as displayed on the GPS. If the GPS
-        #: abbreviates words, spell them out.
-        self.sym: str | None = None
+    #: Type (classification) of the waypoint.
+    type: str | None = None
 
-        #: Type (classification) of the waypoint.
-        self.type: str | None = None
+    #: Type of GPX fix.
+    fix: Fix | None = None
 
-        #: Type of GPX fix.
-        self.fix: str | None = None
+    #: Number of satellites used to calculate the GPX fix.
+    sat: int | None = None
 
-        #: Number of satellites used to calculate the GPX fix.
-        self.sat: int | None = None
+    #: Horizontal dilution of precision.
+    hdop: Decimal | None = None
 
-        #: Horizontal dilution of precision.
-        self.hdop: float | None = None
+    #: Vertical dilution of precision.
+    vdop: Decimal | None = None
 
-        #: Vertical dilution of precision.
-        self.vdop: float | None = None
+    #: Position dilution of precision.
+    pdop: Decimal | None = None
 
-        #: Position dilution of precision.
-        self.pdop: float | None = None
+    #: Number of seconds since last DGPS update.
+    ageofdgpsdata: Decimal | None = None
 
-        #: Number of seconds since last DGPS update.
-        self.ageofdgpsdata: float | None = None
-
-        #: ID of DGPS station used in differential correction.
-        self.dgpsid: int | None = None
-
-        if self._wpt is not None:
-            self._parse()
+    #: ID of DGPS station used in differential correction.
+    dgpsid: DGPSStation | None = None
 
     def _parse(self) -> None:  # noqa: C901
-        # namespaces
-        self._nsmap = self._wpt.nsmap
+        super()._parse()
+
+        # assertion to satisfy mypy
+        assert self._element is not None
 
         # required
-        self.lat = float(self._wpt.get("lat"))
-        self.lon = float(self._wpt.get("lon"))
+        self.lat = Latitude(self._element.get("lat"))
+        self.lon = Longitude(self._element.get("lon"))
 
         # position info
         # elevation
-        if (ele := self._wpt.find("ele", namespaces=self._nsmap)) is not None:
-            self.ele = float(ele.text)
+        if (ele := self._element.find("ele", namespaces=self._nsmap)) is not None:
+            self.ele = Decimal(ele.text)
         # time
-        if (time := self._wpt.find("time", namespaces=self._nsmap)) is not None:
+        if (time := self._element.find("time", namespaces=self._nsmap)) is not None:
             self.time = isoparse(time.text)
         # magnetic variation
-        if (magvar := self._wpt.find("magvar", namespaces=self._nsmap)) is not None:
-            self.magvar = float(magvar.text)
+        if (magvar := self._element.find("magvar", namespaces=self._nsmap)) is not None:
+            self.magvar = Degrees(magvar.text)
         # geoid height
         if (
-            geoidheight := self._wpt.find("geoidheight", namespaces=self._nsmap)
+            geoidheight := self._element.find("geoidheight", namespaces=self._nsmap)
         ) is not None:
-            self.geoidheight = float(geoidheight.text)
+            self.geoidheight = Decimal(geoidheight.text)
 
         # description info
         # name
-        if (name := self._wpt.find("name", namespaces=self._nsmap)) is not None:
+        if (name := self._element.find("name", namespaces=self._nsmap)) is not None:
             self.name = name.text
         # comment
-        if (cmt := self._wpt.find("cmt", namespaces=self._nsmap)) is not None:
+        if (cmt := self._element.find("cmt", namespaces=self._nsmap)) is not None:
             self.cmt = cmt.text
         # description
-        if (desc := self._wpt.find("desc", namespaces=self._nsmap)) is not None:
+        if (desc := self._element.find("desc", namespaces=self._nsmap)) is not None:
             self.desc = desc.text
         # source of data
-        if (src := self._wpt.find("src", namespaces=self._nsmap)) is not None:
+        if (src := self._element.find("src", namespaces=self._nsmap)) is not None:
             self.src = src.text
-        # links to additional info
-        self.links = parse_links(self._wpt)
+        # links
+        for link in self._element.iterfind("link", namespaces=self._nsmap):
+            self.links.append(Link(link))
         # GPS symbol name
-        if (sym := self._wpt.find("sym", namespaces=self._nsmap)) is not None:
+        if (sym := self._element.find("sym", namespaces=self._nsmap)) is not None:
             self.sym = sym.text
         # waypoint type (classification)
-        if (_type := self._wpt.find("type", namespaces=self._nsmap)) is not None:
+        if (_type := self._element.find("type", namespaces=self._nsmap)) is not None:
             self.type = _type.text
 
         # accuracy info
         # GPX fix type
-        if (fix := self._wpt.find("fix", namespaces=self._nsmap)) is not None:
-            self.fix = fix.text
+        if (fix := self._element.find("fix", namespaces=self._nsmap)) is not None:
+            self.fix = Fix(fix.text)
         # number of satellites used to calculate the GPX fix
-        if (sat := self._wpt.find("sat", namespaces=self._nsmap)) is not None:
+        if (sat := self._element.find("sat", namespaces=self._nsmap)) is not None:
             self.sat = int(sat.text)
         # horizontal dilution of precision
-        if (hdop := self._wpt.find("hdop", namespaces=self._nsmap)) is not None:
-            self.hdop = float(hdop.text)
+        if (hdop := self._element.find("hdop", namespaces=self._nsmap)) is not None:
+            self.hdop = Decimal(hdop.text)
         # vertical dilution of precision
-        if (vdop := self._wpt.find("vdop", namespaces=self._nsmap)) is not None:
-            self.vdop = float(vdop.text)
+        if (vdop := self._element.find("vdop", namespaces=self._nsmap)) is not None:
+            self.vdop = Decimal(vdop.text)
         # position dilution of precision
-        if (pdop := self._wpt.find("pdop", namespaces=self._nsmap)) is not None:
-            self.pdop = float(pdop.text)
+        if (pdop := self._element.find("pdop", namespaces=self._nsmap)) is not None:
+            self.pdop = Decimal(pdop.text)
         # number of seconds since last DGPS update
         if (
-            ageofdgpsdata := self._wpt.find("ageofdgpsdata", namespaces=self._nsmap)
+            ageofdgpsdata := self._element.find("ageofdgpsdata", namespaces=self._nsmap)
         ) is not None:
-            self.ageofdgpsdata = float(ageofdgpsdata.text)
+            self.ageofdgpsdata = Decimal(ageofdgpsdata.text)
         # DGPS station id used in differential correction
-        if (dgpsid := self._wpt.find("dgpsid", namespaces=self._nsmap)) is not None:
-            self.dgpsid = int(dgpsid.text)
+        if (dgpsid := self._element.find("dgpsid", namespaces=self._nsmap)) is not None:
+            self.dgpsid = DGPSStation(dgpsid.text)
 
-    def _build(self, tag: str | None = "wpt") -> etree._Element:  # noqa: C901
-        waypoint = etree.Element(tag, nsmap=self._nsmap)
+    def _build(self, tag: str = "wpt") -> etree._Element:  # noqa: C901
+        waypoint = super()._build(tag)
         waypoint.set("lat", str(self.lat))
         waypoint.set("lon", str(self.lon))
 
@@ -177,7 +179,9 @@ class Waypoint:
 
         if self.time is not None:
             time = etree.SubElement(waypoint, "time", nsmap=self._nsmap)
-            time.text = self.time.isoformat().replace("+00:00", "Z")
+            time.text = self.time.isoformat(
+                timespec="milliseconds" if self.time.microsecond else "seconds"
+            ).replace("+00:00", "Z")
 
         if self.magvar is not None:
             magvar = etree.SubElement(waypoint, "magvar", nsmap=self._nsmap)
@@ -203,15 +207,8 @@ class Waypoint:
             src = etree.SubElement(waypoint, "src", nsmap=self._nsmap)
             src.text = self.src
 
-        for _link in self.links:
-            link = etree.SubElement(waypoint, "link", nsmap=self._nsmap)
-            link.set("href", _link["href"])
-            if (tag := "text") in _link:
-                text = etree.SubElement(link, tag, nsmap=self._nsmap)
-                text.text = _link[tag]
-            if (tag := "type") in _link:
-                _type = etree.SubElement(link, tag, nsmap=self._nsmap)
-                _type.text = _link[tag]
+        for link in self.links:
+            waypoint.append(link._build())
 
         if self.sym is not None:
             sym = etree.SubElement(waypoint, "sym", nsmap=self._nsmap)
@@ -255,7 +252,7 @@ class Waypoint:
 
     def distance_to(self, other: Waypoint, radius: int = 6_378_137) -> float:
         """Returns the distance to the other waypoint (in metres) using a simple
-        spherical earth model.
+        spherical earth model (haversine formula).
 
         Args:
             other: The other waypoint.
@@ -275,15 +272,15 @@ class Waypoint:
         δ = 2 * atan2(sqrt(a), sqrt(1 - a))
         return R * δ
 
-    def duration_to(self, other: Waypoint) -> float:
-        """Returns the duration to the other waypoint (in seconds).
+    def duration_to(self, other: Waypoint) -> timedelta:
+        """Returns the duration to the other waypoint.
 
         Args:
             other: The other waypoint.
 
         Returns:
-            The duration to the other waypoint (in seconds).
+            The duration to the other waypoint.
         """
         if self.time is None or other.time is None:
-            return 0
-        return (other.time - self.time).total_seconds()
+            return timedelta()
+        return other.time - self.time
