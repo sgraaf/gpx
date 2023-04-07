@@ -4,7 +4,7 @@ points describing a path.
 """
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Iterator
 
@@ -189,6 +189,17 @@ class Track(Element):
         return min(trkseg.min_speed for trkseg in self.trksegs)
 
     @property
+    def speed_profile(self) -> list[tuple[datetime, float]]:
+        """The speed profile of the track.
+
+        The speed profile is a list of (timestamp, speed) tuples.
+        """
+        profile = []
+        for trkseg in self.trksegs:
+            profile += trkseg.speed_profile
+        return profile
+
+    @property
     def avg_elevation(self) -> Decimal:
         """The average elevation (in metres)."""
         _eles = [
@@ -225,3 +236,20 @@ class Track(Element):
     def total_descent(self) -> Decimal:
         """The total descent of the track (in metres)."""
         return abs(sum([trkseg.total_descent for trkseg in self.trksegs], Decimal("0")))
+
+    @property
+    def elevation_profile(self) -> list[tuple[float, Decimal]]:
+        """The elevation profile of the track.
+
+        The elevation profile is a list of (distance, elevation) tuples.
+        """
+        distance = 0.0
+        profile = []
+        if self.trksegs[0]._points_with_ele[0].ele is not None:
+            profile.append((distance, self.trksegs[0]._points_with_ele[0].ele))
+        for trkseg in self.trksegs:
+            for i, point in enumerate(trkseg._points_with_ele[1:], 1):
+                if point.ele is not None:
+                    distance += trkseg._points_with_ele[i - 1].distance_to(point)
+                    profile.append((distance, point.ele))
+        return profile

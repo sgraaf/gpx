@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import MutableMapping, MutableSequence, Sequence
-from datetime import timedelta
+from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import Any, Iterable, Iterator, overload
 
@@ -179,6 +179,22 @@ class PointsStatisticsMixin:
         return min(self._speeds)
 
     @property
+    def speed_profile(self) -> list[tuple[datetime, float]]:
+        """The speed profile.
+
+        The speed profile is a list of (timestamp, speed) tuples.
+        """
+        return [
+            (point.time, point.speed_to(self.points[i + 1]))
+            for i, point in enumerate(self.points[:-1])
+            if point.time is not None
+        ]
+
+    @property
+    def _points_with_ele(self) -> list[Waypoint]:
+        return [point for point in self.points if point.ele is not None]
+
+    @property
     def _eles(self) -> list[Decimal]:
         return [point.ele for point in self.points if point.ele is not None]
 
@@ -206,7 +222,10 @@ class PointsStatisticsMixin:
 
     @property
     def _gains(self) -> list[Decimal]:
-        return [self._eles[i + 1] - ele for i, ele in enumerate(self._eles[:-1])]
+        return [
+            point.gain_to(self._points_with_ele[i + 1])
+            for i, point in enumerate(self._points_with_ele[:-1])
+        ]
 
     @property
     def total_ascent(self) -> Decimal:
@@ -217,3 +236,19 @@ class PointsStatisticsMixin:
     def total_descent(self) -> Decimal:
         """The total descent (in metres)."""
         return abs(sum([gain for gain in self._gains if gain < 0], Decimal("0")))
+
+    @property
+    def elevation_profile(self) -> list[tuple[float, Decimal]]:
+        """The elevation profile.
+
+        The elevation profile is a list of (distance, elevation) tuples.
+        """
+        distance = 0.0
+        profile = []
+        if self._points_with_ele[0].ele is not None:
+            profile.append((distance, self._points_with_ele[0].ele))
+        for i, point in enumerate(self._points_with_ele[1:], 1):
+            if point.ele is not None:
+                distance += self._points_with_ele[i - 1].distance_to(point)
+                profile.append((distance, point.ele))
+        return profile
