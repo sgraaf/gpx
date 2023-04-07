@@ -4,17 +4,14 @@ points describing a path.
 """
 from __future__ import annotations
 
-from datetime import timedelta
-
 from lxml import etree
 
 from .element import Element
-from .mixins import PointsMutableSequenceMixin
-from .types import Latitude, Longitude
+from .mixins import PointsMutableSequenceMixin, PointsStatisticsMixin
 from .waypoint import Waypoint
 
 
-class TrackSegment(Element, PointsMutableSequenceMixin):
+class TrackSegment(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
     """A track segment class for the GPX data format.
 
     A Track Segment holds a list of Track Points which are logically connected
@@ -48,29 +45,3 @@ class TrackSegment(Element, PointsMutableSequenceMixin):
             track_segment.append(_trkpt._build(tag="trkpt"))
 
         return track_segment
-
-    @property
-    def bounds(self) -> tuple[Latitude, Longitude, Latitude, Longitude]:
-        """The bounds of the track segment."""
-        return (
-            min(point.lat for point in self.trkpts),
-            min(point.lon for point in self.trkpts),
-            max(point.lat for point in self.trkpts),
-            max(point.lon for point in self.trkpts),
-        )
-
-    @property
-    def distance(self) -> float:
-        """The distance of the track segment (in metres)."""
-        _distance = 0.0
-        for i, point in enumerate(self.trkpts[:-1]):
-            _distance += point.distance_to(self.trkpts[i + 1])
-        return round(_distance, 2)
-
-    @property
-    def duration(self) -> timedelta:
-        """The total duration of the track segment."""
-        _duration = timedelta()
-        for i, point in enumerate(self.trkpts[:-1]):
-            _duration += point.duration_to(self.trkpts[i + 1])
-        return _duration

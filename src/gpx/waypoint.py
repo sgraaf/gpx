@@ -284,3 +284,38 @@ class Waypoint(Element):
         if self.time is None or other.time is None:
             return timedelta()
         return other.time - self.time
+
+    def speed_to(self, other: Waypoint) -> float:
+        """Returns the speed to the other waypoint (in metres per second).
+
+        Args:
+            other: The other waypoint.
+
+        Returns:
+            The speed to the other waypoint (in metres per second).
+        """
+        return self.distance_to(other) / self.duration_to(other).total_seconds()
+
+    def gain_to(self, other: Waypoint) -> Decimal:
+        """Returns the elevation gain to the other waypoint (in metres).
+
+        Args:
+            other: The other waypoint.
+
+        Returns:
+            The elevation gain to the other waypoint (in metres).
+        """
+        if self.ele is None or other.ele is None:
+            return Decimal("0.0")
+        return other.ele - self.ele
+
+    def slope_to(self, other: Waypoint) -> Decimal:
+        """Returns the slope to the other waypoint (in percent).
+
+        Args:
+            other: The other waypoint.
+
+        Returns:
+            The slope to the other waypoint (in percent).
+        """
+        return self.gain_to(other) / Decimal(self.distance_to(other)) * 100

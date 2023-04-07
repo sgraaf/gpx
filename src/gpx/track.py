@@ -4,7 +4,8 @@ points describing a path.
 """
 from __future__ import annotations
 
-from datetime import timedelta
+from datetime import datetime, timedelta
+from decimal import Decimal
 from typing import Iterator
 
 from lxml import etree
@@ -143,11 +144,112 @@ class Track(Element):
         )
 
     @property
-    def distance(self) -> float:
-        """The distance of the track (in metres)."""
-        return round(sum(trkseg.distance for trkseg in self.trksegs), 2)
+    def total_distance(self) -> float:
+        """The total distance of the track (in metres)."""
+        return sum(trkseg.total_distance for trkseg in self.trksegs)
+
+    distance = total_distance  #: Alias of :attr:`total_distance`.
 
     @property
-    def duration(self) -> timedelta:
-        """The duration of the track (in seconds)."""
-        return sum([trkseg.duration for trkseg in self.trksegs], timedelta())
+    def total_duration(self) -> timedelta:
+        """The total duration of the track (in seconds)."""
+        return sum([trkseg.total_duration for trkseg in self.trksegs], timedelta())
+
+    duration = total_duration  #: Alias of :attr:`total_duration`.
+
+    @property
+    def moving_duration(self) -> timedelta:
+        """The moving duration of the track.
+
+        The moving duration is the total duration with a
+        speed greater than 0.5 km/h.
+        """
+        return sum([trkseg.moving_duration for trkseg in self.trksegs], timedelta())
+
+    @property
+    def avg_speed(self) -> float:
+        """The average speed of the track (in metres / second)."""
+        return self.total_distance / self.total_duration.total_seconds()
+
+    speed = avg_speed  #: Alias of :attr:`avg_speed`.
+
+    @property
+    def avg_moving_speed(self) -> float:
+        """The average moving speed of the track (in metres / second)."""
+        return self.total_distance / self.moving_duration.total_seconds()
+
+    @property
+    def max_speed(self) -> float:
+        """The maximum speed of the track (in metres / second)."""
+        return max(trkseg.max_speed for trkseg in self.trksegs)
+
+    @property
+    def min_speed(self) -> float:
+        """The minimum speed of the track (in metres / second)."""
+        return min(trkseg.min_speed for trkseg in self.trksegs)
+
+    @property
+    def speed_profile(self) -> list[tuple[datetime, float]]:
+        """The speed profile of the track.
+
+        The speed profile is a list of (timestamp, speed) tuples.
+        """
+        profile = []
+        for trkseg in self.trksegs:
+            profile += trkseg.speed_profile
+        return profile
+
+    @property
+    def avg_elevation(self) -> Decimal:
+        """The average elevation (in metres)."""
+        _eles = [
+            trkpt.ele
+            for trkseg in self.trksegs
+            for trkpt in trkseg
+            if trkpt.ele is not None
+        ]
+        return sum(_eles, Decimal("0")) / len(_eles)
+
+    elevation = avg_elevation  #: Alias of :attr:`avg_elevation`.
+
+    @property
+    def max_elevation(self) -> Decimal:
+        """The maximum elevation of the track (in metres)."""
+        return max(trkseg.max_elevation for trkseg in self.trksegs)
+
+    @property
+    def min_elevation(self) -> Decimal:
+        """The minimum elevation of the track (in metres)."""
+        return min(trkseg.min_elevation for trkseg in self.trksegs)
+
+    @property
+    def diff_elevation(self) -> Decimal:
+        """The difference in elevation of the track (in metres)."""
+        return self.max_elevation - self.min_elevation
+
+    @property
+    def total_ascent(self) -> Decimal:
+        """The total ascent of the track (in metres)."""
+        return sum([trkseg.total_ascent for trkseg in self.trksegs], Decimal("0"))
+
+    @property
+    def total_descent(self) -> Decimal:
+        """The total descent of the track (in metres)."""
+        return abs(sum([trkseg.total_descent for trkseg in self.trksegs], Decimal("0")))
+
+    @property
+    def elevation_profile(self) -> list[tuple[float, Decimal]]:
+        """The elevation profile of the track.
+
+        The elevation profile is a list of (distance, elevation) tuples.
+        """
+        distance = 0.0
+        profile = []
+        if self.trksegs[0]._points_with_ele[0].ele is not None:
+            profile.append((distance, self.trksegs[0]._points_with_ele[0].ele))
+        for trkseg in self.trksegs:
+            for i, point in enumerate(trkseg._points_with_ele[1:], 1):
+                if point.ele is not None:
+                    distance += trkseg._points_with_ele[i - 1].distance_to(point)
+                    profile.append((distance, point.ele))
+        return profile
