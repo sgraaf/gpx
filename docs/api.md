@@ -4,122 +4,115 @@
 
 ```{eval-rst}
 .. automodule:: gpx.gpx
-   :members:
+    :members:
 ```
 
 ## `gpx.metadata` Module
 
 ```{eval-rst}
 .. automodule:: gpx.metadata
-   :members:
+    :members:
 ```
 
 ## `gpx.waypoint` Module
 
 ```{eval-rst}
 .. automodule:: gpx.waypoint
-   :members:
+    :members:
 ```
 
 ## `gpx.route` Module
 
 ```{eval-rst}
 .. automodule:: gpx.route
-   :members:
+    :members:
 ```
 
 ## `gpx.track` Module
 
 ```{eval-rst}
 .. automodule:: gpx.track
-   :members:
+    :members:
 ```
 
 ## `gpx.track_segment` Module
 
 ```{eval-rst}
 .. automodule:: gpx.track_segment
-   :members:
+    :members:
 ```
 
 ## `gpx.copyright` Module
 
 ```{eval-rst}
 .. automodule:: gpx.copyright
-   :members:
+    :members:
 ```
 
 ## `gpx.link` Module
 
 ```{eval-rst}
 .. automodule:: gpx.link
-   :members:
+    :members:
 ```
 
 ## `gpx.email` Module
 
 ```{eval-rst}
 .. automodule:: gpx.email
-   :members:
+    :members:
 ```
 
 ## `gpx.person` Module
 
 ```{eval-rst}
 .. automodule:: gpx.person
-   :members:
+    :members:
 ```
 
 ## `gpx.bounds` Module
 
 ```{eval-rst}
 .. automodule:: gpx.bounds
-   :members:
+    :members:
 ```
 
 ## `gpx.element` Module
 
 ```{eval-rst}
 .. automodule:: gpx.element
-   :members:
-   :private-members:
+    :members:
+    :private-members:
 ```
 
 ## `gpx.mixins` Module
 
 ```{eval-rst}
 .. automodule:: gpx.mixins
-```
-
-```{eval-rst}
 .. autoclass:: gpx.mixins.AttributesMutableMappingMixin
-```
-
-```{eval-rst}
 .. autoclass:: gpx.mixins.PointsSequenceMixin
-```
-
-```{eval-rst}
 .. autoclass:: gpx.mixins.PointsMutableSequenceMixin
+.. autoclass:: gpx.mixins.PointsStatisticsMixin
+    :members:
 ```
 
 ## `gpx.types` Module
 
 ```{eval-rst}
 .. automodule:: gpx.types
-   :members:
+    :members:
 ```
 
 ## `gpx.utils` Module
 
 ```{eval-rst}
 .. automodule:: gpx.utils
-   :members:
+    :members:
 ```
 
 ## `gpx.errors` Module
 
 ```{eval-rst}
 .. automodule:: gpx.errors
-   :members:
+    :members:
 ```

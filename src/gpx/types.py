@@ -11,6 +11,9 @@ class Latitude(Decimal):
 
     Args:
         value: The latitude value.
+
+    Raises:
+        ValueError: If the value is not a valid latitude (i.e. between `[-90.0, 90.0]`).
     """
 
     def __new__(cls, value: str | int | float | Decimal) -> Latitude:
@@ -35,6 +38,9 @@ class Longitude(Decimal):
 
     Args:
         value: The longitude value.
+
+    Raises:
+        ValueError: If the value is not a valid latitude (i.e. between `[-180.0, 180.0]`).
     """
 
     def __new__(cls, value: str | int | float | Decimal) -> Longitude:
@@ -60,6 +66,9 @@ class Degrees(Decimal):
 
     Args:
         value: The degrees value.
+
+    Raises:
+        ValueError: If the value is not a valid latitude (i.e. between `[0.0, 360.0)`).
     """
 
     def __new__(cls, value: str | int | float | Decimal) -> Degrees:
@@ -85,6 +94,9 @@ class Fix(str):
 
     Args:
         value: The fix value.
+
+    Raises:
+        ValueError: If the value is not a valid fix (i.e. one of `none`, `2d`, `3d`, `dgps`, `pps`).
     """
 
     ALLOWED_VALUES = ("none", "2d", "3d", "dgps", "pps")
@@ -105,6 +117,9 @@ class DGPSStation(int):
 
     Args:
         value: The DGPS station value.
+
+    Raises:
+        ValueError: If the value is not a valid DGPS station (i.e. between `[0, 1023]`).
     """
 
     def __new__(cls, value: int) -> DGPSStation:

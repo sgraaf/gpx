@@ -54,7 +54,7 @@ class GPX(Element):
     def name(self) -> str | None:
         """The name of the GPX file.
 
-        Alias of :attr:`gpx.metadata.Metadata.name`.
+        Proxy of :attr:`gpx.metadata.Metadata.name`.
         """
         if self.metadata is not None:
             return self.metadata.name
@@ -70,7 +70,7 @@ class GPX(Element):
     def desc(self) -> str | None:
         """A description of the contents of the GPX file.
 
-        Alias of :attr:`gpx.metadata.Metadata.desc`.
+        Proxy of :attr:`gpx.metadata.Metadata.desc`.
         """
         if self.metadata is not None:
             return self.metadata.desc
@@ -86,7 +86,7 @@ class GPX(Element):
     def author(self) -> Person | None:
         """The person or organization who created the GPX file.
 
-        Alias of :attr:`gpx.metadata.Metadata.author`.
+        Proxy of :attr:`gpx.metadata.Metadata.author`.
         """
         if self.metadata is not None:
             return self.metadata.author
@@ -102,7 +102,7 @@ class GPX(Element):
     def copyright(self) -> Copyright | None:
         """Copyright and license information governing use of the file.
 
-        Alias of :attr:`gpx.metadata.Metadata.copyright`.
+        Proxy of :attr:`gpx.metadata.Metadata.copyright`.
         """
         if self.metadata is not None:
             return self.metadata.copyright
@@ -118,7 +118,7 @@ class GPX(Element):
     def links(self) -> list[Link] | None:
         """URLs associated with the location described in the file.
 
-        Alias of :attr:`gpx.metadata.Metadata.links`.
+        Proxy of :attr:`gpx.metadata.Metadata.links`.
         """
         if self.metadata is not None:
             return self.metadata.links
@@ -134,7 +134,7 @@ class GPX(Element):
     def time(self) -> datetime | None:
         """The creation date of the file.
 
-        Alias of :attr:`gpx.metadata.Metadata.time`.
+        Proxy of :attr:`gpx.metadata.Metadata.time`.
         """
         if self.metadata is not None:
             return self.metadata.time
@@ -151,7 +151,7 @@ class GPX(Element):
         """Keywords associated with the file. Search engines or databases can
         use this information to classify the data.
 
-        Alias of :attr:`gpx.metadata.Metadata.keywords`.
+        Proxy of :attr:`gpx.metadata.Metadata.keywords`.
         """
         if self.metadata is not None:
             return self.metadata.keywords
@@ -168,7 +168,7 @@ class GPX(Element):
         """Minimum and maximum coordinates which describe the extent of the
         coordinates in the file.
 
-        Alias of :attr:`gpx.metadata.Metadata.bounds`.
+        Proxy of :attr:`gpx.metadata.Metadata.bounds`.
         """
         if self.metadata is not None:
             return self.metadata.bounds
