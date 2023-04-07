@@ -8,12 +8,11 @@ from lxml import etree
 
 from .element import Element
 from .link import Link
-from .mixins import PointsMutableSequenceMixin
-from .types import Latitude, Longitude
+from .mixins import PointsMutableSequenceMixin, PointsStatisticsMixin
 from .waypoint import Waypoint
 
 
-class Route(Element, PointsMutableSequenceMixin):
+class Route(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
     """A route class for the GPX data format.
 
     A route represents an ordered list of waypoints representing a series of
@@ -115,13 +114,3 @@ class Route(Element, PointsMutableSequenceMixin):
             route.append(_rtept._build(tag="rtept"))
 
         return route
-
-    @property
-    def bounds(self) -> tuple[Latitude, Longitude, Latitude, Longitude]:
-        """The bounds of the route."""
-        return (
-            min(point.lat for point in self.rtepts),
-            min(point.lon for point in self.rtepts),
-            max(point.lat for point in self.rtepts),
-            max(point.lon for point in self.rtepts),
-        )
