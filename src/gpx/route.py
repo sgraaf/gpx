@@ -104,7 +104,7 @@ class Route(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
 
         if self.number is not None:
             number = etree.SubElement(route, "number", nsmap=self._nsmap)
-            number.text = self.number
+            number.text = str(self.number)
 
         if self.type is not None:
             _type = etree.SubElement(route, "type", nsmap=self._nsmap)
