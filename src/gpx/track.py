@@ -127,7 +127,7 @@ class Track(Element):
 
         if self.number is not None:
             number = etree.SubElement(track, "number", nsmap=self._nsmap)
-            number.text = self.number
+            number.text = str(self.number)
 
         if self.type is not None:
             _type = etree.SubElement(track, "type", nsmap=self._nsmap)
