@@ -23,76 +23,82 @@ class Waypoint(Element):
         element: The waypoint XML element. Defaults to `None`.
     """
 
-    #: The latitude of the point. Decimal degrees, WGS84 datum.
-    lat: Latitude
+    def __init__(self, element: etree._Element | None = None) -> None:
+        super().__init__(element)
 
-    #: The longitude of the point. Decimal degrees, WGS84 datum.
-    lon: Longitude
+        #: The latitude of the point. Decimal degrees, WGS84 datum.
+        self.lat: Latitude
 
-    #: Elevation (in meters) of the point.
-    ele: Decimal | None = None
+        #: The longitude of the point. Decimal degrees, WGS84 datum.
+        self.lon: Longitude
 
-    #: Creation/modification timestamp for element. Date and time in are in
-    #: Universal Coordinated Time (UTC), not local time! Conforms to ISO 8601
-    #: specification for date/time representation. Fractional seconds are
-    #: allowed for millisecond timing in tracklogs.
-    time: datetime | None = None
+        #: Elevation (in meters) of the point.
+        self.ele: Decimal | None = None
 
-    #: Magnetic variation (in degrees) at the point
-    magvar: Degrees | None = None
+        #: Creation/modification timestamp for element. Date and time in are in
+        #: Universal Coordinated Time (UTC), not local time! Conforms to ISO
+        #: 8601 specification for date/time representation. Fractional seconds
+        #: are allowed for millisecond timing in tracklogs.
+        self.time: datetime | None = None
 
-    #: Height (in meters) of geoid (mean sea level) above WGS84 earth
-    #: ellipsoid. As defined in NMEA GGA message.
-    geoidheight: Decimal | None = None
+        #: Magnetic variation (in degrees) at the point
+        self.magvar: Degrees | None = None
 
-    #: The GPS name of the waypoint. This field will be transferred to and
-    #: from the GPS. GPX does not place restrictions on the length of this
-    #: field or the characters contained in it. It is up to the receiving
-    #: application to validate the field before sending it to the GPS.
-    name: str | None = None
+        #: Height (in meters) of geoid (mean sea level) above WGS84 earth
+        #: ellipsoid. As defined in NMEA GGA message.
+        self.geoidheight: Decimal | None = None
 
-    #: GPS waypoint comment. Sent to GPS as comment.
-    cmt: str | None = None
+        #: The GPS name of the waypoint. This field will be transferred to and
+        #: from the GPS. GPX does not place restrictions on the length of this
+        #: field or the characters contained in it. It is up to the receiving
+        #: application to validate the field before sending it to the GPS.
+        self.name: str | None = None
 
-    #: A text description of the element. Holds additional information about
-    #: the element intended for the user, not the GPS.
-    desc: str | None = None
+        #: GPS waypoint comment. Sent to GPS as comment.
+        self.cmt: str | None = None
 
-    #: Source of data. Included to give user some idea of reliability and
-    #: accuracy of data. "Garmin eTrex", "USGS quad Boston North", e.g.
-    src: str | None = None
+        #: A text description of the element. Holds additional information about
+        #: the element intended for the user, not the GPS.
+        self.desc: str | None = None
 
-    #: Link to additional information about the waypoint.
-    links: list[Link] = []
+        #: Source of data. Included to give user some idea of reliability and
+        #: accuracy of data. "Garmin eTrex", "USGS quad Boston North", e.g.
+        self.src: str | None = None
 
-    #: Text of GPS symbol name. For interchange with other programs, use the
-    #: exact spelling of the symbol as displayed on the GPS. If the GPS
-    #: abbreviates words, spell them out.
-    sym: str | None = None
+        #: Link to additional information about the waypoint.
+        self.links: list[Link] = []
 
-    #: Type (classification) of the waypoint.
-    type: str | None = None
+        #: Text of GPS symbol name. For interchange with other programs, use the
+        #: exact spelling of the symbol as displayed on the GPS. If the GPS
+        #: abbreviates words, spell them out.
+        self.sym: str | None = None
 
-    #: Type of GPX fix.
-    fix: Fix | None = None
+        #: Type (classification) of the waypoint.
+        self.type: str | None = None
 
-    #: Number of satellites used to calculate the GPX fix.
-    sat: int | None = None
+        #: Type of GPX fix.
+        self.fix: Fix | None = None
 
-    #: Horizontal dilution of precision.
-    hdop: Decimal | None = None
+        #: Number of satellites used to calculate the GPX fix.
+        self.sat: int | None = None
 
-    #: Vertical dilution of precision.
-    vdop: Decimal | None = None
+        #: Horizontal dilution of precision.
+        self.hdop: Decimal | None = None
 
-    #: Position dilution of precision.
-    pdop: Decimal | None = None
+        #: Vertical dilution of precision.
+        self.vdop: Decimal | None = None
 
-    #: Number of seconds since last DGPS update.
-    ageofdgpsdata: Decimal | None = None
+        #: Position dilution of precision.
+        self.pdop: Decimal | None = None
 
-    #: ID of DGPS station used in differential correction.
-    dgpsid: DGPSStation | None = None
+        #: Number of seconds since last DGPS update.
+        self.ageofdgpsdata: Decimal | None = None
+
+        #: ID of DGPS station used in differential correction.
+        self.dgpsid: DGPSStation | None = None
+
+        if self._element is not None:
+            self._parse()
 
     def _parse(self) -> None:  # noqa: C901
         super()._parse()

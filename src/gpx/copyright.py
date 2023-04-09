@@ -21,14 +21,20 @@ class Copyright(Element):
         element: The copyright XML element. Defaults to `None`.
     """
 
-    #: Copyright holder (e.g. TopoSoft, Inc.).
-    author: str
+    def __init__(self, element: etree._Element | None = None) -> None:
+        super().__init__(element)
 
-    #: Year of copyright.
-    year: int | None = None
+        #: Copyright holder (e.g. TopoSoft, Inc.).
+        self.author: str
 
-    #: Link to external file containing license text.
-    license: str | None = None
+        #: Year of copyright.
+        self.year: int | None = None
+
+        #: Link to external file containing license text.
+        self.license: str | None = None
+
+        if self._element is not None:
+            self._parse()
 
     def _parse(self) -> None:
         super()._parse()

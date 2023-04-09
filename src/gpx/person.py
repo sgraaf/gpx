@@ -18,16 +18,22 @@ class Person(Element, AttributesMutableMappingMixin):
         element: The person XML element. Defaults to `None`.
     """
 
-    #: Name of person or organization.
-    name: str | None = None
-
-    #: Email address.
-    email: Email | None = None
-
-    #: Link to Web site or other external information about person.
-    link: Link | None = None
-
     __keys__ = ("name", "email", "link")
+
+    def __init__(self, element: etree._Element | None = None) -> None:
+        super().__init__(element)
+
+        #: Name of person or organization.
+        self.name: str | None = None
+
+        #: Email address.
+        self.email: Email | None = None
+
+        #: Link to Web site or other external information about person.
+        self.link: Link | None = None
+
+        if self._element is not None:
+            self._parse()
 
     def _parse(self) -> None:
         super()._parse()

@@ -27,31 +27,37 @@ class Metadata(Element):
         element: The metadata XML element. Defaults to `None`.
     """
 
-    #: The name of the GPX file.
-    name: str | None = None
+    def __init__(self, element: etree._Element | None = None) -> None:
+        super().__init__(element)
 
-    #: A description of the contents of the GPX file.
-    desc: str | None = None
+        #: The name of the GPX file.
+        self.name: str | None = None
 
-    #: The person or organization who created the GPX file.
-    author: Person | None = None
+        #: A description of the contents of the GPX file.
+        self.desc: str | None = None
 
-    #: Copyright and license information governing use of the file.
-    copyright: Copyright | None = None
+        #: The person or organization who created the GPX file.
+        self.author: Person | None = None
 
-    #: URLs associated with the location described in the file.
-    links: list[Link] = []
+        #: Copyright and license information governing use of the file.
+        self.copyright: Copyright | None = None
 
-    #: The creation date of the file.
-    time: datetime.datetime | None = None
+        #: URLs associated with the location described in the file.
+        self.links: list[Link] = []
 
-    #: Keywords associated with the file. Search engines or databases can use
-    #: this information to classify the data.
-    keywords: str | None = None
+        #: The creation date of the file.
+        self.time: datetime.datetime | None = None
 
-    #: Minimum and maximum coordinates which describe the extent of the
-    #: coordinates in the file.
-    bounds: Bounds | None = None
+        #: Keywords associated with the file. Search engines or databases can
+        #: use this information to classify the data.
+        self.keywords: str | None = None
+
+        #: Minimum and maximum coordinates which describe the extent of the
+        #: coordinates in the file.
+        self.bounds: Bounds | None = None
+
+        if self._element is not None:
+            self._parse()
 
     def _parse(self) -> None:
         super()._parse()

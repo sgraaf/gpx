@@ -19,17 +19,23 @@ class Bounds(Element):
         element: The bounds XML element. Defaults to `None`.
     """
 
-    #: The minimum latitude.
-    minlat: Latitude
+    def __init__(self, element: etree._Element | None = None) -> None:
+        super().__init__(element)
 
-    #: The minimum longitude.
-    minlon: Longitude
+        #: The minimum latitude.
+        self.minlat: Latitude
 
-    #: The maximum latitude.
-    maxlat: Latitude
+        #: The minimum longitude.
+        self.minlon: Longitude
 
-    #: The maximum longitude.
-    maxlon: Longitude
+        #: The maximum latitude.
+        self.maxlat: Latitude
+
+        #: The maximum longitude.
+        self.maxlon: Longitude
+
+        if self._element is not None:
+            self._parse()
 
     def as_tuple(self) -> tuple[Latitude, Longitude, Latitude, Longitude]:
         """Return the bounds as a tuple."""

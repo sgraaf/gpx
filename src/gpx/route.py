@@ -23,31 +23,37 @@ class Route(Element, PointsMutableSequenceMixin):
         element: The route XML element. Defaults to `None`.
     """
 
-    #: GPS name of route.
-    name: str | None = None
+    def __init__(self, element: etree._Element | None = None) -> None:
+        super().__init__(element)
 
-    #: GPS comment for route.
-    cmt: str | None = None
+        #: GPS name of route.
+        self.name: str | None = None
 
-    #: Text description of route for user. Not sent to GPS.
-    desc: str | None = None
+        #: GPS comment for route.
+        self.cmt: str | None = None
 
-    #: Source of data. Included to give user some idea of reliability and
-    #: accuracy of data.
-    src: str | None = None
+        #: Text description of route for user. Not sent to GPS.
+        self.desc: str | None = None
 
-    #: Links to external information about the route.
-    links: list[Link] = []
+        #: Source of data. Included to give user some idea of reliability and
+        #: accuracy of data.
+        self.src: str | None = None
 
-    #: GPS route number.
-    number: int | None = None
+        #: Links to external information about the route.
+        self.links: list[Link] = []
 
-    #: Type (classification) of route.
-    type: str | None = None
+        #: GPS route number.
+        self.number: int | None = None
 
-    #: A list of route points.
-    rtepts: list[Waypoint] = []
-    points = rtepts  #: Alias of :attr:`rtepts`.
+        #: Type (classification) of route.
+        self.type: str | None = None
+
+        #: A list of route points.
+        self.rtepts: list[Waypoint] = []
+        self.points = self.rtepts  #: Alias of :attr:`rtepts`.
+
+        if self._element is not None:
+            self._parse()
 
     def _parse(self) -> None:
         super()._parse()
