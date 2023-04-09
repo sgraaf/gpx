@@ -23,4 +23,4 @@ from .track_segment import TrackSegment
 from .types import Degrees, DGPSStation, Fix, Latitude, Longitude
 from .waypoint import Waypoint
 
-__version__ = "0.2.0"
+__version__ = "0.2.1"
