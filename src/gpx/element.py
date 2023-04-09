@@ -23,9 +23,6 @@ class Element:
         #: The XML namespace mapping from prefix -> URI.
         self._nsmap: dict[str, str] | None = None
 
-        if self._element is not None:
-            self._parse()
-
     def _parse(self) -> None:
         """Parses the XML element.
 

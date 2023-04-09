@@ -25,34 +25,40 @@ class Track(Element):
         element: The track XML element. Defaults to `None`.
     """
 
-    #: GPS name of track.
-    name: str | None = None
+    def __init__(self, element: etree._Element | None = None) -> None:
+        super().__init__(element)
 
-    #: GPS comment for track.
-    cmt: str | None = None
+        #: GPS name of track.
+        self.name: str | None = None
 
-    #: User description of track.
-    desc: str | None = None
+        #: GPS comment for track.
+        self.cmt: str | None = None
 
-    #: Source of data. Included to give user some idea of reliability and
-    #: accuracy of data.
-    src: str | None = None
+        #: User description of track.
+        self.desc: str | None = None
 
-    #: Links to external information about track.
-    links: list[Link] = []
+        #: Source of data. Included to give user some idea of reliability and
+        #: accuracy of data.
+        self.src: str | None = None
 
-    #: GPS track number.
-    number: int | None = None
+        #: Links to external information about track.
+        self.links: list[Link] = []
 
-    #: Type (classification) of track.
-    type: str | None = None
+        #: GPS track number.
+        self.number: int | None = None
 
-    #: A Track Segment holds a list of Track Points which are logically
-    #: connected in order. To represent a single GPS track where GPS
-    #: reception was lost, or the GPS receiver was turned off, start a new
-    #: Track Segment for each continuous span of track data.
-    trksegs: list[TrackSegment] = []
-    segments = trksegs  #: Alias of :attr:`trksegs`.
+        #: Type (classification) of track.
+        self.type: str | None = None
+
+        #: A Track Segment holds a list of Track Points which are logically
+        #: connected in order. To represent a single GPS track where GPS
+        #: reception was lost, or the GPS receiver was turned off, start a new
+        #: Track Segment for each continuous span of track data.
+        self.trksegs: list[TrackSegment] = []
+        self.segments = self.trksegs  #: Alias of :attr:`trksegs`.
+
+        if self._element is not None:
+            self._parse()
 
     def __getitem__(self, index: int) -> TrackSegment:
         """Returns the track segment at the given index."""
@@ -122,7 +128,7 @@ class Track(Element):
 
         if self.number is not None:
             number = etree.SubElement(track, "number", nsmap=self._nsmap)
-            number.text = self.number
+            number.text = str(self.number)
 
         if self.type is not None:
             _type = etree.SubElement(track, "type", nsmap=self._nsmap)

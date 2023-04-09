@@ -16,11 +16,17 @@ class Email(Element):
         element: The email XML element. Defaults to `None`.
     """
 
-    #: id half of email address (e.g. billgates2004)
-    id: str
+    def __init__(self, element: etree._Element | None = None) -> None:
+        super().__init__(element)
 
-    #: domain half of email address (e.g. hotmail.com)
-    domain: str
+        #: id half of email address (e.g. billgates2004)
+        self.id: str
+
+        #: domain half of email address (e.g. hotmail.com)
+        self.domain: str
+
+        if self._element is not None:
+            self._parse()
 
     def _parse(self) -> None:
         super()._parse()

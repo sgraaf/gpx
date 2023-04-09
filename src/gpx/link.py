@@ -19,14 +19,20 @@ class Link(Element):
         element: The link XML element. Defaults to `None`.
     """
 
-    #: URL of hyperlink.
-    href: str
+    def __init__(self, element: etree._Element | None = None) -> None:
+        super().__init__(element)
 
-    #: Text of hyperlink.
-    text: str | None = None
+        #: URL of hyperlink.
+        self.href: str
 
-    #: Mime type of content (e.g. image/jpeg)
-    type: str | None = None
+        #: Text of hyperlink.
+        self.text: str | None = None
+
+        #: Mime type of content (e.g. image/jpeg)
+        self.type: str | None = None
+
+        if self._element is not None:
+            self._parse()
 
     def _parse(self) -> None:
         super()._parse()

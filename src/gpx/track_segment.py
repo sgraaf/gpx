@@ -23,10 +23,16 @@ class TrackSegment(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
         element: The track segment XML element. Defaults to `None`.
     """
 
-    #: A Track Point holds the coordinates, elevation, timestamp, and
-    #: metadata for a single point in a track.
-    trkpts: list[Waypoint] = []
-    points = trkpts  #: Alias of :attr:`trkpts`.
+    def __init__(self, element: etree._Element | None = None) -> None:
+        super().__init__(element)
+
+        #: A Track Point holds the coordinates, elevation, timestamp, and
+        #: metadata for a single point in a track.
+        self.trkpts: list[Waypoint] = []
+        self.points = self.trkpts  #: Alias of :attr:`trkpts`.
+
+        if self._element is not None:
+            self._parse()
 
     def _parse(self) -> None:
         super()._parse()

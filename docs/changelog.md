@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.1 (2023-04-09)
+
+### Fixed
+
+-   Serialization of route and track numbers. #10
+-   Mutable default values. #11
+
 ## 0.2.0 (2023-04-06)
 
 With this release, PyGPX is now fully [^spec-compat] compatible with the [GPX 1.1 specification](https://www.topografix.com/GPX/1/1/gpx.xsd).
