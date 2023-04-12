@@ -21,7 +21,7 @@ class Element:
         self._element: etree._Element | None = element
 
         #: The XML namespace mapping from prefix -> URI.
-        self._nsmap: dict[str, str] | None = None
+        self._nsmap: dict[str | None, str] | None = None
 
     def _parse(self) -> None:
         """Parses the XML element.
@@ -34,7 +34,34 @@ class Element:
             raise ParseError("No element to parse.")
 
         # namespaces
-        self._nsmap = self._element.nsmap
+        if (nsmap := self._element.nsmap) is not None:
+            self._nsmap = nsmap
+
+    def _filter_nsmap(self) -> None:
+        """Filters the namespace mapping to only include the namespaces used
+        by the element.
+        """
+        if self._element is None or self._nsmap is None:
+            return None
+
+        # get all namespaces used by the element and its children
+        used_ns = set()
+        for element in self._element.iter():
+            ns_uri = etree.QName(element).namespace
+            if ns_uri:
+                used_ns.add(ns_uri)
+            for attrib_name in element.attrib:
+                ns_uri = etree.QName(attrib_name).namespace
+                if ns_uri:
+                    used_ns.add(ns_uri)
+
+        # filter the namespace mapping to only include the namespaces used by
+        # the element and its children
+        self._nsmap = {
+            prefix: uri
+            for prefix, uri in self._nsmap.items()
+            if uri in used_ns or prefix is None  # keep default namespace
+        }
 
     def _build(self, tag: str) -> etree._Element:
         """Builds the XML element.
@@ -45,6 +72,7 @@ class Element:
         Returns:
             The XML element.
         """
+        self._filter_nsmap()
         element = etree.Element(tag, nsmap=self._nsmap)
         return element
 

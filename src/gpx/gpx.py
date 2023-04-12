@@ -37,6 +37,15 @@ class GPX(Element):
     def __init__(self, element: etree._Element | None = None) -> None:
         super().__init__(element)
 
+        self._nsmap: dict[str | None, str] = {
+            None: "http://www.topografix.com/GPX/1/1",
+            "xsi": "http://www.w3.org/2001/XMLSchema-instance",
+        }
+
+        self._schema_locations: dict[str, str] = {
+            "http://www.topografix.com/GPX/1/1": "http://www.topografix.com/GPX/1/1/gpx.xsd",
+        }
+
         #: The name or URL of the software that created your GPX document.
         #: Defaults to "PyGPX".
         self.creator: str = "PyGPX"
@@ -192,8 +201,18 @@ class GPX(Element):
         # assertion to satisfy mypy
         assert self._element is not None
 
-        # namespaces
-        self._nsmap = self._element.nsmap
+        # schema location
+        if (
+            schema_location := self._element.get(
+                f"{{{self._nsmap['xsi']}}}schemaLocation"
+            )
+        ) is not None:
+            self._schema_locations.update(
+                (x, y)
+                for x, y in zip(
+                    schema_location.split(" ")[0::2], schema_location.split(" ")[1::2]
+                )
+            )
 
         # creator
         creator = self._element.get("creator")
@@ -221,9 +240,17 @@ class GPX(Element):
     def _build(self, tag: str = "gpx") -> etree._Element:
         gpx = super()._build(tag)
 
+        # filter schema locations
+        self._schema_locations = {
+            k: v for k, v in self._schema_locations.items() if k in self._nsmap.values()
+        }
         # set version and creator attributes
         gpx.set("version", "1.1")
         gpx.set("creator", self.creator)
+        gpx.set(
+            f"{{{self._nsmap['xsi']}}}schemaLocation",
+            " ".join(f"{k} {v}" for k, v in self._schema_locations.items()),
+        )
 
         # metadata
         if self.metadata:
