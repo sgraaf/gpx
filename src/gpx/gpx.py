@@ -215,8 +215,7 @@ class GPX(Element):
             )
 
         # creator
-        creator = self._element.get("creator")
-        if creator is not None:
+        if (creator := self._element.get("creator")) is not None:
             self.creator = creator
 
         # metadata
