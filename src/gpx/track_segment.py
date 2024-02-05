@@ -2,6 +2,7 @@
 This module provides a Track object to contain GPX routes - an ordered list of
 points describing a path.
 """
+
 from __future__ import annotations
 
 from lxml import etree

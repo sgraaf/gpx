@@ -2,6 +2,7 @@
 This module provides a Bounds object to contain two lat/lon pairs defining
 the extent of an element.
 """
+
 from __future__ import annotations
 
 from lxml import etree
