@@ -1,4 +1,5 @@
 """This module provides a Person object to contain a person or organization."""
+
 from __future__ import annotations
 
 from lxml import etree

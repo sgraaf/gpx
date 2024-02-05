@@ -1,4 +1,5 @@
 """This module provides a Email object to contain an email address."""
+
 from __future__ import annotations
 
 from lxml import etree

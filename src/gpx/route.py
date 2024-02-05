@@ -2,6 +2,7 @@
 This module provides a Route object to contain GPX routes - ordered lists of
 waypoints representing a series of turn points leading to a destination.
 """
+
 from __future__ import annotations
 
 from lxml import etree

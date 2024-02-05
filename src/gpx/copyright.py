@@ -3,6 +3,7 @@ This module provides a Copyright object to contain GPX copyright, containing
 information about the copyright holder and any license governing use of the GPX
 data.
 """
+
 from __future__ import annotations
 
 from lxml import etree

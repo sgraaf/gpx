@@ -1,4 +1,5 @@
 """This module provides a Waypoint object to contain GPX waypoints."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
