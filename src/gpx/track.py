@@ -72,6 +72,43 @@ class Track(Element):
         """Iterates over the track segments."""
         yield from self.trksegs
 
+    def __geo_interface__(self) -> dict:
+        """Returns a GeoJSON-like dictionary."""
+        return {
+            "type": "Feature",
+            "geometry": {
+                "type": "MultiLineString",
+                "coordinates": [
+                    [(trkpt.lon, trkpt.lat) for trkpt in trkseg]
+                    for trkseg in self.trksegs
+                ],
+            },
+            "properties": {
+                "name": self.name,
+                "cmt": self.cmt,
+                "desc": self.desc,
+                "src": self.src,
+                "links": [link.text for link in self.links],
+                "number": self.number,
+                "type": self.type,
+                "total_distance": self.total_distance,
+                "total_duration": self.total_duration.total_seconds(),
+                "moving_duration": self.moving_duration.total_seconds(),
+                "avg_speed": self.avg_speed,
+                "avg_moving_speed": self.avg_moving_speed,
+                "max_speed": self.max_speed,
+                "min_speed": self.min_speed,
+                "speed_profile": self.speed_profile,
+                "avg_elevation": float(self.avg_elevation),
+                "max_elevation": float(self.max_elevation),
+                "min_elevation": float(self.min_elevation),
+                "diff_elevation": float(self.diff_elevation),
+                "total_ascent": float(self.total_ascent),
+                "total_descent": float(self.total_descent),
+                "elevation_profile": self.elevation_profile,
+            },
+        }
+
     def _parse(self) -> None:
         super()._parse()
 

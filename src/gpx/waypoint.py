@@ -100,6 +100,33 @@ class Waypoint(Element):
         if self._element is not None:
             self._parse()
 
+    def __geo_interface__(self) -> dict:
+        """Return a GeoJSON-like dictionary for the waypoint."""
+        return {
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [self.lon, self.lat]},
+            "properties": {
+                "ele": float(self.ele),
+                "time": self.time,
+                "magvar": self.magvar,
+                "geoidheight": float(self.geoidheight),
+                "name": self.name,
+                "cmt": self.cmt,
+                "desc": self.desc,
+                "src": self.src,
+                "links": [link.text for link in self.links],
+                "sym": self.sym,
+                "type": self.type,
+                "fix": self.fix,
+                "sat": self.sat,
+                "hdop": self.hdop,
+                "vdop": self.vdop,
+                "pdop": self.pdop,
+                "ageofdgpsdata": self.ageofdgpsdata,
+                "dgpsid": self.dgpsid,
+            },
+        }
+
     def _parse(self) -> None:  # noqa: C901
         super()._parse()
 

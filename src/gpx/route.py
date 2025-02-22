@@ -54,6 +54,25 @@ class Route(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
         if self._element is not None:
             self._parse()
 
+    def __geo_interface__(self) -> dict:
+        """Return a GeoJSON-like dictionary for the route."""
+        return {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [point.coords for point in self.rtepts],
+            },
+            "properties": {
+                "name": self.name,
+                "cmt": self.cmt,
+                "desc": self.desc,
+                "src": self.src,
+                "links": [link.text for link in self.links],
+                "number": self.number,
+                "type": self.type,
+            },
+        }
+
     def _parse(self) -> None:
         super()._parse()
 
