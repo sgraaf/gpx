@@ -2,6 +2,7 @@
 This module provides a Track object to contain GPX routes - an ordered list of
 points describing a path.
 """
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -79,7 +80,7 @@ class Track(Element):
             "geometry": {
                 "type": "MultiLineString",
                 "coordinates": [
-                    [(trkpt.lon, trkpt.lat) for trkpt in trkseg]
+                    [[float(coord) for coord in trkpt._coords] for trkpt in trkseg]
                     for trkseg in self.trksegs
                 ],
             },
@@ -88,7 +89,7 @@ class Track(Element):
                 "cmt": self.cmt,
                 "desc": self.desc,
                 "src": self.src,
-                "links": [link.text for link in self.links],
+                "links": [link.href for link in self.links],
                 "number": self.number,
                 "type": self.type,
                 "total_distance": self.total_distance,
@@ -98,14 +99,20 @@ class Track(Element):
                 "avg_moving_speed": self.avg_moving_speed,
                 "max_speed": self.max_speed,
                 "min_speed": self.min_speed,
-                "speed_profile": self.speed_profile,
+                "speed_profile": [
+                    [timestamp.isoformat(), speed]
+                    for (timestamp, speed) in self.speed_profile
+                ],
                 "avg_elevation": float(self.avg_elevation),
                 "max_elevation": float(self.max_elevation),
                 "min_elevation": float(self.min_elevation),
                 "diff_elevation": float(self.diff_elevation),
                 "total_ascent": float(self.total_ascent),
                 "total_descent": float(self.total_descent),
-                "elevation_profile": self.elevation_profile,
+                "elevation_profile": [
+                    [distance, float(elevation)]
+                    for (distance, elevation) in self.elevation_profile
+                ],
             },
         }
 

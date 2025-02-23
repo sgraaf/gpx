@@ -2,6 +2,7 @@
 This module provides a Track object to contain GPX routes - an ordered list of
 points describing a path.
 """
+
 from __future__ import annotations
 
 from lxml import etree
@@ -38,7 +39,9 @@ class TrackSegment(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
         """Return a GeoJSON-like dictionary for the track segment."""
         return {
             "type": "LineString",
-            "coordinates": [point.coords for point in self.trkpts],
+            "coordinates": [
+                [float(coord) for coord in point._coords] for point in self.trkpts
+            ],
         }
 
     def _parse(self) -> None:

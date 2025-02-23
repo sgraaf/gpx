@@ -2,6 +2,7 @@
 This module provides a Route object to contain GPX routes - ordered lists of
 waypoints representing a series of turn points leading to a destination.
 """
+
 from __future__ import annotations
 
 from lxml import etree
@@ -60,14 +61,16 @@ class Route(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
             "type": "Feature",
             "geometry": {
                 "type": "LineString",
-                "coordinates": [point.coords for point in self.rtepts],
+                "coordinates": [
+                    [float(coord) for coord in point._coords] for point in self.rtepts
+                ],
             },
             "properties": {
                 "name": self.name,
                 "cmt": self.cmt,
                 "desc": self.desc,
                 "src": self.src,
-                "links": [link.text for link in self.links],
+                "links": [link.href for link in self.links],
                 "number": self.number,
                 "type": self.type,
             },

@@ -1,4 +1,5 @@
 """This module provides a Waypoint object to contain GPX waypoints."""
+
 from __future__ import annotations
 
 from datetime import datetime, timedelta
@@ -104,28 +105,38 @@ class Waypoint(Element):
         """Return a GeoJSON-like dictionary for the waypoint."""
         return {
             "type": "Feature",
-            "geometry": {"type": "Point", "coordinates": [self.lon, self.lat]},
+            "geometry": {
+                "type": "Point",
+                "coordinates": [float(coord) for coord in self._coords],
+            },
             "properties": {
-                "ele": float(self.ele),
-                "time": self.time,
-                "magvar": self.magvar,
+                "time": self.time.isoformat(),
+                "magvar": float(self.magvar),
                 "geoidheight": float(self.geoidheight),
                 "name": self.name,
                 "cmt": self.cmt,
                 "desc": self.desc,
                 "src": self.src,
-                "links": [link.text for link in self.links],
+                "links": [link.href for link in self.links],
                 "sym": self.sym,
                 "type": self.type,
                 "fix": self.fix,
                 "sat": self.sat,
-                "hdop": self.hdop,
-                "vdop": self.vdop,
-                "pdop": self.pdop,
-                "ageofdgpsdata": self.ageofdgpsdata,
-                "dgpsid": self.dgpsid,
+                "hdop": float(self.hdop),
+                "vdop": float(self.vdop),
+                "pdop": float(self.pdop),
+                "ageofdgpsdata": float(self.ageofdgpsdata),
+                "dgpsid": str(self.dgpsid),
             },
         }
+
+    @property
+    def _coords(self) -> tuple[Decimal, Decimal] | tuple[Decimal, Decimal, Decimal]:
+        """Return the coordinates of the waypoint, in 2 or 3 dimensions."""
+        if self.ele is not None:
+            return (self.lon, self.lat, self.ele)
+        else:
+            return (self.lon, self.lat)
 
     def _parse(self) -> None:  # noqa: C901
         super()._parse()
