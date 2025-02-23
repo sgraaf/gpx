@@ -75,7 +75,7 @@ class Track(Element):
 
     @property
     def __geo_interface__(self) -> dict:
-        """Returns a GeoJSON-like dictionary."""
+        """Returns a GeoJSON-like dictionary for the track."""
         return {
             "type": "Feature",
             "geometry": {
