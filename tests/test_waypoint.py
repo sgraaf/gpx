@@ -19,14 +19,14 @@ def test_geo_interface():
     waypoint.src = "Test Source"
     waypoint.sym = "Test Symbol"
     waypoint.type = "Test Type"
-    waypoint.fix = "2d"
+    waypoint.fix = "3d"
     waypoint.sat = 5
     waypoint.hdop = Decimal("0.9")
     waypoint.vdop = Decimal("1.1")
     waypoint.pdop = Decimal("1.5")
     waypoint.ageofdgpsdata = Decimal("0.0")
     waypoint.dgpsid = "0000"
-    waypoint.links = []
+    waypoint.links = {}
 
     geo_interface = waypoint.__geo_interface__
     geo_interface_json = json.dumps(geo_interface, default=str)
@@ -46,10 +46,10 @@ def test_geo_interface():
                 "cmt": "Test Comment",
                 "desc": "Test Description",
                 "src": "Test Source",
-                "links": [],
+                "links": {},
                 "sym": "Test Symbol",
                 "type": "Test Type",
-                "fix": "2d",
+                "fix": "3d",
                 "sat": 5,
                 "hdop": 0.9,
                 "vdop": 1.1,

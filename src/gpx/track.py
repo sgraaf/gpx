@@ -88,6 +88,7 @@ class Track(Element):
                     for trkseg in self.trksegs
                 ],
             },
+            # "bbox": list(self.bounds),
             "properties": {
                 "name": self.name,
                 "cmt": self.cmt,

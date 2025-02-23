@@ -4,6 +4,7 @@ from decimal import Decimal
 
 from gpx.track import Track
 from gpx.track_segment import TrackSegment
+from gpx.types import Latitude, Longitude
 from gpx.waypoint import Waypoint
 
 
@@ -15,18 +16,18 @@ def test_geo_interface():
     track.src = "Test Source"
     track.number = 1
     track.type = "Test Type"
-    track.links = []
+    track.links = {}
 
     segment = TrackSegment()
     point1 = Waypoint()
-    point1.lat = Decimal("48.2081743")
-    point1.lon = Decimal("16.3739189")
+    point1.lat = Latitude("48.2081743")
+    point1.lon = Longitude("16.3739189")
     point1.ele = Decimal("151.0")
     point1.time = datetime(2023, 10, 1, 12, 0, 0)
 
     point2 = Waypoint()
-    point2.lat = Decimal("48.2081744")
-    point2.lon = Decimal("16.3738190")
+    point2.lat = Latitude("48.2081744")
+    point2.lon = Longitude("16.3738190")
     point2.ele = Decimal("152.0")
     point2.time = datetime(2023, 10, 1, 12, 5, 0)
 
@@ -52,7 +53,7 @@ def test_geo_interface():
             "cmt": "Test Comment",
             "desc": "Test Description",
             "src": "Test Source",
-            "links": [],
+            "links": {},
             "number": 1,
             "type": "Test Type",
             # "total_distance": track.total_distance,

@@ -40,6 +40,7 @@ class TrackSegment(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
         """Return a GeoJSON-like dictionary for the track segment."""
         return {
             "type": "LineString",
+            # "bbox": list(self.bounds),
             "coordinates": [
                 [float(coord) for coord in point._coords] for point in self.trkpts
             ],

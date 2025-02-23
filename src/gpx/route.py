@@ -66,6 +66,7 @@ class Route(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
                     [float(coord) for coord in point._coords] for point in self.rtepts
                 ],
             },
+            # "bbox": list(self.bounds),
             "properties": {
                 "name": self.name,
                 "cmt": self.cmt,
