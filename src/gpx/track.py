@@ -73,6 +73,7 @@ class Track(Element):
         """Iterates over the track segments."""
         yield from self.trksegs
 
+    @property
     def __geo_interface__(self) -> dict:
         """Returns a GeoJSON-like dictionary."""
         return {
@@ -80,7 +81,10 @@ class Track(Element):
             "geometry": {
                 "type": "MultiLineString",
                 "coordinates": [
-                    [[float(coord) for coord in trkpt._coords] for trkpt in trkseg]
+                    [
+                        [float(coord) for coord in trkpt._coords]
+                        for trkpt in trkseg.trkpts
+                    ]
                     for trkseg in self.trksegs
                 ],
             },
@@ -89,30 +93,30 @@ class Track(Element):
                 "cmt": self.cmt,
                 "desc": self.desc,
                 "src": self.src,
-                "links": [link.href for link in self.links],
+                "links": {link.text: link.href for link in self.links},
                 "number": self.number,
                 "type": self.type,
-                "total_distance": self.total_distance,
-                "total_duration": self.total_duration.total_seconds(),
-                "moving_duration": self.moving_duration.total_seconds(),
-                "avg_speed": self.avg_speed,
-                "avg_moving_speed": self.avg_moving_speed,
-                "max_speed": self.max_speed,
-                "min_speed": self.min_speed,
-                "speed_profile": [
-                    [timestamp.isoformat(), speed]
-                    for (timestamp, speed) in self.speed_profile
-                ],
-                "avg_elevation": float(self.avg_elevation),
-                "max_elevation": float(self.max_elevation),
-                "min_elevation": float(self.min_elevation),
-                "diff_elevation": float(self.diff_elevation),
-                "total_ascent": float(self.total_ascent),
-                "total_descent": float(self.total_descent),
-                "elevation_profile": [
-                    [distance, float(elevation)]
-                    for (distance, elevation) in self.elevation_profile
-                ],
+                # "total_distance": self.total_distance,
+                # "total_duration": self.total_duration.total_seconds(),
+                # "moving_duration": self.moving_duration.total_seconds(),
+                # "avg_speed": self.avg_speed,
+                # "avg_moving_speed": self.avg_moving_speed,
+                # "max_speed": self.max_speed,
+                # "min_speed": self.min_speed,
+                # "speed_profile": [
+                #     [timestamp.isoformat(), speed]
+                #     for (timestamp, speed) in self.speed_profile
+                # ],
+                # "avg_elevation": float(self.avg_elevation),
+                # "max_elevation": float(self.max_elevation),
+                # "min_elevation": float(self.min_elevation),
+                # "diff_elevation": float(self.diff_elevation),
+                # "total_ascent": float(self.total_ascent),
+                # "total_descent": float(self.total_descent),
+                # "elevation_profile": [
+                #     [distance, float(elevation)]
+                #     for (distance, elevation) in self.elevation_profile
+                # ],
             },
         }
 

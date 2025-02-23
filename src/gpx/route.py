@@ -55,6 +55,7 @@ class Route(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
         if self._element is not None:
             self._parse()
 
+    @property
     def __geo_interface__(self) -> dict:
         """Return a GeoJSON-like dictionary for the route."""
         return {
@@ -70,7 +71,7 @@ class Route(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
                 "cmt": self.cmt,
                 "desc": self.desc,
                 "src": self.src,
-                "links": [link.href for link in self.links],
+                "links": {link.text: link.href for link in self.links},
                 "number": self.number,
                 "type": self.type,
             },

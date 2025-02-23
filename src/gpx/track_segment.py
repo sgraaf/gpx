@@ -35,6 +35,7 @@ class TrackSegment(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
         if self._element is not None:
             self._parse()
 
+    @property
     def __geo_interface__(self) -> dict:
         """Return a GeoJSON-like dictionary for the track segment."""
         return {

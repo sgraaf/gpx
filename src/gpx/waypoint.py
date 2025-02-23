@@ -101,6 +101,7 @@ class Waypoint(Element):
         if self._element is not None:
             self._parse()
 
+    @property
     def __geo_interface__(self) -> dict:
         """Return a GeoJSON-like dictionary for the waypoint."""
         return {
@@ -117,7 +118,7 @@ class Waypoint(Element):
                 "cmt": self.cmt,
                 "desc": self.desc,
                 "src": self.src,
-                "links": [link.href for link in self.links],
+                "links": {link.text: link.href for link in self.links},
                 "sym": self.sym,
                 "type": self.type,
                 "fix": self.fix,
