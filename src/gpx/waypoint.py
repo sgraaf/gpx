@@ -104,16 +104,13 @@ class Waypoint(Element):
     @property
     def __geo_interface__(self) -> dict:
         """Return a GeoJSON-like dictionary for the waypoint."""
-        return {
+        geo_interface = {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
                 "coordinates": [float(coord) for coord in self._coords],
             },
             "properties": {
-                "time": self.time.isoformat(),
-                "magvar": float(self.magvar),
-                "geoidheight": float(self.geoidheight),
                 "name": self.name,
                 "cmt": self.cmt,
                 "desc": self.desc,
@@ -123,13 +120,42 @@ class Waypoint(Element):
                 "type": self.type,
                 "fix": self.fix,
                 "sat": self.sat,
-                "hdop": float(self.hdop),
-                "vdop": float(self.vdop),
-                "pdop": float(self.pdop),
-                "ageofdgpsdata": float(self.ageofdgpsdata),
-                "dgpsid": str(self.dgpsid),
             },
         }
+
+        try:
+            geo_interface["properties"]["time"] = self.time.isoformat()
+        except AttributeError:
+            geo_interface["properties"]["time"] = None
+        try:
+            geo_interface["properties"]["magvar"] = float(self.magvar)
+        except TypeError:
+            geo_interface["properties"]["magvar"] = None
+        try:
+            geo_interface["properties"]["geoidheight"] = float(self.geoidheight)
+        except TypeError:
+            geo_interface["properties"]["geoidheight"] = None
+        try:
+            geo_interface["properties"]["hdop"] = float(self.hdop)
+        except TypeError:
+            geo_interface["properties"]["hdop"] = None
+        try:
+            geo_interface["properties"]["vdop"] = float(self.vdop)
+        except TypeError:
+            geo_interface["properties"]["vdop"] = None
+        try:
+            geo_interface["properties"]["pdop"] = float(self.pdop)
+        except TypeError:
+            geo_interface["properties"]["pdop"] = None
+        try:
+            geo_interface["properties"]["ageofdgpsdata"] = float(self.ageofdgpsdata)
+        except TypeError:
+            geo_interface["properties"]["ageofdgpsdata"] = None
+        try:
+            geo_interface["properties"]["dgpsid"] = str(self.dgpsid)
+        except TypeError:
+            geo_interface["properties"]["dgpsid"] = None
+        return geo_interface
 
     @property
     def _coords(self) -> tuple[Decimal, Decimal] | tuple[Decimal, Decimal, Decimal]:
