@@ -104,13 +104,18 @@ class Waypoint(Element):
     @property
     def __geo_interface__(self) -> dict:
         """Return a GeoJSON-like dictionary for the waypoint."""
-        geo_interface = {
+        return {
             "type": "Feature",
             "geometry": {
                 "type": "Point",
                 "coordinates": [float(coord) for coord in self._coords],
             },
             "properties": {
+                "time": self.time.isoformat() if self.time is not None else None,
+                "magvar": float(self.magvar) if self.magvar is not None else None,
+                "geoidheight": (
+                    float(self.geoidheight) if self.geoidheight is not None else None
+                ),
                 "name": self.name,
                 "cmt": self.cmt,
                 "desc": self.desc,
@@ -120,50 +125,26 @@ class Waypoint(Element):
                 "type": self.type,
                 "fix": self.fix,
                 "sat": self.sat,
+                "hdop": float(self.hdop) if self.hdop is not None else None,
+                "vdop": float(self.vdop) if self.vdop is not None else None,
+                "pdop": float(self.pdop) if self.pdop is not None else None,
+                "ageofdgpsdata": (
+                    float(self.ageofdgpsdata)
+                    if self.ageofdgpsdata is not None
+                    else None
+                ),
+                "dgpsid": str(self.dgpsid) if self.dgpsid is not None else None,
             },
         }
-
-        try:
-            geo_interface["properties"]["time"] = self.time.isoformat()
-        except AttributeError:
-            geo_interface["properties"]["time"] = None
-        try:
-            geo_interface["properties"]["magvar"] = float(self.magvar)
-        except TypeError:
-            geo_interface["properties"]["magvar"] = None
-        try:
-            geo_interface["properties"]["geoidheight"] = float(self.geoidheight)
-        except TypeError:
-            geo_interface["properties"]["geoidheight"] = None
-        try:
-            geo_interface["properties"]["hdop"] = float(self.hdop)
-        except TypeError:
-            geo_interface["properties"]["hdop"] = None
-        try:
-            geo_interface["properties"]["vdop"] = float(self.vdop)
-        except TypeError:
-            geo_interface["properties"]["vdop"] = None
-        try:
-            geo_interface["properties"]["pdop"] = float(self.pdop)
-        except TypeError:
-            geo_interface["properties"]["pdop"] = None
-        try:
-            geo_interface["properties"]["ageofdgpsdata"] = float(self.ageofdgpsdata)
-        except TypeError:
-            geo_interface["properties"]["ageofdgpsdata"] = None
-        try:
-            geo_interface["properties"]["dgpsid"] = str(self.dgpsid)
-        except TypeError:
-            geo_interface["properties"]["dgpsid"] = None
-        return geo_interface
 
     @property
     def _coords(self) -> tuple[Decimal, Decimal] | tuple[Decimal, Decimal, Decimal]:
         """Return the coordinates of the waypoint, in 2 or 3 dimensions."""
-        if self.ele is not None:
-            return (self.lon, self.lat, self.ele)
-        else:
-            return (self.lon, self.lat)
+        return (
+            (self.lon, self.lat, self.ele)
+            if self.ele is not None
+            else (self.lon, self.lat)
+        )
 
     def _parse(self) -> None:  # noqa: C901
         super()._parse()

@@ -97,6 +97,7 @@ class Track(Element):
                 "links": {link.text: link.href for link in self.links},
                 "number": self.number,
                 "type": self.type,
+                # Theese will fail in some cases
                 # "total_distance": self.total_distance,
                 # "total_duration": self.total_duration.total_seconds(),
                 # "moving_duration": self.moving_duration.total_seconds(),
