@@ -66,7 +66,13 @@ class Route(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
                     [float(coord) for coord in point._coords] for point in self.rtepts
                 ],
             },
-            # "bbox": list(self.bounds),
+            # geo_interface format is [min_lon, min_lat, max_lon, max_lat]
+            "bbox": [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+            ],
             "properties": {
                 "name": self.name,
                 "cmt": self.cmt,

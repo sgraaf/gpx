@@ -88,7 +88,13 @@ class Track(Element):
                     for trkseg in self.trksegs
                 ],
             },
-            # "bbox": list(self.bounds),
+            # geo_interface format is [min_lon, min_lat, max_lon, max_lat]
+            "bbox": [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+            ],
             "properties": {
                 "name": self.name,
                 "cmt": self.cmt,
@@ -98,27 +104,27 @@ class Track(Element):
                 "number": self.number,
                 "type": self.type,
                 # These will fail in some cases
-                # "total_distance": self.total_distance,
-                # "total_duration": self.total_duration.total_seconds(),
-                # "moving_duration": self.moving_duration.total_seconds(),
-                # "avg_speed": self.avg_speed,
-                # "avg_moving_speed": self.avg_moving_speed,
-                # "max_speed": self.max_speed,
-                # "min_speed": self.min_speed,
-                # "speed_profile": [
-                #     [timestamp.isoformat(), speed]
-                #     for (timestamp, speed) in self.speed_profile
-                # ],
-                # "avg_elevation": float(self.avg_elevation),
-                # "max_elevation": float(self.max_elevation),
-                # "min_elevation": float(self.min_elevation),
-                # "diff_elevation": float(self.diff_elevation),
-                # "total_ascent": float(self.total_ascent),
-                # "total_descent": float(self.total_descent),
-                # "elevation_profile": [
-                #     [distance, float(elevation)]
-                #     for (distance, elevation) in self.elevation_profile
-                # ],
+                "total_distance": self.total_distance,
+                "total_duration": self.total_duration.total_seconds(),
+                "moving_duration": self.moving_duration.total_seconds(),
+                "avg_speed": self.avg_speed,
+                "avg_moving_speed": self.avg_moving_speed,
+                "max_speed": self.max_speed,
+                "min_speed": self.min_speed,
+                "speed_profile": [
+                    [timestamp.isoformat(), speed]
+                    for (timestamp, speed) in self.speed_profile
+                ],
+                "avg_elevation": float(self.avg_elevation),
+                "max_elevation": float(self.max_elevation),
+                "min_elevation": float(self.min_elevation),
+                "diff_elevation": float(self.diff_elevation),
+                "total_ascent": float(self.total_ascent),
+                "total_descent": float(self.total_descent),
+                "elevation_profile": [
+                    [distance, float(elevation)]
+                    for (distance, elevation) in self.elevation_profile
+                ],
             },
         }
 
@@ -232,7 +238,10 @@ class Track(Element):
     @property
     def avg_moving_speed(self) -> float:
         """The average moving speed of the track (in metres / second)."""
-        return self.total_distance / self.moving_duration.total_seconds()
+        try:
+            return self.total_distance / self.moving_duration.total_seconds()
+        except ZeroDivisionError:
+            return 0.0
 
     @property
     def max_speed(self) -> float:
