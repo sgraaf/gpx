@@ -409,9 +409,9 @@ def test_geo_interface(
 
     for key, expected_value in expected_props.items():
         if key in actual_props:
-            assert actual_props[key] == expected_value, (
-                f"Property {key} mismatch: got {actual_props[key]}, expected {expected_value}"
-            )
+            assert (
+                actual_props[key] == expected_value
+            ), f"Property {key} mismatch: got {actual_props[key]}, expected {expected_value}"
 
     for key in actual_props:
         if key not in expected_props:
