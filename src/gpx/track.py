@@ -75,10 +75,10 @@ class Track(Element):
         yield from self.trksegs
 
     @property
-    def __geo_interface__(self) -> dict:
+    def __geo_interface__(self) -> dict[str, Any]:
         """Return a GeoJSON-like dictionary for the track."""
 
-        properties: dict[str, Any] = {
+        properties = {
             "name": self.name,
             "cmt": self.cmt,
             "desc": self.desc,
