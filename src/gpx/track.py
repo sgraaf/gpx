@@ -78,7 +78,7 @@ class Track(Element):
     def __geo_interface__(self) -> dict[str, Any]:
         """Return a GeoJSON-like dictionary for the track."""
 
-        properties = {
+        properties: dict[str, Any] = {
             "name": self.name,
             "cmt": self.cmt,
             "desc": self.desc,
@@ -120,20 +120,22 @@ class Track(Element):
         with contextlib.suppress(
             ValueError, ZeroDivisionError, IndexError, InvalidOperation
         ):
-            properties["speed_profile"] = [
-                [timestamp.isoformat(), speed]
+            speed_profile: dict[str, float] = {
+                timestamp.isoformat(): speed
                 for (timestamp, speed) in self.speed_profile
-            ]
+            }
+            properties["speed_profile"] = speed_profile
 
         with contextlib.suppress(
             ValueError, ZeroDivisionError, IndexError, InvalidOperation
         ):
-            properties["elevation_profile"] = [
-                [distance, float(elevation)]
+            elevation_profile: dict[float, float] = {
+                distance: float(elevation)
                 for (distance, elevation) in self.elevation_profile
-            ]
+            }
+            properties["elevation_profile"] = elevation_profile
 
-        geo_interface = {
+        geo_interface: dict[str, Any] = {
             "type": "Feature",
             "geometry": {
                 "type": "MultiLineString",
@@ -150,12 +152,13 @@ class Track(Element):
 
         with contextlib.suppress(ValueError):
             # geo_interface format is [min_lon, min_lat, max_lon, max_lat]
-            geo_interface["bbox"] = [
+            bbox: list[float] = [
                 float(self.bounds[1]),
                 float(self.bounds[0]),
                 float(self.bounds[3]),
                 float(self.bounds[2]),
             ]
+            geo_interface["bbox"] = bbox
 
         return geo_interface
 
