@@ -5,6 +5,9 @@ waypoints representing a series of turn points leading to a destination.
 
 from __future__ import annotations
 
+import contextlib
+from typing import Any
+
 from lxml import etree
 
 from .element import Element
@@ -56,9 +59,9 @@ class Route(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
             self._parse()
 
     @property
-    def __geo_interface__(self) -> dict:
+    def __geo_interface__(self) -> dict[str, Any]:
         """Return a GeoJSON-like dictionary for the route."""
-        return {
+        geo_interface: dict[str, Any] = {
             "type": "Feature",
             "geometry": {
                 "type": "LineString",
@@ -66,13 +69,6 @@ class Route(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
                     [float(coord) for coord in point._coords] for point in self.rtepts
                 ],
             },
-            # geo_interface format is [min_lon, min_lat, max_lon, max_lat]
-            "bbox": [
-                float(self.bounds[1]),
-                float(self.bounds[0]),
-                float(self.bounds[3]),
-                float(self.bounds[2]),
-            ],
             "properties": {
                 "name": self.name,
                 "cmt": self.cmt,
@@ -83,6 +79,18 @@ class Route(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
                 "type": self.type,
             },
         }
+
+        with contextlib.suppress(ValueError):
+            # geo_interface format is [min_lon, min_lat, max_lon, max_lat]
+            bbox: list[float] = [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+            ]
+            geo_interface["bbox"] = bbox
+
+        return geo_interface
 
     def _parse(self) -> None:
         super()._parse()

@@ -5,6 +5,9 @@ points describing a path.
 
 from __future__ import annotations
 
+import contextlib
+from typing import Any
+
 from lxml import etree
 
 from .element import Element
@@ -36,21 +39,25 @@ class TrackSegment(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
             self._parse()
 
     @property
-    def __geo_interface__(self) -> dict:
+    def __geo_interface__(self) -> dict[str, Any]:
         """Return a GeoJSON-like dictionary for the track segment."""
-        return {
+        geo_interface: dict[str, Any] = {
             "type": "LineString",
-            # geo_interface format is [min_lon, min_lat, max_lon, max_lat]
-            "bbox": [
-                float(self.bounds[1]),
-                float(self.bounds[0]),
-                float(self.bounds[3]),
-                float(self.bounds[2]),
-            ],
             "coordinates": [
                 [float(coord) for coord in point._coords] for point in self.trkpts
             ],
         }
+        with contextlib.suppress(ValueError):
+            # geo_interface format is [min_lon, min_lat, max_lon, max_lat]
+            bbox: list[float] = [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+            ]
+            geo_interface["bbox"] = bbox
+
+        return geo_interface
 
     def _parse(self) -> None:
         super()._parse()
