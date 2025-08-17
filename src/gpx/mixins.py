@@ -1,4 +1,5 @@
 """This module provides a Person object to contain a person or organization."""
+
 from __future__ import annotations
 
 from collections.abc import MutableMapping, MutableSequence, Sequence
@@ -48,12 +49,10 @@ class PointsSequenceMixin(Sequence):
     points: list[Waypoint]
 
     @overload
-    def __getitem__(self, index: int) -> Waypoint:
-        ...
+    def __getitem__(self, index: int) -> Waypoint: ...
 
     @overload
-    def __getitem__(self, index: slice) -> MutableSequence[Waypoint]:
-        ...
+    def __getitem__(self, index: slice) -> MutableSequence[Waypoint]: ...
 
     def __getitem__(self, index: int | slice) -> Waypoint | MutableSequence[Waypoint]:
         return self.points[index]
@@ -72,12 +71,10 @@ class PointsMutableSequenceMixin(PointsSequenceMixin, MutableSequence):
     """
 
     @overload
-    def __setitem__(self, index: int, value: Waypoint) -> None:
-        ...
+    def __setitem__(self, index: int, value: Waypoint) -> None: ...
 
     @overload
-    def __setitem__(self, index: slice, value: Iterable[Waypoint]) -> None:
-        ...
+    def __setitem__(self, index: slice, value: Iterable[Waypoint]) -> None: ...
 
     def __setitem__(
         self, index: int | slice, value: Waypoint | Iterable[Waypoint]
@@ -89,12 +86,10 @@ class PointsMutableSequenceMixin(PointsSequenceMixin, MutableSequence):
         raise TypeError("Invalid type of index or value.")
 
     @overload
-    def __delitem__(self, index: int) -> None:
-        ...
+    def __delitem__(self, index: int) -> None: ...
 
     @overload
-    def __delitem__(self, index: slice) -> None:
-        ...
+    def __delitem__(self, index: slice) -> None: ...
 
     def __delitem__(self, index: int | slice) -> None:
         del self.points[index]
@@ -132,6 +127,8 @@ class PointsStatisticsMixin:
     @property
     def total_duration(self) -> timedelta:
         """The total duration."""
+        if len(self.points) < 2:
+            return timedelta()
         return self.points[0].duration_to(self.points[-1])
 
     duration = total_duration  #: Alias of :attr:`total_duration`.
@@ -152,13 +149,19 @@ class PointsStatisticsMixin:
     @property
     def avg_speed(self) -> float:
         """The average speed (in metres / second)."""
-        return self.total_distance / self.total_duration.total_seconds()
+        return (
+            0.0
+            if self.total_duration.total_seconds() == 0
+            else self.total_distance / self.total_duration.total_seconds()
+        )
 
     speed = avg_speed  #: Alias of :attr:`avg_speed`.
 
     @property
     def avg_moving_speed(self) -> float:
         """The average moving speed (in metres / second)."""
+        if self.moving_duration.total_seconds() == 0:
+            return 0.0
         return self.total_distance / self.moving_duration.total_seconds()
 
     @property
@@ -230,12 +233,12 @@ class PointsStatisticsMixin:
     @property
     def total_ascent(self) -> Decimal:
         """The total ascent (in metres)."""
-        return sum([gain for gain in self._gains if gain > 0], Decimal("0"))
+        return sum((gain for gain in self._gains if gain > 0), Decimal("0"))
 
     @property
     def total_descent(self) -> Decimal:
         """The total descent (in metres)."""
-        return abs(sum([gain for gain in self._gains if gain < 0], Decimal("0")))
+        return abs(sum((gain for gain in self._gains if gain < 0), Decimal("0")))
 
     @property
     def elevation_profile(self) -> list[tuple[float, Decimal]]:

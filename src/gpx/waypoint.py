@@ -346,6 +346,8 @@ class Waypoint(Element):
         Returns:
             The speed to the other waypoint (in metres per second).
         """
+        if self.duration_to(other).total_seconds() == 0:
+            return 0.0
         return self.distance_to(other) / self.duration_to(other).total_seconds()
 
     def gain_to(self, other: Waypoint) -> Decimal:

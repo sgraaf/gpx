@@ -5,8 +5,9 @@ points describing a path.
 
 from __future__ import annotations
 
+import contextlib
 from datetime import datetime, timedelta
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from typing import Iterator
 
 from lxml import etree
@@ -75,8 +76,63 @@ class Track(Element):
 
     @property
     def __geo_interface__(self) -> dict:
-        """Returns a GeoJSON-like dictionary for the track."""
-        return {
+        """Return a GeoJSON-like dictionary for the track."""
+        properties = {
+            "name": self.name,
+            "cmt": self.cmt,
+            "desc": self.desc,
+            "src": self.src,
+            "links": {link.text: link.href for link in self.links},
+            "number": self.number,
+            "type": self.type,
+            "total_distance": self.total_distance,
+            "total_duration": self.total_duration.total_seconds(),
+            "moving_duration": self.moving_duration.total_seconds(),
+            "avg_speed": self.avg_speed,
+            "avg_moving_speed": self.avg_moving_speed,
+        }
+
+        with contextlib.suppress(
+            ValueError, ZeroDivisionError, IndexError, InvalidOperation
+        ):
+            properties["max_speed"] = self.max_speed
+            properties["min_speed"] = self.min_speed
+
+        with contextlib.suppress(
+            ValueError, ZeroDivisionError, IndexError, InvalidOperation
+        ):
+            properties["avg_elevation"] = float(self.avg_elevation)
+            properties["max_elevation"] = float(self.max_elevation)
+            properties["min_elevation"] = float(self.min_elevation)
+
+        with contextlib.suppress(
+            ValueError, ZeroDivisionError, IndexError, InvalidOperation
+        ):
+            properties["diff_elevation"] = float(self.diff_elevation)
+
+        with contextlib.suppress(
+            ValueError, ZeroDivisionError, IndexError, InvalidOperation
+        ):
+            properties["total_ascent"] = float(self.total_ascent)
+            properties["total_descent"] = float(self.total_descent)
+
+        with contextlib.suppress(
+            ValueError, ZeroDivisionError, IndexError, InvalidOperation
+        ):
+            properties["speed_profile"] = [
+                [timestamp.isoformat(), speed]
+                for (timestamp, speed) in self.speed_profile
+            ]
+
+        with contextlib.suppress(
+            ValueError, ZeroDivisionError, IndexError, InvalidOperation
+        ):
+            properties["elevation_profile"] = [
+                [distance, float(elevation)]
+                for (distance, elevation) in self.elevation_profile
+            ]
+
+        geo_interface = {
             "type": "Feature",
             "geometry": {
                 "type": "MultiLineString",
@@ -88,45 +144,19 @@ class Track(Element):
                     for trkseg in self.trksegs
                 ],
             },
+            "properties": properties,
+        }
+
+        with contextlib.suppress(ValueError):
             # geo_interface format is [min_lon, min_lat, max_lon, max_lat]
-            "bbox": [
+            geo_interface["bbox"] = [
                 float(self.bounds[1]),
                 float(self.bounds[0]),
                 float(self.bounds[3]),
                 float(self.bounds[2]),
-            ],
-            "properties": {
-                "name": self.name,
-                "cmt": self.cmt,
-                "desc": self.desc,
-                "src": self.src,
-                "links": {link.text: link.href for link in self.links},
-                "number": self.number,
-                "type": self.type,
-                # These will fail in some cases
-                "total_distance": self.total_distance,
-                "total_duration": self.total_duration.total_seconds(),
-                "moving_duration": self.moving_duration.total_seconds(),
-                "avg_speed": self.avg_speed,
-                "avg_moving_speed": self.avg_moving_speed,
-                "max_speed": self.max_speed,
-                "min_speed": self.min_speed,
-                "speed_profile": [
-                    [timestamp.isoformat(), speed]
-                    for (timestamp, speed) in self.speed_profile
-                ],
-                "avg_elevation": float(self.avg_elevation),
-                "max_elevation": float(self.max_elevation),
-                "min_elevation": float(self.min_elevation),
-                "diff_elevation": float(self.diff_elevation),
-                "total_ascent": float(self.total_ascent),
-                "total_descent": float(self.total_descent),
-                "elevation_profile": [
-                    [distance, float(elevation)]
-                    for (distance, elevation) in self.elevation_profile
-                ],
-            },
-        }
+            ]
+
+        return geo_interface
 
     def _parse(self) -> None:
         super()._parse()
@@ -215,7 +245,7 @@ class Track(Element):
     @property
     def total_duration(self) -> timedelta:
         """The total duration of the track (in seconds)."""
-        return sum([trkseg.total_duration for trkseg in self.trksegs], timedelta())
+        return sum((trkseg.total_duration for trkseg in self.trksegs), timedelta())
 
     duration = total_duration  #: Alias of :attr:`total_duration`.
 
@@ -226,22 +256,25 @@ class Track(Element):
         The moving duration is the total duration with a
         speed greater than 0.5 km/h.
         """
-        return sum([trkseg.moving_duration for trkseg in self.trksegs], timedelta())
+        return sum((trkseg.moving_duration for trkseg in self.trksegs), timedelta())
 
     @property
     def avg_speed(self) -> float:
         """The average speed of the track (in metres / second)."""
-        return self.total_distance / self.total_duration.total_seconds()
+        return (
+            0.0
+            if self.total_duration.total_seconds() == 0
+            else self.total_distance / self.total_duration.total_seconds()
+        )
 
     speed = avg_speed  #: Alias of :attr:`avg_speed`.
 
     @property
     def avg_moving_speed(self) -> float:
         """The average moving speed of the track (in metres / second)."""
-        try:
-            return self.total_distance / self.moving_duration.total_seconds()
-        except ZeroDivisionError:
+        if self.moving_duration.total_seconds() == 0:
             return 0.0
+        return self.total_distance / self.moving_duration.total_seconds()
 
     @property
     def max_speed(self) -> float:
@@ -295,12 +328,12 @@ class Track(Element):
     @property
     def total_ascent(self) -> Decimal:
         """The total ascent of the track (in metres)."""
-        return sum([trkseg.total_ascent for trkseg in self.trksegs], Decimal("0"))
+        return sum((trkseg.total_ascent for trkseg in self.trksegs), Decimal("0"))
 
     @property
     def total_descent(self) -> Decimal:
         """The total descent of the track (in metres)."""
-        return abs(sum([trkseg.total_descent for trkseg in self.trksegs], Decimal("0")))
+        return abs(sum((trkseg.total_descent for trkseg in self.trksegs), Decimal("0")))
 
     @property
     def elevation_profile(self) -> list[tuple[float, Decimal]]:
