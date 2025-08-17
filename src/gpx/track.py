@@ -8,7 +8,7 @@ from __future__ import annotations
 import contextlib
 from datetime import datetime, timedelta
 from decimal import Decimal, InvalidOperation
-from typing import Iterator
+from typing import Any, Iterator
 
 from lxml import etree
 
@@ -77,7 +77,8 @@ class Track(Element):
     @property
     def __geo_interface__(self) -> dict:
         """Return a GeoJSON-like dictionary for the track."""
-        properties = {
+
+        properties: dict[str, Any] = {
             "name": self.name,
             "cmt": self.cmt,
             "desc": self.desc,
