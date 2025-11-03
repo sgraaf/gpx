@@ -2,6 +2,7 @@
 This module provides a Metadata object to contain GPX metadata, containing
 information about the GPX file, author, and copyright restrictions.
 """
+
 from __future__ import annotations
 
 import datetime

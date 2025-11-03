@@ -2,6 +2,7 @@
 This module provides a GPX object to contain GPX files, consisting of waypoints,
 routes and tracks.
 """
+
 from __future__ import annotations
 
 from datetime import datetime

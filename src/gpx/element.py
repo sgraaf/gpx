@@ -2,6 +2,7 @@
 This module provides an Element object to serve as a base class for other GPX
 objects.
 """
+
 from __future__ import annotations
 
 from lxml import etree

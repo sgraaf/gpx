@@ -1,4 +1,5 @@
 """This module provides simple type objects to contain various GPX data."""
+
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
