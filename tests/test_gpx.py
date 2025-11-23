@@ -1,4 +1,5 @@
 """Tests for gpx.gpx module - main GPX class and I/O operations."""
+
 import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -95,7 +96,7 @@ class TestGPXValidation:
     def test_parse_invalid_gpx_without_validation(self, invalid_gpx_string):
         """Test that invalid GPX can be parsed when validation is disabled."""
         # This may raise a different error due to missing lat/lon attributes
-        with pytest.raises(Exception):
+        with pytest.raises(KeyError):
             GPX.from_string(invalid_gpx_string, validate=False)
 
 

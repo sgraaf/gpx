@@ -1,4 +1,5 @@
 """This module provides a Person object to contain a person or organization."""
+
 from __future__ import annotations
 
 from collections.abc import (
@@ -54,12 +55,10 @@ class PointsSequenceMixin(Sequence):
     points: list[Waypoint]
 
     @overload
-    def __getitem__(self, index: int) -> Waypoint:
-        ...
+    def __getitem__(self, index: int) -> Waypoint: ...
 
     @overload
-    def __getitem__(self, index: slice) -> MutableSequence[Waypoint]:
-        ...
+    def __getitem__(self, index: slice) -> MutableSequence[Waypoint]: ...
 
     def __getitem__(self, index: int | slice) -> Waypoint | MutableSequence[Waypoint]:
         return self.points[index]
@@ -78,12 +77,10 @@ class PointsMutableSequenceMixin(PointsSequenceMixin, MutableSequence):
     """
 
     @overload
-    def __setitem__(self, index: int, value: Waypoint) -> None:
-        ...
+    def __setitem__(self, index: int, value: Waypoint) -> None: ...
 
     @overload
-    def __setitem__(self, index: slice, value: Iterable[Waypoint]) -> None:
-        ...
+    def __setitem__(self, index: slice, value: Iterable[Waypoint]) -> None: ...
 
     def __setitem__(
         self, index: int | slice, value: Waypoint | Iterable[Waypoint]
@@ -97,12 +94,10 @@ class PointsMutableSequenceMixin(PointsSequenceMixin, MutableSequence):
         raise TypeError("Invalid type of index or value.")
 
     @overload
-    def __delitem__(self, index: int) -> None:
-        ...
+    def __delitem__(self, index: int) -> None: ...
 
     @overload
-    def __delitem__(self, index: slice) -> None:
-        ...
+    def __delitem__(self, index: slice) -> None: ...
 
     def __delitem__(self, index: int | slice) -> None:
         del self.points[index]

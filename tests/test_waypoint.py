@@ -1,4 +1,5 @@
 """Tests for gpx.waypoint module."""
+
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 

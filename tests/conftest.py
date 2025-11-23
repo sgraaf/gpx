@@ -1,4 +1,5 @@
 """Pytest configuration and fixtures for GPX tests."""
+
 from datetime import datetime, timezone
 from decimal import Decimal
 

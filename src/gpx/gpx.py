@@ -2,6 +2,7 @@
 This module provides a GPX object to contain GPX files, consisting of waypoints,
 routes and tracks.
 """
+
 from __future__ import annotations
 
 from datetime import datetime
@@ -210,7 +211,9 @@ class GPX(Element):
             self._schema_locations.update(
                 (x, y)
                 for x, y in zip(
-                    schema_location.split(" ")[0::2], schema_location.split(" ")[1::2]
+                    schema_location.split(" ")[0::2],
+                    schema_location.split(" ")[1::2],
+                    strict=False,
                 )
             )
 

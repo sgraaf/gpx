@@ -1,4 +1,5 @@
 """Tests for metadata-related classes: Metadata, Bounds, Link, Person, Email, Copyright."""
+
 from datetime import datetime, timezone
 
 from gpx import GPX, Bounds, Copyright, Email, Link, Metadata, Person
