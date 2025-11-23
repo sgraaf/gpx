@@ -84,8 +84,10 @@ class PointsMutableSequenceMixin(PointsSequenceMixin, MutableSequence):
     ) -> None:
         if isinstance(index, int) and isinstance(value, Waypoint):
             self.points[index] = value
+            return
         if isinstance(index, slice) and isinstance(value, Iterable):
             self.points[index] = value
+            return
         raise TypeError("Invalid type of index or value.")
 
     @overload
