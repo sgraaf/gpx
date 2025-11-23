@@ -1,7 +1,4 @@
-"""
-This module provides a Route object to contain GPX routes - ordered lists of
-waypoints representing a series of turn points leading to a destination.
-"""
+"""This module provides a Route object to contain GPX routes - ordered lists of waypoints representing a series of turn points leading to a destination."""
 
 from __future__ import annotations
 
@@ -21,6 +18,7 @@ class Route(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
 
     Args:
         element: The route XML element. Defaults to `None`.
+
     """
 
     def __init__(self, element: etree._Element | None = None) -> None:

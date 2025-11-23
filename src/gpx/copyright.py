@@ -1,8 +1,4 @@
-"""
-This module provides a Copyright object to contain GPX copyright, containing
-information about the copyright holder and any license governing use of the GPX
-data.
-"""
+"""This module provides a Copyright object to contain GPX copyright, containing information about the copyright holder and any license governing use of the GPX data."""
 
 from __future__ import annotations
 
@@ -20,6 +16,7 @@ class Copyright(Element):
 
     Args:
         element: The copyright XML element. Defaults to `None`.
+
     """
 
     def __init__(self, element: etree._Element | None = None) -> None:
@@ -52,20 +49,20 @@ class Copyright(Element):
 
         # license
         if (
-            license := self._element.find("license", namespaces=self._nsmap)
+            license_ := self._element.find("license", namespaces=self._nsmap)
         ) is not None:
-            self.license = license.text
+            self.license = license_.text
 
     def _build(self, tag: str = "copyright") -> etree._Element:
-        copyright = super()._build(tag)
-        copyright.set("author", self.author)
+        copyright_ = super()._build(tag)
+        copyright_.set("author", self.author)
 
         if self.year is not None:
-            year = etree.SubElement(copyright, "year", nsmap=self._nsmap)
+            year = etree.SubElement(copyright_, "year", nsmap=self._nsmap)
             year.text = str(self.year)
 
         if self.license is not None:
-            license = etree.SubElement(copyright, "license", nsmap=self._nsmap)
-            license.text = self.license
+            license_ = etree.SubElement(copyright_, "license", nsmap=self._nsmap)
+            license_.text = self.license
 
-        return copyright
+        return copyright_

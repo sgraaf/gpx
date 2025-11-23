@@ -1,27 +1,28 @@
-"""
-This module provides a GPX object to contain GPX files, consisting of waypoints,
-routes and tracks.
-"""
+"""This module provides a GPX object to contain GPX files, consisting of waypoints, routes and tracks."""
 
 from __future__ import annotations
 
-from datetime import datetime
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from lxml import etree
 
 from . import gpx_schema
-from .bounds import Bounds
-from .copyright import Copyright
 from .element import Element
 from .errors import InvalidGPXError
-from .link import Link
 from .metadata import Metadata
-from .person import Person
 from .route import Route
 from .track import Track
 from .utils import remove_encoding_from_string
 from .waypoint import Waypoint
+
+if TYPE_CHECKING:
+    from datetime import datetime
+    from pathlib import Path
+
+    from .bounds import Bounds
+    from .copyright import Copyright
+    from .link import Link
+    from .person import Person
 
 
 class GPX(Element):
@@ -33,6 +34,7 @@ class GPX(Element):
 
     Args:
         element: The GPX XML element. Defaults to `None`.
+
     """
 
     def __init__(self, element: etree._Element | None = None) -> None:
@@ -77,7 +79,7 @@ class GPX(Element):
         return None
 
     @name.setter
-    def name(self, value: str):
+    def name(self, value: str) -> None:
         if self.metadata is None:
             self.metadata = Metadata()
         self.metadata.name = value
@@ -93,7 +95,7 @@ class GPX(Element):
         return None
 
     @desc.setter
-    def desc(self, value: str):
+    def desc(self, value: str) -> None:
         if self.metadata is None:
             self.metadata = Metadata()
         self.metadata.desc = value
@@ -109,7 +111,7 @@ class GPX(Element):
         return None
 
     @author.setter
-    def author(self, value: Person):
+    def author(self, value: Person) -> None:
         if self.metadata is None:
             self.metadata = Metadata()
         self.metadata.author = value
@@ -125,7 +127,7 @@ class GPX(Element):
         return None
 
     @copyright.setter
-    def copyright(self, value: Copyright):
+    def copyright(self, value: Copyright) -> None:
         if self.metadata is None:
             self.metadata = Metadata()
         self.metadata.copyright = value
@@ -141,7 +143,7 @@ class GPX(Element):
         return None
 
     @links.setter
-    def links(self, value: list[Link]):
+    def links(self, value: list[Link]) -> None:
         if self.metadata is None:
             self.metadata = Metadata()
         self.metadata.links = value
@@ -157,15 +159,14 @@ class GPX(Element):
         return None
 
     @time.setter
-    def time(self, value: datetime):
+    def time(self, value: datetime) -> None:
         if self.metadata is None:
             self.metadata = Metadata()
         self.metadata.time = value
 
     @property
     def keywords(self) -> str | None:
-        """Keywords associated with the file. Search engines or databases can
-        use this information to classify the data.
+        """Keywords associated with the file. Search engines or databases can use this information to classify the data.
 
         Proxy of :attr:`gpx.metadata.Metadata.keywords`.
         """
@@ -174,15 +175,14 @@ class GPX(Element):
         return None
 
     @keywords.setter
-    def keywords(self, value: str):
+    def keywords(self, value: str) -> None:
         if self.metadata is None:
             self.metadata = Metadata()
         self.metadata.keywords = value
 
     @property
     def bounds(self) -> Bounds | None:
-        """Minimum and maximum coordinates which describe the extent of the
-        coordinates in the file.
+        """Minimum and maximum coordinates which describe the extent of the coordinates in the file.
 
         Proxy of :attr:`gpx.metadata.Metadata.bounds`.
         """
@@ -191,7 +191,7 @@ class GPX(Element):
         return None
 
     @bounds.setter
-    def bounds(self, value: Bounds):
+    def bounds(self, value: Bounds) -> None:
         if self.metadata is None:
             self.metadata = Metadata()
         self.metadata.bounds = value
@@ -205,7 +205,7 @@ class GPX(Element):
         # schema location
         if (
             schema_location := self._element.get(
-                f"{{{self._nsmap['xsi']}}}schemaLocation"
+                f"{{{self._nsmap['xsi']}}}schemaLocation",
             )
         ) is not None:
             self._schema_locations.update(
@@ -273,7 +273,7 @@ class GPX(Element):
         return gpx
 
     @classmethod
-    def from_string(cls, gpx_str: str, validate: bool = False) -> GPX:
+    def from_string(cls, gpx_str: str, *, validate: bool = False) -> GPX:
         """Create an GPX instance from a string.
 
             >>> from gpx import GPX
@@ -289,17 +289,18 @@ class GPX(Element):
 
         Returns:
             The GPX instance.
+
         """
         # etree.fromstring() does not support encoding declarations in the string itself.
         gpx_str = remove_encoding_from_string(gpx_str)
         gpx = etree.fromstring(gpx_str)
-        if validate:
-            if not gpx_schema.validate(gpx):  # invalid GPX
-                raise InvalidGPXError("The GPX data is invalid.")
+        if validate and not gpx_schema.validate(gpx):  # invalid GPX
+            msg = "The GPX data is invalid."
+            raise InvalidGPXError(msg)
         return cls(gpx)
 
     @classmethod
-    def from_file(cls, gpx_file: str | Path, validate: bool = False) -> GPX:
+    def from_file(cls, gpx_file: str | Path, *, validate: bool = False) -> GPX:
         """Create an GPX instance from a file.
 
             >>> from gpx import GPX
@@ -312,12 +313,13 @@ class GPX(Element):
 
         Returns:
             The GPX instance.
+
         """
         gpx_tree = etree.parse(str(gpx_file))
         gpx = gpx_tree.getroot()
-        if validate:
-            if not gpx_schema.validate(gpx):  # invalid GPX
-                raise InvalidGPXError("The GPX data is invalid.")
+        if validate and not gpx_schema.validate(gpx):  # invalid GPX
+            msg = "The GPX data is invalid."
+            raise InvalidGPXError(msg)
         return cls(gpx)
 
     def to_string(self) -> str:
@@ -325,6 +327,7 @@ class GPX(Element):
 
         Returns:
             The GPX data as a string.
+
         """
         gpx = self._build()
         gpx_tree = etree.ElementTree(gpx)
@@ -335,9 +338,13 @@ class GPX(Element):
 
         Args:
             gpx_file: The file to write the GPX data to.
+
         """
         gpx = self._build()
         gpx_tree = etree.ElementTree(gpx)
         gpx_tree.write(
-            str(gpx_file), pretty_print=True, xml_declaration=True, encoding="utf-8"
+            str(gpx_file),
+            pretty_print=True,
+            xml_declaration=True,
+            encoding="utf-8",
         )

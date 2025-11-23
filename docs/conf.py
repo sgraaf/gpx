@@ -1,18 +1,17 @@
 """Sphinx configuration."""
 
-import os
-import sys
-
-sys.path.insert(0, os.path.abspath("../src"))
-import gpx
+from importlib import metadata
 
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
 project = "PyGPX"
-copyright = "2021, Steven van de Graaf"
+copyright_ = "2021, Steven van de Graaf"
 author = "Steven van de Graaf"
-release = gpx.__version__
+# The full version, including alpha/beta/rc tags.
+release = metadata.version("gpx")
+# The short X.Y version.
+version = release.rsplit(".", 1)[0]
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

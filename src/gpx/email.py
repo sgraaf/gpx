@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from lxml import etree
+from typing import TYPE_CHECKING
 
 from .element import Element
+
+if TYPE_CHECKING:
+    from lxml import etree
 
 
 class Email(Element):
@@ -15,6 +18,7 @@ class Email(Element):
 
     Args:
         element: The email XML element. Defaults to `None`.
+
     """
 
     def __init__(self, element: etree._Element | None = None) -> None:

@@ -24,6 +24,7 @@ requires-python = "~=3.10"
 dependencies = [
     "lxml",
     "python-dateutil",
+    "typing-extensions; python_version < '3.11'",
 ]
 dynamic = ["version", "description"]
 
@@ -53,17 +54,31 @@ Changelog = "https://gpx.readthedocs.io/en/stable/changelog.html"
 Issues = "https://github.com/sgraaf/gpx/issues"
 
 [tool.ruff.lint]
-select = [
-    "B",
-    "C90",
-    "E",
-    "F",
-    "I",
-    "UP",
-    "RUF100",
-    "W",
+select = ["ALL"]
+ignore = [
+    "COM812",  # missing-trailing-comma (flake8-commas), handled by the formatter
+    "D102",  # undocumented-public-method (pydocstyle)
+    "D105",  # undocumented-magic-method (pydocstyle)
+    "D107",  # undocumented-public-init (pydocstyle)
+    "E501",  # line-too-long (pycodestyle), handled by the formatter
+    "PLC2401",  # non-ascii-name (Pylint)
+    "S101",   # assert (flake8-bandit)
+    "SLF001",  # private-member-access (flake8-self)
 ]
-ignore = ["E501"]
+pydocstyle.convention = "google"
 
 [tool.ruff.lint.per-file-ignores]
-"__init__.py" = ["F401"]
+"__init__.py" = [
+    "F401",  # unused-import (Pyflakes)
+]
+"docs/conf.py" = [
+    "INP001",  # implicit-namespace-package (flake8-no-pep420)
+]
+"tests/**/test_*.py" = [
+    "D",  # pydocstyle
+    "PLR2004",   # magic-value-comparison (Pylint)
+    "S101",   # assert (flake8-bandit)
+]
+"tests/conftest.py" = [
+    "D401",  # non-imperative-mood (pydocstyle)
+]

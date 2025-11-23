@@ -22,6 +22,7 @@ class Waypoint(Element):
 
     Args:
         element: The waypoint XML element. Defaults to `None`.
+
     """
 
     def __init__(self, element: etree._Element | None = None) -> None:
@@ -101,7 +102,7 @@ class Waypoint(Element):
         if self._element is not None:
             self._parse()
 
-    def _parse(self) -> None:  # noqa: C901
+    def _parse(self) -> None:  # noqa: C901, PLR0912
         super()._parse()
 
         # assertion to satisfy mypy
@@ -175,7 +176,7 @@ class Waypoint(Element):
         if (dgpsid := self._element.find("dgpsid", namespaces=self._nsmap)) is not None:
             self.dgpsid = DGPSStation(dgpsid.text)
 
-    def _build(self, tag: str = "wpt") -> etree._Element:  # noqa: C901
+    def _build(self, tag: str = "wpt") -> etree._Element:  # noqa: C901, PLR0912, PLR0915
         waypoint = super()._build(tag)
         waypoint.set("lat", str(self.lat))
         waypoint.set("lon", str(self.lon))
@@ -187,7 +188,7 @@ class Waypoint(Element):
         if self.time is not None:
             time = etree.SubElement(waypoint, "time", nsmap=self._nsmap)
             time.text = self.time.isoformat(
-                timespec="milliseconds" if self.time.microsecond else "seconds"
+                timespec="milliseconds" if self.time.microsecond else "seconds",
             ).replace("+00:00", "Z")
 
         if self.magvar is not None:
@@ -247,7 +248,9 @@ class Waypoint(Element):
 
         if self.ageofdgpsdata is not None:
             ageofdgpsdata = etree.SubElement(
-                waypoint, "ageofdgpsdata", nsmap=self._nsmap
+                waypoint,
+                "ageofdgpsdata",
+                nsmap=self._nsmap,
             )
             ageofdgpsdata.text = str(self.ageofdgpsdata)
 
@@ -258,8 +261,7 @@ class Waypoint(Element):
         return waypoint
 
     def distance_to(self, other: Waypoint, radius: int = 6_378_137) -> float:
-        """Returns the distance to the other waypoint (in metres) using a simple
-        spherical earth model (haversine formula).
+        """Return the distance to the other waypoint (in metres) using a simple spherical earth model (haversine formula).
 
         Args:
             other: The other waypoint.
@@ -269,60 +271,65 @@ class Waypoint(Element):
             The distance to the other waypoint (in metres).
 
         Adapted from: https://github.com/chrisveness/geodesy/blob/33d1bf53c069cd7dd83c6bf8531f5f3e0955c16e/latlon-spherical.js#L187-L205
+
         """
-        R = radius
+        R = radius  # noqa: N806
         φ1, λ1 = radians(self.lat), radians(self.lon)
         φ2, λ2 = radians(other.lat), radians(other.lon)
-        Δφ = φ2 - φ1
-        Δλ = λ2 - λ1
+        Δφ = φ2 - φ1  # noqa: N806
+        Δλ = λ2 - λ1  # noqa: N806
         a = sin(Δφ / 2) * sin(Δφ / 2) + cos(φ1) * cos(φ2) * sin(Δλ / 2) * sin(Δλ / 2)
         δ = 2 * atan2(sqrt(a), sqrt(1 - a))
         return R * δ
 
     def duration_to(self, other: Waypoint) -> timedelta:
-        """Returns the duration to the other waypoint.
+        """Return the duration to the other waypoint.
 
         Args:
             other: The other waypoint.
 
         Returns:
             The duration to the other waypoint.
+
         """
         if self.time is None or other.time is None:
             return timedelta()
         return other.time - self.time
 
     def speed_to(self, other: Waypoint) -> float:
-        """Returns the speed to the other waypoint (in metres per second).
+        """Return the speed to the other waypoint (in metres per second).
 
         Args:
             other: The other waypoint.
 
         Returns:
             The speed to the other waypoint (in metres per second).
+
         """
         return self.distance_to(other) / self.duration_to(other).total_seconds()
 
     def gain_to(self, other: Waypoint) -> Decimal:
-        """Returns the elevation gain to the other waypoint (in metres).
+        """Return the elevation gain to the other waypoint (in metres).
 
         Args:
             other: The other waypoint.
 
         Returns:
             The elevation gain to the other waypoint (in metres).
+
         """
         if self.ele is None or other.ele is None:
             return Decimal("0.0")
         return other.ele - self.ele
 
     def slope_to(self, other: Waypoint) -> Decimal:
-        """Returns the slope to the other waypoint (in percent).
+        """Return the slope to the other waypoint (in percent).
 
         Args:
             other: The other waypoint.
 
         Returns:
             The slope to the other waypoint (in percent).
+
         """
         return self.gain_to(other) / Decimal(self.distance_to(other)) * 100

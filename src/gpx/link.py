@@ -1,7 +1,4 @@
-"""
-This module provides a Link object to contain GPX links to external resources
-(Web page, digital photo, video clip, etc) with additional information.
-"""
+"""This module provides a Link object to contain GPX links to external resources (Web page, digital photo, video clip, etc) with additional information."""
 
 from __future__ import annotations
 
@@ -18,6 +15,7 @@ class Link(Element):
 
     Args:
         element: The link XML element. Defaults to `None`.
+
     """
 
     def __init__(self, element: etree._Element | None = None) -> None:

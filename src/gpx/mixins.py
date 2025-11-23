@@ -11,34 +11,36 @@ from collections.abc import (
 )
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Any, overload
+from typing import TYPE_CHECKING, overload
 
-from .types import Latitude, Longitude
 from .waypoint import Waypoint
+
+if TYPE_CHECKING:
+    from .types import Latitude, Longitude
 
 
 class AttributesMutableMappingMixin(MutableMapping):
-    """
-    A mixin class to provide a `MutableMapping` interface to an object's defined
-    attributes.
-    """
+    """A mixin class to provide a `MutableMapping` interface to an object's defined attributes."""
 
     #: A tuple of attribute names that are to be treated as keys.
     __keys__: tuple[str, ...]
 
-    def __getitem__(self, key: str) -> Any | None:
+    def __getitem__(self, key: str) -> object | None:
         if key not in self.__keys__:
-            raise KeyError(f"Key not found: {key}")
+            msg = f"Key not found: {key}"
+            raise KeyError(msg)
         return getattr(self, key)
 
-    def __setitem__(self, key: str, value: Any | None) -> None:
+    def __setitem__(self, key: str, value: object | None) -> None:
         if key not in self.__keys__:
-            raise KeyError(f"Key not found: {key}")
+            msg = f"Key not found: {key}"
+            raise KeyError(msg)
         setattr(self, key, value)
 
     def __delitem__(self, key: str) -> None:
         if key not in self.__keys__:
-            raise KeyError(f"Key not found: {key}")
+            msg = f"Key not found: {key}"
+            raise KeyError(msg)
         setattr(self, key, None)
 
     def __iter__(self) -> Iterator[str]:
@@ -71,10 +73,7 @@ class PointsSequenceMixin(Sequence):
 
 
 class PointsMutableSequenceMixin(PointsSequenceMixin, MutableSequence):
-    """
-    A mixin class to provide a `MutableSequence` interface to an object's
-    `points`.
-    """
+    """A mixin class to provide a `MutableSequence` interface to an object's `points`."""
 
     @overload
     def __setitem__(self, index: int, value: Waypoint) -> None: ...
@@ -83,7 +82,9 @@ class PointsMutableSequenceMixin(PointsSequenceMixin, MutableSequence):
     def __setitem__(self, index: slice, value: Iterable[Waypoint]) -> None: ...
 
     def __setitem__(
-        self, index: int | slice, value: Waypoint | Iterable[Waypoint]
+        self,
+        index: int | slice,
+        value: Waypoint | Iterable[Waypoint],
     ) -> None:
         if isinstance(index, int) and isinstance(value, Waypoint):
             self.points[index] = value
@@ -91,7 +92,8 @@ class PointsMutableSequenceMixin(PointsSequenceMixin, MutableSequence):
         if isinstance(index, slice) and isinstance(value, Iterable):
             self.points[index] = value
             return
-        raise TypeError("Invalid type of index or value.")
+        msg = "Invalid type of index or value."
+        raise TypeError(msg)
 
     @overload
     def __delitem__(self, index: int) -> None: ...
@@ -204,7 +206,7 @@ class PointsStatisticsMixin:
     @property
     def avg_elevation(self) -> Decimal:
         """The average elevation (in metres)."""
-        return sum(self._eles, Decimal("0")) / len(self._eles)
+        return sum(self._eles, Decimal(0)) / len(self._eles)
 
     elevation = avg_elevation  #: Alias of :attr:`avg_elevation`.
 
@@ -233,12 +235,12 @@ class PointsStatisticsMixin:
     @property
     def total_ascent(self) -> Decimal:
         """The total ascent (in metres)."""
-        return sum([gain for gain in self._gains if gain > 0], Decimal("0"))
+        return sum([gain for gain in self._gains if gain > 0], Decimal(0))
 
     @property
     def total_descent(self) -> Decimal:
         """The total descent (in metres)."""
-        return abs(sum([gain for gain in self._gains if gain < 0], Decimal("0")))
+        return abs(sum([gain for gain in self._gains if gain < 0], Decimal(0)))
 
     @property
     def elevation_profile(self) -> list[tuple[float, Decimal]]:

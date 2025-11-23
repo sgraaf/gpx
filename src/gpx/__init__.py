@@ -1,7 +1,4 @@
-"""
-PyGPX is a Python package that brings support for reading, writing and
-converting GPX files.
-"""
+"""PyGPX is a Python package that brings support for reading, writing and converting GPX files."""
 
 # ruff: noqa: E402
 from pathlib import Path
