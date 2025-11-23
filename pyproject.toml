@@ -52,7 +52,7 @@ Changelog = "https://gpx.readthedocs.io/en/stable/changelog.html"
 "Source code" = "https://github.com/sgraaf/gpx"
 Issues = "https://github.com/sgraaf/gpx/issues"
 
-[tool.ruff]
+[tool.ruff.lint]
 select = [
     "B",
     "C90",
@@ -64,8 +64,6 @@ select = [
     "W",
 ]
 ignore = ["E501"]
-src = ["src"]
-target-version = "py310"
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]

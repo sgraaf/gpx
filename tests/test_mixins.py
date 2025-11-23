@@ -1,4 +1,5 @@
 """Tests for gpx.mixins module."""
+
 from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 

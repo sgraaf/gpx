@@ -1,4 +1,5 @@
 """Tests for gpx.track and gpx.track_segment modules."""
+
 from datetime import timedelta
 from decimal import Decimal
 

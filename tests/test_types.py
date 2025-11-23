@@ -1,4 +1,5 @@
 """Tests for gpx.types module."""
+
 from decimal import Decimal
 
 import pytest

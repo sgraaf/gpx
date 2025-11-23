@@ -2,6 +2,7 @@
 This module provides a Link object to contain GPX links to external resources
 (Web page, digital photo, video clip, etc) with additional information.
 """
+
 from __future__ import annotations
 
 from lxml import etree

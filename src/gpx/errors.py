@@ -1,4 +1,4 @@
-"""This module provices various error types."""
+"""This module provides various error types."""
 
 
 class InvalidGPXError(Exception):

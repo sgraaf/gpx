@@ -1,4 +1,5 @@
 """Tests for gpx.route module."""
+
 from datetime import timedelta
 from decimal import Decimal
 

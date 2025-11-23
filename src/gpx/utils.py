@@ -1,4 +1,5 @@
 """This module contains various utility functions."""
+
 import re
 
 
