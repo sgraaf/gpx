@@ -17,6 +17,7 @@ class Person(Element, AttributesMutableMappingMixin):
 
     Args:
         element: The person XML element. Defaults to `None`.
+
     """
 
     __keys__ = ("name", "email", "link")

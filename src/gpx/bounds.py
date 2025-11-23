@@ -1,14 +1,16 @@
-"""
-This module provides a Bounds object to contain two lat/lon pairs defining
-the extent of an element.
-"""
+"""This module provides a Bounds object to contain two lat/lon pairs defining the extent of an element."""
 
 from __future__ import annotations
 
-from lxml import etree
+from typing import TYPE_CHECKING
 
 from .element import Element
 from .types import Latitude, Longitude
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from lxml import etree
 
 
 class Bounds(Element):
@@ -18,6 +20,7 @@ class Bounds(Element):
 
     Args:
         element: The bounds XML element. Defaults to `None`.
+
     """
 
     def __init__(self, element: etree._Element | None = None) -> None:
@@ -45,10 +48,10 @@ class Bounds(Element):
     def __getitem__(self, index: int) -> Latitude | Longitude:
         return self.as_tuple()[index]
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[Latitude | Longitude]:
         return iter(self.as_tuple())
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.as_tuple())
 
     def _parse(self) -> None:

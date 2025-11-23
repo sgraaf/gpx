@@ -1,20 +1,21 @@
-"""
-This module provides a Track object to contain GPX routes - an ordered list of
-points describing a path.
-"""
+"""This module provides a Track object to contain GPX routes - an ordered list of points describing a path."""
 
 from __future__ import annotations
 
-from collections.abc import Iterator
 from datetime import datetime, timedelta
 from decimal import Decimal
+from typing import TYPE_CHECKING
 
 from lxml import etree
 
 from .element import Element
 from .link import Link
 from .track_segment import TrackSegment
-from .types import Latitude, Longitude
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from .types import Latitude, Longitude
 
 
 class Track(Element):
@@ -24,6 +25,7 @@ class Track(Element):
 
     Args:
         element: The track XML element. Defaults to `None`.
+
     """
 
     def __init__(self, element: etree._Element | None = None) -> None:
@@ -62,11 +64,11 @@ class Track(Element):
             self._parse()
 
     def __getitem__(self, index: int) -> TrackSegment:
-        """Returns the track segment at the given index."""
+        """Return the track segment at the given index."""
         return self.trksegs[index]
 
     def __len__(self) -> int:
-        """Returns the number of track segments."""
+        """Return the number of track segments."""
         return len(self.trksegs)
 
     def __iter__(self) -> Iterator[TrackSegment]:
@@ -215,7 +217,7 @@ class Track(Element):
             for trkpt in trkseg
             if trkpt.ele is not None
         ]
-        return sum(_eles, Decimal("0")) / len(_eles)
+        return sum(_eles, Decimal(0)) / len(_eles)
 
     elevation = avg_elevation  #: Alias of :attr:`avg_elevation`.
 
@@ -237,12 +239,12 @@ class Track(Element):
     @property
     def total_ascent(self) -> Decimal:
         """The total ascent of the track (in metres)."""
-        return sum([trkseg.total_ascent for trkseg in self.trksegs], Decimal("0"))
+        return sum([trkseg.total_ascent for trkseg in self.trksegs], Decimal(0))
 
     @property
     def total_descent(self) -> Decimal:
         """The total descent of the track (in metres)."""
-        return abs(sum([trkseg.total_descent for trkseg in self.trksegs], Decimal("0")))
+        return abs(sum([trkseg.total_descent for trkseg in self.trksegs], Decimal(0)))
 
     @property
     def elevation_profile(self) -> list[tuple[float, Decimal]]:

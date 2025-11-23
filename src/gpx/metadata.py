@@ -1,11 +1,8 @@
-"""
-This module provides a Metadata object to contain GPX metadata, containing
-information about the GPX file, author, and copyright restrictions.
-"""
+"""This module provides a Metadata object to contain GPX metadata, containing information about the GPX file, author, and copyright restrictions."""
 
 from __future__ import annotations
 
-import datetime
+from typing import TYPE_CHECKING
 
 from dateutil.parser import isoparse
 from lxml import etree
@@ -15,6 +12,9 @@ from .copyright import Copyright
 from .element import Element
 from .link import Link
 from .person import Person
+
+if TYPE_CHECKING:
+    import datetime
 
 
 class Metadata(Element):
@@ -26,6 +26,7 @@ class Metadata(Element):
 
     Args:
         element: The metadata XML element. Defaults to `None`.
+
     """
 
     def __init__(self, element: etree._Element | None = None) -> None:
@@ -125,7 +126,7 @@ class Metadata(Element):
         if self.time is not None:
             time = etree.SubElement(metadata, "time", nsmap=self._nsmap)
             time.text = self.time.isoformat(
-                timespec="milliseconds" if self.time.microsecond else "seconds"
+                timespec="milliseconds" if self.time.microsecond else "seconds",
             ).replace("+00:00", "Z")
 
         if self.keywords is not None:

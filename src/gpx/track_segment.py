@@ -1,15 +1,15 @@
-"""
-This module provides a Track object to contain GPX routes - an ordered list of
-points describing a path.
-"""
+"""This module provides a Track object to contain GPX routes - an ordered list of points describing a path."""
 
 from __future__ import annotations
 
-from lxml import etree
+from typing import TYPE_CHECKING
 
 from .element import Element
 from .mixins import PointsMutableSequenceMixin, PointsStatisticsMixin
 from .waypoint import Waypoint
+
+if TYPE_CHECKING:
+    from lxml import etree
 
 
 class TrackSegment(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
@@ -22,6 +22,7 @@ class TrackSegment(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
 
     Args:
         element: The track segment XML element. Defaults to `None`.
+
     """
 
     def __init__(self, element: etree._Element | None = None) -> None:

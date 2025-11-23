@@ -2,7 +2,13 @@
 
 from __future__ import annotations
 
+import sys
 from decimal import Decimal, InvalidOperation
+
+if sys.version_info < (3, 11):
+    from typing_extensions import Self
+else:
+    from typing import Self
 
 
 class Latitude(Decimal):
@@ -15,18 +21,21 @@ class Latitude(Decimal):
 
     Raises:
         ValueError: If the value is not a valid latitude (i.e. between `[-90.0, 90.0]`).
+
     """
 
-    def __new__(cls, value: str | int | float | Decimal) -> Latitude:
+    def __new__(cls, value: str | float | Decimal) -> Self:
         # try to convert value to Decimal (raises ValueError if not possible)
         try:
             decimal_value = Decimal(value)
         except InvalidOperation as e:
-            raise ValueError(f"Invalid latitude value: '{value}'.") from e
+            msg = f"Invalid latitude value: '{value}'."
+            raise ValueError(msg) from e
 
-        if not -90 <= decimal_value <= 90:
+        if not -90 <= decimal_value <= 90:  # noqa: PLR2004
+            msg = f"Invalid latitude value: '{value}'. Must be between [-90.0, 90.0]."
             raise ValueError(
-                f"Invalid latitude value: '{value}'. Must be between [-90.0, 90.0]."
+                msg,
             )
 
         return super().__new__(cls, decimal_value)
@@ -42,18 +51,23 @@ class Longitude(Decimal):
 
     Raises:
         ValueError: If the value is not a valid latitude (i.e. between `[-180.0, 180.0]`).
+
     """
 
-    def __new__(cls, value: str | int | float | Decimal) -> Longitude:
+    def __new__(cls, value: str | float | Decimal) -> Self:
         # try to convert value to Decimal (raises ValueError if not possible)
         try:
             decimal_value = Decimal(value)
         except InvalidOperation as e:
-            raise ValueError(f"Invalid longitude value: '{value}'.") from e
+            msg = f"Invalid longitude value: '{value}'."
+            raise ValueError(msg) from e
 
-        if not -180 <= decimal_value <= 180:
-            raise ValueError(
+        if not -180 <= decimal_value <= 180:  # noqa: PLR2004
+            msg = (
                 f"Invalid longitude value: '{value}'. Must be between [-180.0, 180.0]."
+            )
+            raise ValueError(
+                msg,
             )
 
         return super().__new__(cls, decimal_value)
@@ -70,18 +84,21 @@ class Degrees(Decimal):
 
     Raises:
         ValueError: If the value is not a valid latitude (i.e. between `[0.0, 360.0)`).
+
     """
 
-    def __new__(cls, value: str | int | float | Decimal) -> Degrees:
+    def __new__(cls, value: str | float | Decimal) -> Self:
         # try to convert value to Decimal (raises ValueError if not possible)
         try:
             decimal_value = Decimal(value)
         except InvalidOperation as e:
-            raise ValueError(f"Invalid degrees value: '{value}'.") from e
+            msg = f"Invalid degrees value: '{value}'."
+            raise ValueError(msg) from e
 
-        if not 0 <= decimal_value < 360:
+        if not 0 <= decimal_value < 360:  # noqa: PLR2004
+            msg = f"Invalid degrees value: '{value}'. Must be between [0.0, 360.0)."
             raise ValueError(
-                f"Invalid degrees value: '{value}'. Must be between [0.0, 360.0)."
+                msg,
             )
 
         return super().__new__(cls, decimal_value)
@@ -98,14 +115,18 @@ class Fix(str):
 
     Raises:
         ValueError: If the value is not a valid fix (i.e. one of `none`, `2d`, `3d`, `dgps`, `pps`).
+
     """
+
+    __slots__ = ()
 
     ALLOWED_VALUES = ("none", "2d", "3d", "dgps", "pps")
 
-    def __new__(cls, value: str) -> Fix:
+    def __new__(cls, value: str) -> Self:
         if value not in cls.ALLOWED_VALUES:
+            msg = f"Invalid fix value: '{value}'. Must be one of {', '.join(cls.ALLOWED_VALUES)}."
             raise ValueError(
-                f"Invalid fix value: '{value}'. Must be one of {', '.join(cls.ALLOWED_VALUES)}."
+                msg,
             )
 
         return super().__new__(cls, value)
@@ -121,12 +142,14 @@ class DGPSStation(int):
 
     Raises:
         ValueError: If the value is not a valid DGPS station (i.e. between `[0, 1023]`).
+
     """
 
-    def __new__(cls, value: int) -> DGPSStation:
-        if not 0 <= value <= 1023:
+    def __new__(cls, value: int) -> Self:
+        if not 0 <= value <= 1023:  # noqa: PLR2004
+            msg = f"Invalid DGPS station value: '{value}'. Must be between [0, 1023]."
             raise ValueError(
-                f"Invalid DGPS station value: '{value}'. Must be between [0, 1023]."
+                msg,
             )
 
         return super().__new__(cls, value)

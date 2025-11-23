@@ -20,7 +20,7 @@ from gpx.types import Latitude, Longitude
 
 
 @pytest.fixture
-def minimal_gpx_string():
+def minimal_gpx_string() -> str:
     """A minimal valid GPX string."""
     return """<?xml version="1.0" encoding="UTF-8"?>
 <gpx xmlns="http://www.topografix.com/GPX/1/1"
@@ -32,7 +32,7 @@ def minimal_gpx_string():
 
 
 @pytest.fixture
-def gpx_with_waypoint_string():
+def gpx_with_waypoint_string() -> str:
     """A GPX string with a single waypoint."""
     return """<?xml version="1.0" encoding="UTF-8"?>
 <gpx xmlns="http://www.topografix.com/GPX/1/1"
@@ -59,7 +59,7 @@ def gpx_with_waypoint_string():
 
 
 @pytest.fixture
-def gpx_with_track_string():
+def gpx_with_track_string() -> str:
     """A GPX string with a track containing multiple segments and points."""
     return """<?xml version="1.0" encoding="UTF-8"?>
 <gpx xmlns="http://www.topografix.com/GPX/1/1"
@@ -103,7 +103,7 @@ def gpx_with_track_string():
 
 
 @pytest.fixture
-def gpx_with_route_string():
+def gpx_with_route_string() -> str:
     """A GPX string with a route."""
     return """<?xml version="1.0" encoding="UTF-8"?>
 <gpx xmlns="http://www.topografix.com/GPX/1/1"
@@ -138,7 +138,7 @@ def gpx_with_route_string():
 
 
 @pytest.fixture
-def gpx_with_metadata_string():
+def gpx_with_metadata_string() -> str:
     """A GPX string with full metadata."""
     return """<?xml version="1.0" encoding="UTF-8"?>
 <gpx xmlns="http://www.topografix.com/GPX/1/1"
@@ -173,7 +173,7 @@ def gpx_with_metadata_string():
 
 
 @pytest.fixture
-def full_gpx_string():
+def full_gpx_string() -> str:
     """A comprehensive GPX string with all element types."""
     return """<?xml version="1.0" encoding="UTF-8"?>
 <gpx xmlns="http://www.topografix.com/GPX/1/1"
@@ -222,7 +222,7 @@ def full_gpx_string():
 
 
 @pytest.fixture
-def invalid_gpx_string():
+def invalid_gpx_string() -> str:
     """An invalid GPX string (missing required attributes)."""
     return """<?xml version="1.0" encoding="UTF-8"?>
 <gpx xmlns="http://www.topografix.com/GPX/1/1">
@@ -233,7 +233,7 @@ def invalid_gpx_string():
 
 
 @pytest.fixture
-def sample_waypoint():
+def sample_waypoint() -> Waypoint:
     """Create a sample waypoint programmatically."""
     wpt = Waypoint()
     wpt.lat = Latitude("52.5200")
@@ -246,7 +246,7 @@ def sample_waypoint():
 
 
 @pytest.fixture
-def sample_waypoints_for_track():
+def sample_waypoints_for_track() -> list[Waypoint]:
     """Create sample waypoints for track/route testing with timestamps."""
     waypoints = []
     coords = [
@@ -266,7 +266,7 @@ def sample_waypoints_for_track():
 
 
 @pytest.fixture
-def sample_track_segment(sample_waypoints_for_track):
+def sample_track_segment(sample_waypoints_for_track: list[Waypoint]) -> TrackSegment:
     """Create a sample track segment."""
     seg = TrackSegment()
     seg.trkpts = sample_waypoints_for_track
@@ -275,7 +275,7 @@ def sample_track_segment(sample_waypoints_for_track):
 
 
 @pytest.fixture
-def sample_track(sample_track_segment):
+def sample_track(sample_track_segment: TrackSegment) -> Track:
     """Create a sample track."""
     track = Track()
     track.name = "Test Track"
@@ -286,7 +286,7 @@ def sample_track(sample_track_segment):
 
 
 @pytest.fixture
-def sample_route(sample_waypoints_for_track):
+def sample_route(sample_waypoints_for_track: list[Waypoint]) -> Route:
     """Create a sample route."""
     route = Route()
     route.name = "Test Route"
@@ -297,7 +297,7 @@ def sample_route(sample_waypoints_for_track):
 
 
 @pytest.fixture
-def sample_metadata():
+def sample_metadata() -> Metadata:
     """Create a sample metadata object."""
     metadata = Metadata()
     metadata.name = "Test GPX"
@@ -308,7 +308,7 @@ def sample_metadata():
 
 
 @pytest.fixture
-def sample_link():
+def sample_link() -> Link:
     """Create a sample link object."""
     link = Link()
     link.href = "https://example.com"
@@ -318,7 +318,7 @@ def sample_link():
 
 
 @pytest.fixture
-def sample_person():
+def sample_person() -> Person:
     """Create a sample person object."""
     person = Person()
     person.name = "Test Author"
@@ -330,7 +330,7 @@ def sample_person():
 
 
 @pytest.fixture
-def sample_bounds():
+def sample_bounds() -> Bounds:
     """Create a sample bounds object."""
     bounds = Bounds()
     bounds.minlat = Latitude("52.5")

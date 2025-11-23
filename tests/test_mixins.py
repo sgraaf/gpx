@@ -1,7 +1,7 @@
 """Tests for gpx.mixins module."""
 
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 
 import pytest
 
@@ -20,55 +20,55 @@ class TestAttributesMutableMappingMixin:
 
         __keys__ = ("name", "value", "count")
 
-        def __init__(self):
-            self.name = None
+        def __init__(self) -> None:
+            self.name: str | None = None
             self.value = None
             self.count = None
 
-    def test_getitem(self):
+    def test_getitem(self) -> None:
         """Test getting item by key."""
         obj = self.MockMappingClass()
         obj.name = "test"
         assert obj["name"] == "test"
 
-    def test_getitem_invalid_key(self):
+    def test_getitem_invalid_key(self) -> None:
         """Test getting item with invalid key raises KeyError."""
         obj = self.MockMappingClass()
         with pytest.raises(KeyError, match="Key not found"):
             _ = obj["invalid"]
 
-    def test_setitem(self):
+    def test_setitem(self) -> None:
         """Test setting item by key."""
         obj = self.MockMappingClass()
         obj["name"] = "new_name"
         assert obj.name == "new_name"
 
-    def test_setitem_invalid_key(self):
+    def test_setitem_invalid_key(self) -> None:
         """Test setting item with invalid key raises KeyError."""
         obj = self.MockMappingClass()
         with pytest.raises(KeyError, match="Key not found"):
             obj["invalid"] = "value"
 
-    def test_delitem(self):
+    def test_delitem(self) -> None:
         """Test deleting item sets it to None."""
         obj = self.MockMappingClass()
         obj.name = "test"
         del obj["name"]
         assert obj.name is None
 
-    def test_delitem_invalid_key(self):
+    def test_delitem_invalid_key(self) -> None:
         """Test deleting item with invalid key raises KeyError."""
         obj = self.MockMappingClass()
         with pytest.raises(KeyError, match="Key not found"):
             del obj["invalid"]
 
-    def test_iter(self):
+    def test_iter(self) -> None:
         """Test iteration over keys."""
         obj = self.MockMappingClass()
         keys = list(obj)
         assert keys == ["name", "value", "count"]
 
-    def test_len(self):
+    def test_len(self) -> None:
         """Test length equals number of keys."""
         obj = self.MockMappingClass()
         assert len(obj) == 3
@@ -78,35 +78,37 @@ class TestPointsSequenceMixin:
     """Tests for PointsSequenceMixin."""
 
     @pytest.fixture
-    def segment_with_points(self, sample_waypoints_for_track):
+    def segment_with_points(
+        self, sample_waypoints_for_track: list[Waypoint]
+    ) -> TrackSegment:
         """Create a track segment with points."""
         seg = TrackSegment()
         seg.trkpts = sample_waypoints_for_track
         seg.points = seg.trkpts
         return seg
 
-    def test_getitem_int(self, segment_with_points):
+    def test_getitem_int(self, segment_with_points: TrackSegment) -> None:
         """Test getting item by integer index."""
         point = segment_with_points[0]
         assert isinstance(point, Waypoint)
 
-    def test_getitem_negative(self, segment_with_points):
+    def test_getitem_negative(self, segment_with_points: TrackSegment) -> None:
         """Test getting item by negative index."""
         point = segment_with_points[-1]
         assert isinstance(point, Waypoint)
         assert point.lat == Latitude("52.5230")
 
-    def test_getitem_slice(self, segment_with_points):
+    def test_getitem_slice(self, segment_with_points: TrackSegment) -> None:
         """Test getting items by slice."""
         points = segment_with_points[1:3]
         assert len(points) == 2
 
-    def test_iter(self, segment_with_points):
+    def test_iter(self, segment_with_points: TrackSegment) -> None:
         """Test iteration."""
         points = list(segment_with_points)
         assert len(points) == 4
 
-    def test_len(self, segment_with_points):
+    def test_len(self, segment_with_points: TrackSegment) -> None:
         """Test length."""
         assert len(segment_with_points) == 4
 
@@ -115,25 +117,25 @@ class TestPointsMutableSequenceMixin:
     """Tests for PointsMutableSequenceMixin."""
 
     @pytest.fixture
-    def route_with_points(self, sample_waypoints_for_track):
+    def route_with_points(self, sample_waypoints_for_track: list[Waypoint]) -> Route:
         """Create a route with points."""
         route = Route()
         route.rtepts = list(sample_waypoints_for_track)  # copy the list
         route.points = route.rtepts
         return route
 
-    def test_delitem_int(self, route_with_points):
+    def test_delitem_int(self, route_with_points: Route) -> None:
         """Test deleting item by integer index."""
         original_len = len(route_with_points)
         del route_with_points[0]
         assert len(route_with_points) == original_len - 1
 
-    def test_delitem_slice(self, route_with_points):
+    def test_delitem_slice(self, route_with_points: Route) -> None:
         """Test deleting items by slice."""
         del route_with_points[1:3]
         assert len(route_with_points) == 2
 
-    def test_insert(self, route_with_points):
+    def test_insert(self, route_with_points: Route) -> None:
         """Test inserting item."""
         new_point = Waypoint()
         new_point.lat = Latitude("52.5")
@@ -143,7 +145,7 @@ class TestPointsMutableSequenceMixin:
         assert len(route_with_points) == 5
         assert route_with_points[1] == new_point
 
-    def test_append_via_insert(self, route_with_points):
+    def test_append_via_insert(self, route_with_points: Route) -> None:
         """Test appending by inserting at end."""
         new_point = Waypoint()
         new_point.lat = Latitude("52.5")
@@ -152,7 +154,7 @@ class TestPointsMutableSequenceMixin:
         route_with_points.insert(len(route_with_points), new_point)
         assert route_with_points[-1] == new_point
 
-    def test_setitem_int(self, route_with_points):
+    def test_setitem_int(self, route_with_points: Route) -> None:
         """Test setting item by integer index."""
         new_point = Waypoint()
         new_point.lat = Latitude("52.55")
@@ -162,7 +164,7 @@ class TestPointsMutableSequenceMixin:
         assert route_with_points[1] == new_point
         assert route_with_points[1].lat == Latitude("52.55")
 
-    def test_setitem_slice(self, route_with_points):
+    def test_setitem_slice(self, route_with_points: Route) -> None:
         """Test setting items by slice."""
         new_point1 = Waypoint()
         new_point1.lat = Latitude("52.55")
@@ -181,7 +183,7 @@ class TestPointsStatisticsMixin:
     """Tests for PointsStatisticsMixin."""
 
     @pytest.fixture
-    def segment_with_elevation(self):
+    def segment_with_elevation(self) -> TrackSegment:
         """Create a track segment with elevation data."""
         seg = TrackSegment()
         points = []
@@ -206,7 +208,7 @@ class TestPointsStatisticsMixin:
         seg.points = seg.trkpts
         return seg
 
-    def test_bounds(self, segment_with_elevation):
+    def test_bounds(self, segment_with_elevation: TrackSegment) -> None:
         """Test bounds calculation."""
         bounds = segment_with_elevation.bounds
         min_lat, min_lon, max_lat, max_lon = bounds
@@ -215,27 +217,27 @@ class TestPointsStatisticsMixin:
         assert min_lon == Longitude("13.4050")
         assert max_lon == Longitude("13.4080")
 
-    def test_total_distance(self, segment_with_elevation):
+    def test_total_distance(self, segment_with_elevation: TrackSegment) -> None:
         """Test total distance calculation."""
         distance = segment_with_elevation.total_distance
         assert distance > 0
         # Should be roughly 3 * ~130m = ~390m
         assert 300 < distance < 500
 
-    def test_distance_alias(self, segment_with_elevation):
+    def test_distance_alias(self, segment_with_elevation: TrackSegment) -> None:
         """Test distance alias."""
         assert segment_with_elevation.distance == segment_with_elevation.total_distance
 
-    def test_total_duration(self, segment_with_elevation):
+    def test_total_duration(self, segment_with_elevation: TrackSegment) -> None:
         """Test total duration calculation."""
         duration = segment_with_elevation.total_duration
         assert duration == timedelta(minutes=3)
 
-    def test_duration_alias(self, segment_with_elevation):
+    def test_duration_alias(self, segment_with_elevation: TrackSegment) -> None:
         """Test duration alias."""
         assert segment_with_elevation.duration == segment_with_elevation.total_duration
 
-    def test_avg_speed(self, segment_with_elevation):
+    def test_avg_speed(self, segment_with_elevation: TrackSegment) -> None:
         """Test average speed calculation."""
         speed = segment_with_elevation.avg_speed
         # distance / time
@@ -244,23 +246,23 @@ class TestPointsStatisticsMixin:
         )  # 3 minutes = 180 seconds
         assert speed == pytest.approx(expected)
 
-    def test_speed_alias(self, segment_with_elevation):
+    def test_speed_alias(self, segment_with_elevation: TrackSegment) -> None:
         """Test speed alias."""
         assert segment_with_elevation.speed == segment_with_elevation.avg_speed
 
-    def test_max_speed(self, segment_with_elevation):
+    def test_max_speed(self, segment_with_elevation: TrackSegment) -> None:
         """Test maximum speed calculation."""
         max_speed = segment_with_elevation.max_speed
         assert max_speed > 0
         assert max_speed >= segment_with_elevation.avg_speed
 
-    def test_min_speed(self, segment_with_elevation):
+    def test_min_speed(self, segment_with_elevation: TrackSegment) -> None:
         """Test minimum speed calculation."""
         min_speed = segment_with_elevation.min_speed
         assert min_speed > 0
         assert min_speed <= segment_with_elevation.avg_speed
 
-    def test_speed_profile(self, segment_with_elevation):
+    def test_speed_profile(self, segment_with_elevation: TrackSegment) -> None:
         """Test speed profile generation."""
         profile = segment_with_elevation.speed_profile
         # Should have 3 entries (between 4 points)
@@ -270,45 +272,45 @@ class TestPointsStatisticsMixin:
             assert isinstance(timestamp, datetime)
             assert isinstance(speed, float)
 
-    def test_avg_elevation(self, segment_with_elevation):
+    def test_avg_elevation(self, segment_with_elevation: TrackSegment) -> None:
         """Test average elevation calculation."""
         avg = segment_with_elevation.avg_elevation
         # (100 + 110 + 105 + 120) / 4 = 108.75
         expected = Decimal("108.75")
         assert avg == expected
 
-    def test_elevation_alias(self, segment_with_elevation):
+    def test_elevation_alias(self, segment_with_elevation: TrackSegment) -> None:
         """Test elevation alias."""
         assert segment_with_elevation.elevation == segment_with_elevation.avg_elevation
 
-    def test_max_elevation(self, segment_with_elevation):
+    def test_max_elevation(self, segment_with_elevation: TrackSegment) -> None:
         """Test maximum elevation."""
         assert segment_with_elevation.max_elevation == Decimal("120.0")
 
-    def test_min_elevation(self, segment_with_elevation):
+    def test_min_elevation(self, segment_with_elevation: TrackSegment) -> None:
         """Test minimum elevation."""
         assert segment_with_elevation.min_elevation == Decimal("100.0")
 
-    def test_diff_elevation(self, segment_with_elevation):
+    def test_diff_elevation(self, segment_with_elevation: TrackSegment) -> None:
         """Test elevation difference."""
         diff = segment_with_elevation.diff_elevation
         assert diff == Decimal("20.0")
 
-    def test_total_ascent(self, segment_with_elevation):
+    def test_total_ascent(self, segment_with_elevation: TrackSegment) -> None:
         """Test total ascent calculation."""
         ascent = segment_with_elevation.total_ascent
         # 100 -> 110 (+10), 110 -> 105 (-5), 105 -> 120 (+15)
         # Total ascent = 10 + 15 = 25
         assert ascent == Decimal("25.0")
 
-    def test_total_descent(self, segment_with_elevation):
+    def test_total_descent(self, segment_with_elevation: TrackSegment) -> None:
         """Test total descent calculation."""
         descent = segment_with_elevation.total_descent
         # 100 -> 110 (+10), 110 -> 105 (-5), 105 -> 120 (+15)
         # Total descent = 5
         assert descent == Decimal("5.0")
 
-    def test_elevation_profile(self, segment_with_elevation):
+    def test_elevation_profile(self, segment_with_elevation: TrackSegment) -> None:
         """Test elevation profile generation."""
         profile = segment_with_elevation.elevation_profile
         # Should have 4 entries (one per point)
@@ -320,13 +322,13 @@ class TestPointsStatisticsMixin:
         for i in range(1, len(profile)):
             assert profile[i][0] > profile[i - 1][0]
 
-    def test_moving_duration(self, segment_with_elevation):
+    def test_moving_duration(self, segment_with_elevation: TrackSegment) -> None:
         """Test moving duration calculation."""
         duration = segment_with_elevation.moving_duration
         # All segments should have speed > 0.5 km/h
         assert duration > timedelta(0)
 
-    def test_avg_moving_speed(self, segment_with_elevation):
+    def test_avg_moving_speed(self, segment_with_elevation: TrackSegment) -> None:
         """Test average moving speed calculation."""
         speed = segment_with_elevation.avg_moving_speed
         assert speed > 0
@@ -336,7 +338,7 @@ class TestPointsStatisticsMixinEdgeCases:
     """Tests for edge cases in statistics calculations."""
 
     @pytest.fixture
-    def segment_no_elevation(self):
+    def segment_no_elevation(self) -> TrackSegment:
         """Create a track segment without elevation data."""
         seg = TrackSegment()
         points = []
@@ -353,16 +355,16 @@ class TestPointsStatisticsMixinEdgeCases:
         seg.points = seg.trkpts
         return seg
 
-    def test_elevation_stats_with_no_elevation(self, segment_no_elevation):
+    def test_elevation_stats_with_no_elevation(
+        self, segment_no_elevation: TrackSegment
+    ) -> None:
         """Test elevation statistics when no elevation data exists."""
-        from decimal import InvalidOperation
-
         # Should raise when no elevation data (division by zero in Decimal)
         with pytest.raises((ValueError, ZeroDivisionError, InvalidOperation)):
             _ = segment_no_elevation.avg_elevation
 
     @pytest.fixture
-    def segment_partial_elevation(self):
+    def segment_partial_elevation(self) -> TrackSegment:
         """Create a track segment with partial elevation data."""
         seg = TrackSegment()
         points = []
@@ -385,7 +387,10 @@ class TestPointsStatisticsMixinEdgeCases:
         seg.points = seg.trkpts
         return seg
 
-    def test_elevation_stats_with_partial_elevation(self, segment_partial_elevation):
+    def test_elevation_stats_with_partial_elevation(
+        self,
+        segment_partial_elevation: TrackSegment,
+    ) -> None:
         """Test elevation statistics with partial elevation data."""
         # Should only consider points with elevation
         avg = segment_partial_elevation.avg_elevation
