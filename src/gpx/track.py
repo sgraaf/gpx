@@ -4,9 +4,9 @@ points describing a path.
 """
 from __future__ import annotations
 
+from collections.abc import Iterator
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Iterator
 
 from lxml import etree
 

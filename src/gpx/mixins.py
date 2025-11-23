@@ -1,10 +1,16 @@
 """This module provides a Person object to contain a person or organization."""
 from __future__ import annotations
 
-from collections.abc import MutableMapping, MutableSequence, Sequence
+from collections.abc import (
+    Iterable,
+    Iterator,
+    MutableMapping,
+    MutableSequence,
+    Sequence,
+)
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import Any, Iterable, Iterator, overload
+from typing import Any, overload
 
 from .types import Latitude, Longitude
 from .waypoint import Waypoint

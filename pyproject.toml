@@ -13,14 +13,14 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.7",
-    "Programming Language :: Python :: 3.8",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Typing :: Typed",
 ]
-requires-python = "~=3.7"
+requires-python = "~=3.10"
 dependencies = [
     "lxml",
     "python-dateutil",
@@ -65,7 +65,7 @@ select = [
 ]
 ignore = ["E501"]
 src = ["src"]
-target-version = "py37"
+target-version = "py310"
 
 [tool.ruff.per-file-ignores]
 "__init__.py" = ["F401"]
