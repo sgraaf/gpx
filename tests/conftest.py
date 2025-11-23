@@ -5,9 +5,7 @@ from decimal import Decimal
 import pytest
 
 from gpx import (
-    GPX,
     Bounds,
-    Copyright,
     Email,
     Link,
     Metadata,

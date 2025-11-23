@@ -2,8 +2,6 @@
 from datetime import timedelta
 from decimal import Decimal
 
-import pytest
-
 from gpx import GPX, Route, Waypoint
 from gpx.types import Latitude, Longitude
 

@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 from decimal import Decimal
 
 import pytest
-from lxml import etree
 
 from gpx import GPX, Waypoint
 from gpx.types import Degrees, DGPSStation, Fix, Latitude, Longitude

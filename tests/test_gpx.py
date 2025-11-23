@@ -5,9 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from gpx import GPX, Bounds, Link, Metadata, Person, Route, Track, Waypoint
+from gpx import GPX, Person
 from gpx.errors import InvalidGPXError
-from gpx.types import Latitude, Longitude
+from gpx.types import Latitude
 
 
 class TestGPXParsing:
@@ -55,9 +55,7 @@ class TestGPXParsing:
 
     def test_parse_gpx_from_file(self, full_gpx_string):
         """Test parsing GPX from a file."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".gpx", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
             f.write(full_gpx_string)
             f.flush()
 
@@ -70,9 +68,7 @@ class TestGPXParsing:
 
     def test_parse_gpx_from_path_object(self, full_gpx_string):
         """Test parsing GPX from a Path object."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".gpx", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
             f.write(full_gpx_string)
             f.flush()
 
@@ -110,7 +106,9 @@ class TestGPXBuilding:
         """Test building empty GPX."""
         gpx = GPX()
         output = gpx.to_string()
-        assert '<?xml version="1.0"' not in output  # to_string doesn't include declaration
+        assert (
+            '<?xml version="1.0"' not in output
+        )  # to_string doesn't include declaration
         assert "<gpx" in output
         assert 'version="1.1"' in output
 
@@ -160,9 +158,7 @@ class TestGPXFileIO:
         """Test that to_file creates a file."""
         gpx = GPX.from_string(full_gpx_string)
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".gpx", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
             gpx.to_file(f.name)
             assert Path(f.name).exists()
             Path(f.name).unlink()
@@ -171,9 +167,7 @@ class TestGPXFileIO:
         """Test to_file with Path object."""
         gpx = GPX.from_string(full_gpx_string)
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".gpx", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
             gpx.to_file(Path(f.name))
             assert Path(f.name).exists()
             Path(f.name).unlink()
@@ -182,9 +176,7 @@ class TestGPXFileIO:
         """Test complete roundtrip: string -> file -> string."""
         gpx1 = GPX.from_string(full_gpx_string)
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".gpx", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
             gpx1.to_file(f.name)
             gpx2 = GPX.from_file(f.name)
 
@@ -199,9 +191,7 @@ class TestGPXFileIO:
         """Test that saved file has XML declaration."""
         gpx = GPX.from_string(minimal_gpx_string)
 
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".gpx", delete=False
-        ) as f:
+        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
             gpx.to_file(f.name)
             content = Path(f.name).read_text()
             assert '<?xml version="1.0"' in content or "<?xml version='1.0'" in content

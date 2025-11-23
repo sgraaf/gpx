@@ -1,5 +1,4 @@
 """Tests for gpx.utils module."""
-import pytest
 
 from gpx.utils import remove_encoding_from_string
 

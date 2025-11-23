@@ -7,9 +7,6 @@ import pytest
 from gpx import Route, TrackSegment, Waypoint
 from gpx.mixins import (
     AttributesMutableMappingMixin,
-    PointsMutableSequenceMixin,
-    PointsSequenceMixin,
-    PointsStatisticsMixin,
 )
 from gpx.types import Latitude, Longitude
 
@@ -241,7 +238,9 @@ class TestPointsStatisticsMixin:
         """Test average speed calculation."""
         speed = segment_with_elevation.avg_speed
         # distance / time
-        expected = segment_with_elevation.total_distance / 180  # 3 minutes = 180 seconds
+        expected = (
+            segment_with_elevation.total_distance / 180
+        )  # 3 minutes = 180 seconds
         assert speed == pytest.approx(expected)
 
     def test_speed_alias(self, segment_with_elevation):

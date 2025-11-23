@@ -91,7 +91,9 @@ class TestTrackSegmentStatistics:
         """Test track segment average elevation."""
         avg = sample_track_segment.avg_elevation
         # Average of 34.5, 35.0, 36.5, 35.5 = 35.375
-        expected = (Decimal("34.5") + Decimal("35.0") + Decimal("36.5") + Decimal("35.5")) / 4
+        expected = (
+            Decimal("34.5") + Decimal("35.0") + Decimal("36.5") + Decimal("35.5")
+        ) / 4
         assert avg == expected
 
     def test_track_segment_total_ascent(self, sample_track_segment):
