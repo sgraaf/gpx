@@ -113,7 +113,7 @@ class Metadata(Element):
             desc.text = self.desc
 
         if self.author:
-            metadata.append(self.author._build())
+            metadata.append(self.author._build("author"))
 
         if self.copyright:
             metadata.append(self.copyright._build())
