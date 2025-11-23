@@ -8,7 +8,7 @@ PyGPX is a Python library for reading, writing, and converting GPX (GPS Exchange
 
 -   **Package name**: `gpx` (on PyPI)
 -   **Current version**: 0.2.1
--   **Python support**: 3.7+
+-   **Python support**: 3.10+
 -   **License**: GPL-3.0+
 -   **Documentation**: https://gpx.readthedocs.io/
 
