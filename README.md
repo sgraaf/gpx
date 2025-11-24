@@ -72,8 +72,8 @@ waypoint = Waypoint()
 waypoint.lat = Decimal("52.3676")
 waypoint.lon = Decimal("4.9041")
 waypoint.name = "Amsterdam"
-waypoint.description = "Capital of the Netherlands"
-waypoint.elevation = Decimal("2.0")
+waypoint.desc = "Capital of the Netherlands"
+waypoint.ele = Decimal("2.0")
 
 gpx.waypoints.append(waypoint)
 
@@ -117,7 +117,7 @@ gpx.creator = "My Application"
 # Add metadata
 metadata = Metadata()
 metadata.name = "My GPS Track"
-metadata.description = "A sample track"
+metadata.desc = "A sample track"
 metadata.time = datetime.now(timezone.utc)
 gpx.metadata = metadata
 
@@ -132,7 +132,7 @@ for i in range(5):
     point = Waypoint()
     point.lat = Decimal("52.0") + Decimal(i) * Decimal("0.01")
     point.lon = Decimal("4.0") + Decimal(i) * Decimal("0.01")
-    point.elevation = Decimal("10.0") + Decimal(i) * Decimal("2.0")
+    point.ele = Decimal("10.0") + Decimal(i) * Decimal("2.0")
     point.time = datetime.now(timezone.utc)
     segment.points.append(point)
 

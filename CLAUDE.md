@@ -200,7 +200,7 @@ gpx.creator = "My Application v1.0"
 # Add metadata
 metadata = Metadata()
 metadata.name = "Track Name"
-metadata.description = "Description"
+metadata.desc = "Description"
 metadata.time = datetime.now(timezone.utc)
 gpx.metadata = metadata
 
@@ -209,7 +209,7 @@ waypoint = Waypoint()
 waypoint.lat = Decimal("52.3676")
 waypoint.lon = Decimal("4.9041")
 waypoint.name = "Amsterdam"
-waypoint.elevation = Decimal("2.0")
+waypoint.ele = Decimal("2.0")
 gpx.waypoints.append(waypoint)
 
 # Add tracks with segments
