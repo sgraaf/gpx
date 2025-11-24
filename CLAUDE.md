@@ -154,19 +154,95 @@ Element (element.py)
 
 ### Entry Points
 
-Reading GPX files:
+**Reading GPX files:**
 
 ```python
 from gpx import GPX
+
+# Read from file
 gpx = GPX.from_file("path/to/file.gpx")
+
+# Read from string with validation
 gpx = GPX.from_string(gpx_string, validate=True)
+
+# Access basic properties
+print(gpx.creator)
+print(gpx.version)  # Always "1.1"
+print(len(gpx.waypoints))
+print(len(gpx.tracks))
+print(len(gpx.routes))
 ```
 
-Writing GPX files:
+**Writing GPX files:**
 
 ```python
+# Write to file
 gpx.to_file("output.gpx")
+
+# Convert to string
 gpx_string = gpx.to_string()
+
+# Write with pretty printing (default)
+gpx.to_file("output.gpx", pretty_print=True)
+```
+
+**Creating GPX data:**
+
+```python
+from gpx import GPX, Waypoint, Track, TrackSegment, Metadata
+from decimal import Decimal
+from datetime import datetime, timezone
+
+# Create GPX object
+gpx = GPX()
+gpx.creator = "My Application v1.0"
+
+# Add metadata
+metadata = Metadata()
+metadata.name = "Track Name"
+metadata.description = "Description"
+metadata.time = datetime.now(timezone.utc)
+gpx.metadata = metadata
+
+# Add waypoints
+waypoint = Waypoint()
+waypoint.latitude = Decimal("52.3676")
+waypoint.longitude = Decimal("4.9041")
+waypoint.name = "Amsterdam"
+waypoint.elevation = Decimal("2.0")
+gpx.waypoints.append(waypoint)
+
+# Add tracks with segments
+track = Track()
+track.name = "My Track"
+segment = TrackSegment()
+
+# Add track points
+point = Waypoint()  # Track points are also Waypoint objects
+point.latitude = Decimal("52.0")
+point.longitude = Decimal("4.0")
+point.time = datetime.now(timezone.utc)
+segment.points.append(point)
+
+track.segments.append(segment)
+gpx.tracks.append(track)
+```
+
+**Working with statistics:**
+
+```python
+# Get statistics from tracks
+track = gpx.tracks[0]
+print(f"Distance: {track.total_distance} meters")
+print(f"Duration: {track.total_duration}")
+print(f"Avg speed: {track.avg_speed} m/s")
+print(f"Max elevation: {track.max_elevation} m")
+print(f"Total ascent: {track.total_ascent} m")
+print(f"Bounds: {track.bounds}")
+
+# Get elevation and speed profiles
+elevation_profile = track.elevation_profile
+speed_profile = track.speed_profile
 ```
 
 ## Code Style and Conventions
