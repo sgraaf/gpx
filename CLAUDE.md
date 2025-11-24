@@ -7,8 +7,8 @@ This file provides guidance for AI assistants working with the PyGPX codebase.
 PyGPX is a Python library for reading, writing, and converting GPX (GPS Exchange Format) files. It provides a fully-typed, object-oriented interface for working with GPX 1.1 specification data.
 
 -   **Package name**: `gpx` (on PyPI)
--   **Current version**: 0.2.1
--   **Python support**: 3.10+
+-   **Current version**: 2025.1.0
+-   **Python support**: 3.10+ (including 3.14)
 -   **License**: GPL-3.0+
 -   **Documentation**: https://gpx.readthedocs.io/
 
@@ -37,27 +37,79 @@ gpx/
 │   ├── gpx.xsd           # GPX 1.1 XML schema for validation
 │   └── py.typed          # PEP 561 marker for type hints
 ├── docs/                 # Sphinx documentation (MyST Markdown)
+├── tests/                # Test suite
+│   ├── conftest.py       # Pytest configuration and fixtures
+│   ├── smoke_test.py     # Comprehensive smoke tests
+│   └── test_*.py         # Unit tests for each module
 ├── pyproject.toml        # Project configuration and dependencies
-└── .pre-commit-config.yaml
+├── uv.lock               # Dependency lock file (managed by uv)
+├── .pre-commit-config.yaml  # Pre-commit hooks configuration
+├── .readthedocs.yaml     # ReadTheDocs configuration
+└── .github/
+    └── workflows/
+        └── publish.yml   # PyPI publishing workflow
 ```
+
+### Key Configuration Files
+
+-   **pyproject.toml**: Central configuration for:
+    -   Build system (uv_build)
+    -   Project metadata and dependencies
+    -   Ruff linting rules and per-file ignores
+    -   Tool configurations
+-   **uv.lock**: Dependency lock file (do not edit manually)
+-   **.pre-commit-config.yaml**: Pre-commit hooks configuration
+-   **.readthedocs.yaml**: ReadTheDocs build configuration
+-   **.editorconfig**: Editor settings (4 spaces, LF line endings, UTF-8)
+-   **.gitattributes**: Git attributes for line ending normalization
 
 ## Key Dependencies
 
 -   **lxml**: XML parsing and building
 -   **python-dateutil**: ISO 8601 datetime parsing
+-   **typing-extensions**: Type hints backports (Python < 3.11 only)
 
 ## Development Setup
 
+The project uses **uv** as its build backend and package manager.
+
 ```bash
-# Install from source with flit
-pip install flit
-flit install
+# Install from source with uv
+pip install uv
+uv sync
 
 # Install with dev dependencies
-pip install -e ".[dev]"
+uv sync --extra dev
 
 # Install with test dependencies
+uv sync --extra tests
+
+# Or install with pip (traditional method)
+pip install -e ".[dev]"
 pip install -e ".[tests]"
+```
+
+## Build System
+
+The project uses **uv** as its build backend (configured in `pyproject.toml`):
+
+```toml
+[build-system]
+requires = ["uv_build>=0.9.11,<0.10.0"]
+build-backend = "uv_build"
+```
+
+Building the package:
+
+```bash
+# Build wheel and source distribution
+uv build
+
+# Build only wheel
+uv build --wheel
+
+# Build only source distribution
+uv build --sdist
 ```
 
 ## Code Architecture
@@ -121,22 +173,41 @@ gpx_string = gpx.to_string()
 
 ### Formatting
 
--   **Formatter**: Black
--   **Linter**: Ruff
+-   **Formatter**: Ruff (`ruff format`)
+-   **Linter**: Ruff (`ruff check`)
 -   **Type checker**: mypy
 -   **Indentation**: 4 spaces (2 for YAML)
 -   **Line endings**: LF
 -   **Max line length**: Not enforced (E501 ignored)
 
+Running formatting and linting:
+
+```bash
+# Format code
+ruff format .
+
+# Lint and auto-fix
+ruff check --fix .
+
+# Lint with unsafe fixes
+ruff check --fix --unsafe-fixes .
+
+# Type check
+mypy src/
+```
+
 ### Ruff Rules Enabled
 
--   `B`: flake8-bugbear
--   `C90`: mccabe complexity
--   `E`, `W`: pycodestyle
--   `F`: pyflakes
--   `I`: isort
--   `UP`: pyupgrade
--   `RUF100`: unused noqa
+-   **ALL rules enabled** (`select = ["ALL"]`)
+-   Specific ignores:
+    -   `COM812`: missing-trailing-comma (handled by formatter)
+    -   `D102`, `D105`, `D107`: undocumented methods/magic/init
+    -   `E501`: line-too-long (handled by formatter)
+    -   `PLC2401`: non-ascii-name
+    -   `S101`: assert (for non-test files)
+    -   `SLF001`: private-member-access
+-   Google-style docstrings required
+-   Per-file ignores for `__init__.py`, `docs/conf.py`, and test files
 
 ### Type Annotations
 
@@ -164,13 +235,12 @@ The project uses these pre-commit hooks:
 
 -   `check-json`, `check-toml`, `check-xml`, `check-yaml`
 -   `end-of-file-fixer`, `trailing-whitespace`
--   `validate-pyproject`
+-   `validate-pyproject` (with schema store)
 -   `check-github-workflows`, `check-readthedocs`
--   `ruff` (with auto-fix)
--   `black`
+-   `ruff-check` (with auto-fix, unsafe fixes, and show fixes)
+-   `ruff-format` (replaces black)
 -   `mypy` (with `types-python-dateutil`)
 -   `codespell`
--   `prettier` (for non-Python files)
 
 Run pre-commit manually:
 
@@ -184,15 +254,31 @@ pre-commit run --all-files
 # Run tests with pytest
 pytest
 
+# Run specific test files
+pytest tests/test_gpx.py
+pytest tests/smoke_test.py
+
 # Install test dependencies
 pip install -e ".[tests]"
+# Or with uv
+uv sync --extra tests
 ```
+
+The test suite includes:
+
+-   Unit tests for all modules (`test_*.py`)
+-   Comprehensive smoke tests (`smoke_test.py`) that validate:
+    -   Package installation
+    -   Basic GPX reading/writing
+    -   Core functionality across the API
 
 ## Building Documentation
 
 ```bash
 # Install docs dependencies
 pip install -e ".[docs]"
+# Or with uv
+uv sync --extra docs
 
 # Build docs
 cd docs
@@ -211,10 +297,45 @@ Documentation uses:
 
 ## Publishing
 
-Package is published to PyPI via GitHub Actions on release:
+Package is published to PyPI via GitHub Actions on tag push:
 
-1. Create a GitHub release
-2. Workflow builds and publishes using Flit
+1. Push a tag starting with `v` (e.g., `v2025.1.0`)
+2. GitHub Actions workflow automatically:
+    - Installs uv
+    - Builds the package with `uv build`
+    - Runs smoke tests on both wheel and source distribution
+    - Publishes to PyPI with `uv publish` (using trusted publishing)
+
+## Development Workflow
+
+### Pre-commit Configuration
+
+The project uses pre-commit.ci for automated checks on pull requests. Configuration is managed via `.pre-commit-config.yaml` with monthly auto-updates.
+
+### Typical Development Cycle
+
+1. **Make changes** to the codebase
+2. **Run pre-commit** to check formatting and linting:
+   ```bash
+   pre-commit run --all-files
+   ```
+3. **Run tests** to ensure nothing breaks:
+   ```bash
+   pytest
+   ```
+4. **Run type checks**:
+   ```bash
+   mypy src/
+   ```
+5. **Build and test** the package locally:
+   ```bash
+   uv build
+   uv run --isolated --no-project --with dist/*.whl tests/smoke_test.py
+   ```
+
+### Version Numbering
+
+The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (e.g., `2025.1.0`).
 
 ## Common Tasks
 
