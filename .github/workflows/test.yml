@@ -1,0 +1,78 @@
+name: "Test"
+
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: uv sync --extra tests
+
+      - name: Run tests
+        run: uv run pytest
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Python 3.13
+        run: uv python install 3.13
+
+      - name: Install dependencies
+        run: uv sync --extra dev
+
+      - name: Run ruff format check
+        run: uv run ruff format --check .
+
+      - name: Run ruff lint
+        run: uv run ruff check .
+
+      - name: Run mypy
+        run: uv run mypy src/
+
+  smoke-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install Python 3.13
+        run: uv python install 3.13
+
+      - name: Build
+        run: uv build
+
+      - name: Smoke test (wheel)
+        run: uv run --isolated --no-project --with dist/*.whl tests/smoke_test.py
+
+      - name: Smoke test (source distribution)
+        run: uv run --isolated --no-project --with dist/*.tar.gz tests/smoke_test.py
