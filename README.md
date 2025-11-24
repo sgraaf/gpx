@@ -26,13 +26,13 @@ pip install gpx
 
 ### From source
 
-If you'd like, you can also install PyGPX from source (with [`flit`](https://flit.readthedocs.io/en/latest/)):
+If you'd like, you can also install PyGPX from source (with [`uv`](https://docs.astral.sh/uv/)):
 
 ```bash
 git clone https://github.com/sgraaf/gpx.git
 cd gpx
-python3 -m pip install flit
-flit install
+python3 -m pip install uv
+uv sync
 ```
 
 <!-- end docs-include-installation -->
