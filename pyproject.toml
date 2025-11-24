@@ -51,8 +51,8 @@ tests = [
 [project.urls]
 Documentation = "https://gpx.readthedocs.io/en/stable/"
 Changelog = "https://gpx.readthedocs.io/en/stable/changelog.html"
-"Source code" = "https://github.com/sgraaf/gpx"
-Issues = "https://github.com/sgraaf/gpx/issues"
+"Source Code" = "https://github.com/sgraaf/gpx"
+"Issue Tracker" = "https://github.com/sgraaf/gpx/issues"
 
 [tool.ruff.lint]
 select = ["ALL"]

@@ -5,6 +5,7 @@
 [![PyPI](https://img.shields.io/pypi/v/gpx)](https://img.shields.io/pypi/v/gpx)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/gpx)](https://pypi.org/project/gpx/)
 [![pre-commit.ci status](https://results.pre-commit.ci/badge/github/sgraaf/gpx/main.svg)](https://results.pre-commit.ci/latest/github/sgraaf/gpx/main)
+[![Test](https://github.com/sgraaf/gpx/actions/workflows/test.yml/badge.svg)](https://github.com/sgraaf/gpx/actions/workflows/test.yml)
 [![Documentation Status](https://readthedocs.org/projects/gpx/badge/?version=latest)](https://gpx.readthedocs.io/en/latest/?badge=latest)
 [![PyPI - License](https://img.shields.io/pypi/l/gpx)](https://img.shields.io/pypi/l/gpx)
 
@@ -16,23 +17,10 @@ PyGPX is a Python package that brings support for reading, writing and convertin
 
 <!-- start docs-include-installation -->
 
-### From PyPI
+PyGPX is available on [PyPI](https://pypi.org/project/gpx/). Install with [uv](https://docs.astral.sh/uv/) or your package manager of choice:
 
-PyGPX is available on [PyPI](https://pypi.org/project/gpx/). Install with `pip` or your package manager of choice:
-
-```bash
-pip install gpx
-```
-
-### From source
-
-If you'd like, you can also install PyGPX from source (with [`uv`](https://docs.astral.sh/uv/)):
-
-```bash
-git clone https://github.com/sgraaf/gpx.git
-cd gpx
-python3 -m pip install uv
-uv sync
+```sh
+uv add gpx
 ```
 
 <!-- end docs-include-installation -->
