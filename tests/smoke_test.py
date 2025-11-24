@@ -9,15 +9,9 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from pathlib import Path
 
-import pytest
-
 from gpx import (
     GPX,
-    Bounds,
-    Email,
-    Link,
     Metadata,
-    Person,
     Route,
     Track,
     TrackSegment,
@@ -109,6 +103,7 @@ class TestRoundTrip:
 
         # Verify data preserved
         assert gpx2.creator == gpx1.creator
+        assert gpx1.metadata is not None
         assert gpx2.metadata is not None
         assert gpx2.metadata.name == gpx1.metadata.name
         assert len(gpx2.waypoints) == len(gpx1.waypoints)
@@ -409,6 +404,7 @@ class TestEndToEnd:
         gpx2 = GPX.from_string(output)
 
         # Verify modifications preserved
+        assert gpx2.metadata is not None
         assert gpx2.metadata.name == "Modified"
         assert gpx2.waypoints[0].name == "Modified Waypoint"
         assert gpx2.routes[0].name == "Modified Route"

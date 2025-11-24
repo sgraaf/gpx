@@ -1,34 +1,37 @@
-name: Publish Python Package
+name: "Publish"
 
 on:
-  release:
-    types: [created]
+  push:
+    tags:
+      # Publish on any tag starting with a `v`, e.g., v0.1.0
+      - v*
 
 jobs:
-  publish:
+  run:
     runs-on: ubuntu-latest
+    environment:
+      name: pypi
+    permissions:
+      id-token: write
+      contents: read
     steps:
-      - name: Checkout the repo
-        uses: actions/checkout@v3
+      - name: Checkout
+        uses: actions/checkout@v5
 
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.14"
-          cache: pip
-          cache-dependency-path: pyproject.toml
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
 
-      - name: Install Flit
-        run: |
-          python -m pip install flit
+      - name: Install Python 3.13
+        run: uv python install 3.13
 
-      - name: Install Dependencies
-        run: |
-          python -m flit install --deps production
+      - name: Build
+        run: uv build
 
-      - name: Publish to PyPI
-        env:
-          FLIT_USERNAME: __token__
-          FLIT_PASSWORD: ${{ secrets.PYPI_TOKEN }}
-        run: |
-          python -m flit publish
+      # Check that basic features work and we didn't miss to include crucial files
+      - name: Smoke test (wheel)
+        run: uv run --isolated --no-project --with dist/*.whl tests/smoke_test.py
+      - name: Smoke test (source distribution)
+        run: uv run --isolated --no-project --with dist/*.tar.gz tests/smoke_test.py
+
+      - name: Publish
+        run: uv publish
