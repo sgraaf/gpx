@@ -206,8 +206,8 @@ gpx.metadata = metadata
 
 # Add waypoints
 waypoint = Waypoint()
-waypoint.latitude = Decimal("52.3676")
-waypoint.longitude = Decimal("4.9041")
+waypoint.lat = Decimal("52.3676")
+waypoint.lon = Decimal("4.9041")
 waypoint.name = "Amsterdam"
 waypoint.elevation = Decimal("2.0")
 gpx.waypoints.append(waypoint)
@@ -219,8 +219,8 @@ segment = TrackSegment()
 
 # Add track points
 point = Waypoint()  # Track points are also Waypoint objects
-point.latitude = Decimal("52.0")
-point.longitude = Decimal("4.0")
+point.lat = Decimal("52.0")
+point.lon = Decimal("4.0")
 point.time = datetime.now(timezone.utc)
 segment.points.append(point)
 

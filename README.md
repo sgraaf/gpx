@@ -69,8 +69,8 @@ from decimal import Decimal
 
 # Add a new waypoint
 waypoint = Waypoint()
-waypoint.latitude = Decimal("52.3676")
-waypoint.longitude = Decimal("4.9041")
+waypoint.lat = Decimal("52.3676")
+waypoint.lon = Decimal("4.9041")
 waypoint.name = "Amsterdam"
 waypoint.description = "Capital of the Netherlands"
 waypoint.elevation = Decimal("2.0")
@@ -79,7 +79,7 @@ gpx.waypoints.append(waypoint)
 
 # Iterate over waypoints
 for wpt in gpx.waypoints:
-    print(f"{wpt.name}: ({wpt.latitude}, {wpt.longitude})")
+    print(f"{wpt.name}: ({wpt.lat}, {wpt.lon})")
 ```
 
 ### Working with tracks and statistics
@@ -100,7 +100,7 @@ for track in gpx.tracks:
     for segment in track.segments:
         print(f"  Segment with {len(segment.points)} points")
         for point in segment.points:
-            print(f"    Point: ({point.latitude}, {point.longitude}) at {point.time}")
+            print(f"    Point: ({point.lat}, {point.lon}) at {point.time}")
 ```
 
 ### Creating a GPX from scratch
@@ -130,8 +130,8 @@ segment = TrackSegment()
 # Add track points
 for i in range(5):
     point = Waypoint()
-    point.latitude = Decimal("52.0") + Decimal(i) * Decimal("0.01")
-    point.longitude = Decimal("4.0") + Decimal(i) * Decimal("0.01")
+    point.lat = Decimal("52.0") + Decimal(i) * Decimal("0.01")
+    point.lon = Decimal("4.0") + Decimal(i) * Decimal("0.01")
     point.elevation = Decimal("10.0") + Decimal(i) * Decimal("2.0")
     point.time = datetime.now(timezone.utc)
     segment.points.append(point)
@@ -165,13 +165,13 @@ route.name = "City Tour"
 
 # Add route points (waypoints)
 point1 = Waypoint()
-point1.latitude = Decimal("52.3676")
-point1.longitude = Decimal("4.9041")
+point1.lat = Decimal("52.3676")
+point1.lon = Decimal("4.9041")
 point1.name = "Start: Amsterdam Centraal"
 
 point2 = Waypoint()
-point2.latitude = Decimal("52.3731")
-point2.longitude = Decimal("4.8922")
+point2.lat = Decimal("52.3731")
+point2.lon = Decimal("4.8922")
 point2.name = "Dam Square"
 
 route.points.extend([point1, point2])
