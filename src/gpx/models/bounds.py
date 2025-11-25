@@ -14,7 +14,7 @@ from lxml import etree
 
 from gpx.types import Latitude, Longitude  # noqa: TC001
 
-from .utils import build_xml_attributes, parse_xml_attributes
+from .utils import build_to_xml, parse_from_xml
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -59,8 +59,7 @@ class Bounds:
             ValueError: If required attributes are missing or invalid.
 
         """
-        kwargs = parse_xml_attributes(cls, element)
-        return cls(**kwargs)
+        return cls(**parse_from_xml(cls, element))
 
     def to_xml(
         self, tag: str = "bounds", nsmap: dict[str | None, str] | None = None
@@ -79,7 +78,7 @@ class Bounds:
             nsmap = {None: GPX_NAMESPACE}
 
         element = etree.Element(tag, nsmap=nsmap)
-        build_xml_attributes(self, element)
+        build_to_xml(self, element, nsmap=nsmap)
 
         return element
 

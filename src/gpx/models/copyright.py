@@ -12,12 +12,7 @@ from dataclasses import dataclass
 
 from lxml import etree
 
-from .utils import (
-    build_xml_attributes,
-    build_xml_elements,
-    parse_xml_attributes,
-    parse_xml_elements,
-)
+from .utils import build_to_xml, parse_from_xml
 
 if sys.version_info < (3, 11):
     from typing_extensions import Self
@@ -60,13 +55,7 @@ class Copyright:
             ValueError: If required attributes are missing.
 
         """
-        # Parse attributes
-        kwargs = parse_xml_attributes(cls, element, attribute_names={"author"})
-        # Parse child elements
-        kwargs.update(
-            parse_xml_elements(cls, element, element_names={"year", "license"})
-        )
-        return cls(**kwargs)
+        return cls(**parse_from_xml(cls, element))
 
     def to_xml(
         self, tag: str = "copyright", nsmap: dict[str | None, str] | None = None
@@ -85,9 +74,6 @@ class Copyright:
             nsmap = {None: GPX_NAMESPACE}
 
         element = etree.Element(tag, nsmap=nsmap)
-        build_xml_attributes(self, element, attribute_names={"author"})
-        build_xml_elements(
-            self, element, element_names={"year", "license"}, nsmap=nsmap
-        )
+        build_to_xml(self, element, nsmap=nsmap)
 
         return element
