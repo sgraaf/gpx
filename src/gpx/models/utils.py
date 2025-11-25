@@ -12,16 +12,10 @@ This allows automatic determination of attributes vs elements based on type hint
 
 from __future__ import annotations
 
-import sys
 from dataclasses import fields
-from typing import Any, get_args, get_origin
+from typing import Any, get_args, get_origin, get_type_hints
 
 from lxml import etree
-
-if sys.version_info < (3, 11):
-    from typing_extensions import get_type_hints
-else:
-    from typing import get_type_hints
 
 
 def is_optional(field_type: type) -> bool:
