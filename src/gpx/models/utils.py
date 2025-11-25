@@ -14,8 +14,10 @@ from __future__ import annotations
 
 import sys
 from dataclasses import fields
+from datetime import datetime
 from typing import Any, get_args, get_origin
 
+from dateutil.parser import isoparse
 from lxml import etree
 
 if sys.version_info < (3, 11):
@@ -61,6 +63,62 @@ def get_inner_type(field_type: type) -> type:
         # Handle Union with multiple non-None types (keep as is)
         return field_type
     return field_type
+
+
+def is_list_type(field_type: type) -> bool:
+    """Check if a type annotation represents a list.
+
+    Args:
+        field_type: The type annotation to check.
+
+    Returns:
+        True if the type is a list, False otherwise.
+
+    """
+    origin = get_origin(field_type)
+    return origin is list
+
+
+def get_list_item_type(field_type: type) -> type:
+    """Extract the item type from a list type annotation.
+
+    Args:
+        field_type: The list type annotation.
+
+    Returns:
+        The item type.
+
+    """
+    args = get_args(field_type)
+    if args:
+        return args[0]
+    return Any
+
+
+def has_from_xml(obj_type: type) -> bool:
+    """Check if a type has a from_xml classmethod.
+
+    Args:
+        obj_type: The type to check.
+
+    Returns:
+        True if the type has a from_xml method, False otherwise.
+
+    """
+    return hasattr(obj_type, "from_xml") and callable(obj_type.from_xml)
+
+
+def has_to_xml(obj: Any) -> bool:  # noqa: ANN401
+    """Check if an object has a to_xml method.
+
+    Args:
+        obj: The object to check.
+
+    Returns:
+        True if the object has a to_xml method, False otherwise.
+
+    """
+    return hasattr(obj, "to_xml") and callable(obj.to_xml)
 
 
 def parse_xml_attributes(
@@ -210,12 +268,17 @@ def build_xml_elements(
             child.text = str(value)
 
 
-def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:
+def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:  # noqa: C901, PLR0912
     """Parse XML element into dictionary by auto-detecting attributes vs elements.
 
     Uses the GPX specification pattern:
     - Required fields (no | None) are parsed as XML attributes
     - Optional fields (with | None) are parsed as XML child elements
+
+    Supports:
+    - Simple types (str, int, etc.)
+    - Nested models (types with from_xml() method)
+    - Lists of models (list[Model])
 
     Args:
         cls: The dataclass type.
@@ -234,14 +297,45 @@ def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:
     for field in fields(cls):
         field_type = type_hints.get(field.name, field.type)
 
-        if is_optional(field_type):
+        # Lists are always treated as optional child elements (even without | None)
+        if is_list_type(field_type):
+            item_type = get_list_item_type(field_type)
+            items = []
+            for child in element.findall(field.name):
+                if has_from_xml(item_type):
+                    items.append(item_type.from_xml(child))  # type: ignore[attr-defined]
+                else:
+                    items.append(item_type(child.text) if child.text else None)
+            result[field.name] = items
+        elif is_optional(field_type):
             # Optional field → parse as XML child element
-            child = element.find(field.name)
-            if child is None or child.text is None:
-                result[field.name] = None
+            inner_type = get_inner_type(field_type)
+
+            # Check if it's a list of models (Optional[list[T]])
+            if is_list_type(inner_type):
+                item_type = get_list_item_type(inner_type)
+                items = []
+                for child in element.findall(field.name):
+                    if has_from_xml(item_type):
+                        items.append(item_type.from_xml(child))  # type: ignore[attr-defined]
+                    else:
+                        items.append(item_type(child.text) if child.text else None)
+                result[field.name] = items
             else:
-                inner_type = get_inner_type(field_type)
-                result[field.name] = inner_type(child.text)
+                # Single optional element
+                child = element.find(field.name)
+                if child is None:
+                    result[field.name] = None
+                elif has_from_xml(inner_type):
+                    # Nested model
+                    result[field.name] = inner_type.from_xml(child)  # type: ignore[attr-defined]
+                elif child.text is None:
+                    result[field.name] = None
+                # Simple type - handle datetime specially
+                elif inner_type is datetime:
+                    result[field.name] = isoparse(child.text)
+                else:
+                    result[field.name] = inner_type(child.text)
         else:
             # Required field → parse as XML attribute
             value = element.get(field.name)
@@ -255,7 +349,7 @@ def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:
     return result
 
 
-def build_to_xml(
+def build_to_xml(  # noqa: C901, PLR0912
     obj: Any,  # noqa: ANN401
     element: etree._Element,
     nsmap: dict[str | None, str] | None = None,
@@ -265,6 +359,11 @@ def build_to_xml(
     Uses the GPX specification pattern:
     - Required fields (no | None) are serialized as XML attributes
     - Optional fields (with | None) are serialized as XML child elements
+
+    Supports:
+    - Simple types (str, int, etc.)
+    - Nested models (objects with to_xml() method)
+    - Lists of models (list[Model])
 
     Args:
         obj: The dataclass instance.
@@ -281,10 +380,45 @@ def build_to_xml(
         if value is None:
             continue  # Skip None values
 
-        if is_optional(field_type):
+        # Lists are always treated as optional child elements (even without | None)
+        if is_list_type(field_type) and isinstance(value, list):
+            # List of items
+            for item in value:
+                if has_to_xml(item):
+                    # Nested model with to_xml
+                    child = item.to_xml(tag=field.name, nsmap=nsmap)
+                    element.append(child)
+                else:
+                    # Simple type
+                    child = etree.SubElement(element, field.name, nsmap=nsmap)
+                    child.text = str(item)
+        elif is_optional(field_type):
             # Optional field → serialize as XML child element
-            child = etree.SubElement(element, field.name, nsmap=nsmap)
-            child.text = str(value)
+            inner_type = get_inner_type(field_type)
+
+            # Check if it's a list (Optional[list[T]])
+            if is_list_type(inner_type) and isinstance(value, list):
+                # List of items
+                for item in value:
+                    if has_to_xml(item):
+                        # Nested model with to_xml
+                        child = item.to_xml(tag=field.name, nsmap=nsmap)
+                        element.append(child)
+                    else:
+                        # Simple type
+                        child = etree.SubElement(element, field.name, nsmap=nsmap)
+                        child.text = str(item)
+            elif has_to_xml(value):
+                # Single nested model
+                child = value.to_xml(tag=field.name, nsmap=nsmap)
+                element.append(child)
+            else:
+                # Simple type - handle datetime specially
+                child = etree.SubElement(element, field.name, nsmap=nsmap)
+                if isinstance(value, datetime):
+                    child.text = value.isoformat()
+                else:
+                    child.text = str(value)
         else:
             # Required field → serialize as XML attribute
             element.set(field.name, str(value))
