@@ -8,12 +8,14 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta  # noqa: TC003
-from decimal import Decimal  # noqa: TC003
+from datetime import datetime, timedelta
+from decimal import Decimal
 from math import atan2, cos, radians, sin, sqrt
 from typing import Any
 
 from lxml import etree
+
+from gpx.types import Degrees, DGPSStation, Fix, Latitude, Longitude  # noqa: TC001
 
 from .link import Link  # noqa: TC001
 from .utils import build_to_xml, parse_from_xml
@@ -22,18 +24,6 @@ if sys.version_info < (3, 11):
     from typing_extensions import Self
 else:
     from typing import Self
-
-# Import types for type annotations
-if sys.version_info >= (3, 11):
-    from typing import TYPE_CHECKING
-else:
-    from typing_extensions import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from ..types import DGPSStation, Degrees, Fix, Latitude, Longitude
-else:
-    # Import at runtime for actual use
-    from ..types import DGPSStation, Degrees, Fix, Latitude, Longitude
 
 #: GPX 1.1 namespace
 GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
