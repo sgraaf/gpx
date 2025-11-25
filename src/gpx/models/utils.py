@@ -13,9 +13,9 @@ from typing import Any, get_args, get_origin
 from lxml import etree
 
 if sys.version_info < (3, 11):
-    from typing_extensions import Self, get_type_hints
+    from typing_extensions import get_type_hints
 else:
-    from typing import Self, get_type_hints
+    from typing import get_type_hints
 
 
 def is_optional(field_type: type) -> bool:
@@ -58,7 +58,7 @@ def get_inner_type(field_type: type) -> type:
 
 
 def parse_xml_attributes(
-    cls: type[Self],
+    cls: type[Any],
     element: etree._Element,
     attribute_names: set[str] | None = None,
 ) -> dict[str, Any]:
@@ -78,7 +78,7 @@ def parse_xml_attributes(
 
     """
     type_hints = get_type_hints(cls)
-    result = {}
+    result: dict[str, Any] = {}
 
     for field in fields(cls):
         # Skip if not in attribute_names (if provided)
@@ -107,7 +107,7 @@ def parse_xml_attributes(
 
 
 def parse_xml_elements(
-    cls: type[Self],
+    cls: type[Any],
     element: etree._Element,
     element_names: set[str] | None = None,
 ) -> dict[str, Any]:
@@ -127,7 +127,7 @@ def parse_xml_elements(
 
     """
     type_hints = get_type_hints(cls)
-    result = {}
+    result: dict[str, Any] = {}
 
     for field in fields(cls):
         # Skip if not in element_names (if provided)
