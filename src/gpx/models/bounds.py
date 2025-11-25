@@ -12,7 +12,9 @@ from typing import TYPE_CHECKING, Any
 
 from lxml import etree
 
-from gpx.types import Latitude, Longitude
+from gpx.types import Latitude, Longitude  # noqa: TC001
+
+from .utils import build_xml_attributes, parse_xml_attributes
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -57,33 +59,8 @@ class Bounds:
             ValueError: If required attributes are missing or invalid.
 
         """
-        minlat_value = element.get("minlat")
-        minlon_value = element.get("minlon")
-        maxlat_value = element.get("maxlat")
-        maxlon_value = element.get("maxlon")
-
-        if minlat_value is None:
-            msg = "Bounds element missing required 'minlat' attribute"
-            raise ValueError(msg)
-
-        if minlon_value is None:
-            msg = "Bounds element missing required 'minlon' attribute"
-            raise ValueError(msg)
-
-        if maxlat_value is None:
-            msg = "Bounds element missing required 'maxlat' attribute"
-            raise ValueError(msg)
-
-        if maxlon_value is None:
-            msg = "Bounds element missing required 'maxlon' attribute"
-            raise ValueError(msg)
-
-        return cls(
-            minlat=Latitude(minlat_value),
-            minlon=Longitude(minlon_value),
-            maxlat=Latitude(maxlat_value),
-            maxlon=Longitude(maxlon_value),
-        )
+        kwargs = parse_xml_attributes(cls, element)
+        return cls(**kwargs)
 
     def to_xml(
         self, tag: str = "bounds", nsmap: dict[str | None, str] | None = None
@@ -102,10 +79,7 @@ class Bounds:
             nsmap = {None: GPX_NAMESPACE}
 
         element = etree.Element(tag, nsmap=nsmap)
-        element.set("minlat", str(self.minlat))
-        element.set("minlon", str(self.minlon))
-        element.set("maxlat", str(self.maxlat))
-        element.set("maxlon", str(self.maxlon))
+        build_xml_attributes(self, element)
 
         return element
 

@@ -12,6 +12,13 @@ from dataclasses import dataclass
 
 from lxml import etree
 
+from .utils import (
+    build_xml_attributes,
+    build_xml_elements,
+    parse_xml_attributes,
+    parse_xml_elements,
+)
+
 if sys.version_info < (3, 11):
     from typing_extensions import Self
 else:
@@ -50,25 +57,11 @@ class Link:
             ValueError: If required attributes are missing.
 
         """
-        href_value = element.get("href")
-
-        if href_value is None:
-            msg = "Link element missing required 'href' attribute"
-            raise ValueError(msg)
-
-        # Parse optional text element
-        text_value = None
-        text_element = element.find("text")
-        if text_element is not None:
-            text_value = text_element.text
-
-        # Parse optional type element
-        type_value = None
-        type_element = element.find("type")
-        if type_element is not None:
-            type_value = type_element.text
-
-        return cls(href=href_value, text=text_value, type=type_value)
+        # Parse attributes
+        kwargs = parse_xml_attributes(cls, element, attribute_names={"href"})
+        # Parse child elements
+        kwargs.update(parse_xml_elements(cls, element, element_names={"text", "type"}))
+        return cls(**kwargs)
 
     def to_xml(
         self, tag: str = "link", nsmap: dict[str | None, str] | None = None
@@ -87,14 +80,7 @@ class Link:
             nsmap = {None: GPX_NAMESPACE}
 
         element = etree.Element(tag, nsmap=nsmap)
-        element.set("href", self.href)
-
-        if self.text is not None:
-            text_element = etree.SubElement(element, "text", nsmap=nsmap)
-            text_element.text = self.text
-
-        if self.type is not None:
-            type_element = etree.SubElement(element, "type", nsmap=nsmap)
-            type_element.text = self.type
+        build_xml_attributes(self, element, attribute_names={"href"})
+        build_xml_elements(self, element, element_names={"text", "type"}, nsmap=nsmap)
 
         return element

@@ -12,6 +12,13 @@ from dataclasses import dataclass
 
 from lxml import etree
 
+from .utils import (
+    build_xml_attributes,
+    build_xml_elements,
+    parse_xml_attributes,
+    parse_xml_elements,
+)
+
 if sys.version_info < (3, 11):
     from typing_extensions import Self
 else:
@@ -53,25 +60,13 @@ class Copyright:
             ValueError: If required attributes are missing.
 
         """
-        author_value = element.get("author")
-
-        if author_value is None:
-            msg = "Copyright element missing required 'author' attribute"
-            raise ValueError(msg)
-
-        # Parse optional year element
-        year_value = None
-        year_element = element.find("year")
-        if year_element is not None and year_element.text is not None:
-            year_value = int(year_element.text)
-
-        # Parse optional license element
-        license_value = None
-        license_element = element.find("license")
-        if license_element is not None:
-            license_value = license_element.text
-
-        return cls(author=author_value, year=year_value, license=license_value)
+        # Parse attributes
+        kwargs = parse_xml_attributes(cls, element, attribute_names={"author"})
+        # Parse child elements
+        kwargs.update(
+            parse_xml_elements(cls, element, element_names={"year", "license"})
+        )
+        return cls(**kwargs)
 
     def to_xml(
         self, tag: str = "copyright", nsmap: dict[str | None, str] | None = None
@@ -90,14 +85,9 @@ class Copyright:
             nsmap = {None: GPX_NAMESPACE}
 
         element = etree.Element(tag, nsmap=nsmap)
-        element.set("author", self.author)
-
-        if self.year is not None:
-            year_element = etree.SubElement(element, "year", nsmap=nsmap)
-            year_element.text = str(self.year)
-
-        if self.license is not None:
-            license_element = etree.SubElement(element, "license", nsmap=nsmap)
-            license_element.text = self.license
+        build_xml_attributes(self, element, attribute_names={"author"})
+        build_xml_elements(
+            self, element, element_names={"year", "license"}, nsmap=nsmap
+        )
 
         return element

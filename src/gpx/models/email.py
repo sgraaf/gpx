@@ -12,6 +12,8 @@ from dataclasses import dataclass
 
 from lxml import etree
 
+from .utils import build_xml_attributes, parse_xml_attributes
+
 if sys.version_info < (3, 11):
     from typing_extensions import Self
 else:
@@ -50,18 +52,8 @@ class Email:
             ValueError: If required attributes are missing.
 
         """
-        id_value = element.get("id")
-        domain_value = element.get("domain")
-
-        if id_value is None:
-            msg = "Email element missing required 'id' attribute"
-            raise ValueError(msg)
-
-        if domain_value is None:
-            msg = "Email element missing required 'domain' attribute"
-            raise ValueError(msg)
-
-        return cls(id=id_value, domain=domain_value)
+        kwargs = parse_xml_attributes(cls, element)
+        return cls(**kwargs)
 
     def to_xml(
         self, tag: str = "email", nsmap: dict[str | None, str] | None = None
@@ -80,8 +72,7 @@ class Email:
             nsmap = {None: GPX_NAMESPACE}
 
         element = etree.Element(tag, nsmap=nsmap)
-        element.set("id", self.id)
-        element.set("domain", self.domain)
+        build_xml_attributes(self, element)
 
         return element
 
