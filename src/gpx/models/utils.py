@@ -141,16 +141,6 @@ def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:  
     type_hints = get_type_hints(cls)
     result: dict[str, Any] = {}
 
-    # Set up namespace mapping for XPath queries
-    # This handles cases where XML has xmlns="..." declarations
-    default_ns = element.nsmap.get(None)  # Default namespace
-    if default_ns:
-        namespaces = {"ns": default_ns}
-        xpath_prefix = "ns:"
-    else:
-        namespaces = None
-        xpath_prefix = ""
-
     for field in fields(cls):
         field_type = type_hints.get(field.name, field.type)
 
@@ -158,7 +148,7 @@ def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:  
         if is_list_type(field_type):
             item_type = get_list_item_type(field_type)
             items = []
-            for child in element.findall(f"{xpath_prefix}{field.name}", namespaces):
+            for child in element.findall(field.name, element.nsmap):
                 if has_from_xml(item_type):
                     items.append(item_type.from_xml(child))  # type: ignore[attr-defined]
                 else:
@@ -172,7 +162,7 @@ def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:  
             if is_list_type(inner_type):
                 item_type = get_list_item_type(inner_type)
                 items = []
-                for child in element.findall(f"{xpath_prefix}{field.name}", namespaces):
+                for child in element.findall(field.name, element.nsmap):
                     if has_from_xml(item_type):
                         items.append(item_type.from_xml(child))  # type: ignore[attr-defined]
                     else:
@@ -180,7 +170,7 @@ def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:  
                 result[field.name] = items
             else:
                 # Single optional element
-                child = element.find(f"{xpath_prefix}{field.name}", namespaces)
+                child = element.find(field.name, element.nsmap)
                 if child is None:
                     result[field.name] = None
                 elif has_from_xml(inner_type):
