@@ -6,6 +6,7 @@ GPX 1.1 specification as closely as possible.
 
 from __future__ import annotations
 
+from .base import GPXModel
 from .bounds import Bounds
 from .copyright import Copyright
 from .email import Email
@@ -21,6 +22,7 @@ __all__ = [
     "Bounds",
     "Copyright",
     "Email",
+    "GPXModel",
     "Link",
     "Metadata",
     "Person",

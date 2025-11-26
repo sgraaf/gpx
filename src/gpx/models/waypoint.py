@@ -6,31 +6,20 @@ or named feature on a map, following the GPX 1.1 specification.
 
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
 from math import atan2, cos, radians, sin, sqrt
 from typing import Any
 
-from lxml import etree
-
 from gpx.types import Degrees, DGPSStation, Fix, Latitude, Longitude  # noqa: TC001
 
+from .base import GPXModel
 from .link import Link  # noqa: TC001
-from .utils import build_to_xml, parse_from_xml
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
-
-#: GPX 1.1 namespace
-GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
 
 
 @dataclass(frozen=True)
-class Waypoint:
+class Waypoint(GPXModel):
     """A waypoint, point of interest, or named feature on a map.
 
     Args:
@@ -58,6 +47,8 @@ class Waypoint:
         dgpsid: ID of DGPS station used in differential correction. Defaults to None.
 
     """
+
+    _tag = "wpt"
 
     lat: Latitude
     lon: Longitude
@@ -96,43 +87,6 @@ class Waypoint:
             "type": "Point",
             "coordinates": coordinates,
         }
-
-    @classmethod
-    def from_xml(cls, element: etree._Element) -> Self:
-        """Parse a Waypoint from an XML element.
-
-        Args:
-            element: The XML element to parse.
-
-        Returns:
-            The parsed Waypoint instance.
-
-        Raises:
-            ValueError: If required attributes are missing.
-
-        """
-        return cls(**parse_from_xml(cls, element))
-
-    def to_xml(
-        self, tag: str = "wpt", nsmap: dict[str | None, str] | None = None
-    ) -> etree._Element:
-        """Convert the Waypoint to an XML element.
-
-        Args:
-            tag: The XML tag name. Defaults to "wpt".
-            nsmap: Optional namespace mapping. Defaults to GPX 1.1 namespace.
-
-        Returns:
-            The XML element.
-
-        """
-        if nsmap is None:
-            nsmap = {None: GPX_NAMESPACE}
-
-        element = etree.Element(tag, nsmap=nsmap)
-        build_to_xml(self, element, nsmap=nsmap)
-
-        return element
 
     def distance_to(self, other: Waypoint, radius: int = 6_378_137) -> float:
         """Return the distance to another waypoint using the haversine formula.

@@ -6,30 +6,19 @@ the extent of an element, following the GPX 1.1 specification.
 
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from lxml import etree
-
 from gpx.types import Latitude, Longitude  # noqa: TC001
 
-from .utils import build_to_xml, parse_from_xml
+from .base import GPXModel
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
-
-#: GPX 1.1 namespace
-GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
-
 
 @dataclass(frozen=True)
-class Bounds:
+class Bounds(GPXModel):
     """Two lat/lon pairs defining the extent of an element.
 
     Args:
@@ -40,47 +29,12 @@ class Bounds:
 
     """
 
+    _tag = "bounds"
+
     minlat: Latitude
     minlon: Longitude
     maxlat: Latitude
     maxlon: Longitude
-
-    @classmethod
-    def from_xml(cls, element: etree._Element) -> Self:
-        """Parse a Bounds from an XML element.
-
-        Args:
-            element: The XML element to parse.
-
-        Returns:
-            The parsed Bounds instance.
-
-        Raises:
-            ValueError: If required attributes are missing or invalid.
-
-        """
-        return cls(**parse_from_xml(cls, element))
-
-    def to_xml(
-        self, tag: str = "bounds", nsmap: dict[str | None, str] | None = None
-    ) -> etree._Element:
-        """Convert the Bounds to an XML element.
-
-        Args:
-            tag: The XML tag name. Defaults to "bounds".
-            nsmap: Optional namespace mapping. Defaults to GPX 1.1 namespace.
-
-        Returns:
-            The XML element.
-
-        """
-        if nsmap is None:
-            nsmap = {None: GPX_NAMESPACE}
-
-        element = etree.Element(tag, nsmap=nsmap)
-        build_to_xml(self, element, nsmap=nsmap)
-
-        return element
 
     @property
     def __geo_interface__(self) -> dict[str, Any]:

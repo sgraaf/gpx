@@ -6,29 +6,18 @@ file, author, and copyright restrictions, following the GPX 1.1 specification.
 
 from __future__ import annotations
 
-import sys
 from dataclasses import dataclass, field
 from datetime import datetime  # noqa: TC003
 
-from lxml import etree
-
+from .base import GPXModel
 from .bounds import Bounds  # noqa: TC001
 from .copyright import Copyright  # noqa: TC001
 from .link import Link  # noqa: TC001
 from .person import Person  # noqa: TC001
-from .utils import build_to_xml, parse_from_xml
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
-
-#: GPX 1.1 namespace
-GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
 
 
 @dataclass(frozen=True)
-class Metadata:
+class Metadata(GPXModel):
     """Information about the GPX file, author, and copyright restrictions.
 
     Providing rich, meaningful information about your GPX files allows others
@@ -52,6 +41,8 @@ class Metadata:
 
     """
 
+    _tag = "metadata"
+
     name: str | None = None
     desc: str | None = None
     author: Person | None = None
@@ -60,37 +51,3 @@ class Metadata:
     time: datetime | None = None
     keywords: str | None = None
     bounds: Bounds | None = None
-
-    @classmethod
-    def from_xml(cls, element: etree._Element) -> Self:
-        """Parse a Metadata from an XML element.
-
-        Args:
-            element: The XML element to parse.
-
-        Returns:
-            The parsed Metadata instance.
-
-        """
-        return cls(**parse_from_xml(cls, element))
-
-    def to_xml(
-        self, tag: str = "metadata", nsmap: dict[str | None, str] | None = None
-    ) -> etree._Element:
-        """Convert the Metadata to an XML element.
-
-        Args:
-            tag: The XML tag name. Defaults to "metadata".
-            nsmap: Optional namespace mapping. Defaults to GPX 1.1 namespace.
-
-        Returns:
-            The XML element.
-
-        """
-        if nsmap is None:
-            nsmap = {None: GPX_NAMESPACE}
-
-        element = etree.Element(tag, nsmap=nsmap)
-        build_to_xml(self, element, nsmap=nsmap)
-
-        return element
