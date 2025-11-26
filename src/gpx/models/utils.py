@@ -263,7 +263,9 @@ def build_to_xml(  # noqa: C901, PLR0912
                 # Simple type - handle datetime specially
                 child = etree.SubElement(element, field.name, nsmap=nsmap)
                 if isinstance(value, datetime):
-                    child.text = value.isoformat()
+                    child.text = value.isoformat(
+                        timespec="milliseconds" if value.microsecond else "seconds"
+                    ).replace("+00:00", "Z")
                 else:
                     child.text = str(value)
         else:
