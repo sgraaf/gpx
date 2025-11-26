@@ -10,6 +10,7 @@ from .base import GPXModel
 from .bounds import Bounds
 from .copyright import Copyright
 from .email import Email
+from .gpx import GPX
 from .link import Link
 from .metadata import Metadata
 from .person import Person
@@ -22,6 +23,7 @@ __all__ = [
     "Bounds",
     "Copyright",
     "Email",
+    "GPX",
     "GPXModel",
     "Link",
     "Metadata",
