@@ -13,7 +13,7 @@ from .link import Link  # noqa: TC001
 from .track_segment import TrackSegment  # noqa: TC001
 
 
-@dataclass(frozen=True)
+@dataclass(kw_only=True, slots=True)
 class Track(GPXModel):
     """An ordered list of points describing a path.
 

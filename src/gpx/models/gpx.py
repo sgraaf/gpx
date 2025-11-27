@@ -6,7 +6,7 @@ following the GPX 1.1 specification.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import KW_ONLY, dataclass, field
 
 from lxml import etree
 
@@ -23,7 +23,7 @@ GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
 XSI_NAMESPACE = "http://www.w3.org/2001/XMLSchema-instance"
 
 
-@dataclass(frozen=True)
+@dataclass(slots=True)
 class GPX(GPXModel):
     """The root GPX document.
 
@@ -46,6 +46,7 @@ class GPX(GPXModel):
     _tag = "gpx"
 
     creator: str
+    _: KW_ONLY
     metadata: Metadata | None = None
     wpt: list[Waypoint] = field(default_factory=list)
     rte: list[Route] = field(default_factory=list)

@@ -7,12 +7,12 @@ GPX 1.1 specification.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import KW_ONLY, dataclass
 
 from .base import GPXModel
 
 
-@dataclass(frozen=True)
+@dataclass(slots=True)
 class Copyright(GPXModel):
     """Information about the copyright holder and any license.
 
@@ -29,5 +29,6 @@ class Copyright(GPXModel):
     _tag = "copyright"
 
     author: str
+    _: KW_ONLY
     year: int | None = None
     license: str | None = None

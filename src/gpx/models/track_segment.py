@@ -12,7 +12,7 @@ from .base import GPXModel
 from .waypoint import Waypoint  # noqa: TC001
 
 
-@dataclass(frozen=True)
+@dataclass(kw_only=True, slots=True)
 class TrackSegment(GPXModel):
     """A track segment holding a list of logically connected track points.
 

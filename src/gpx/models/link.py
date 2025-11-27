@@ -7,12 +7,12 @@ the GPX 1.1 specification.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import KW_ONLY, dataclass
 
 from .base import GPXModel
 
 
-@dataclass(frozen=True)
+@dataclass(slots=True)
 class Link(GPXModel):
     """A link to an external resource with additional information.
 
@@ -26,5 +26,6 @@ class Link(GPXModel):
     _tag = "link"
 
     href: str
+    _: KW_ONLY
     text: str | None = None
     type: str | None = None

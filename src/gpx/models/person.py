@@ -13,7 +13,7 @@ from .email import Email  # noqa: TC001
 from .link import Link  # noqa: TC001
 
 
-@dataclass(frozen=True)
+@dataclass(kw_only=True, slots=True)
 class Person(GPXModel):
     """A person or organization.
 

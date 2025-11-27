@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
-@dataclass(frozen=True)
+@dataclass(slots=True)
 class Bounds(GPXModel):
     """Two lat/lon pairs defining the extent of an element.
 

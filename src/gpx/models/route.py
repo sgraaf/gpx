@@ -14,7 +14,7 @@ from .link import Link  # noqa: TC001
 from .waypoint import Waypoint  # noqa: TC001
 
 
-@dataclass(frozen=True)
+@dataclass(kw_only=True, slots=True)
 class Route(GPXModel):
     """An ordered list of waypoints representing a series of turn points.
 

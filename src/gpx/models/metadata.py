@@ -16,7 +16,7 @@ from .link import Link  # noqa: TC001
 from .person import Person  # noqa: TC001
 
 
-@dataclass(frozen=True)
+@dataclass(kw_only=True, slots=True)
 class Metadata(GPXModel):
     """Information about the GPX file, author, and copyright restrictions.
 

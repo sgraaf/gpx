@@ -20,10 +20,10 @@ from .track_segment import TrackSegment
 from .waypoint import Waypoint
 
 __all__ = [
+    "GPX",
     "Bounds",
     "Copyright",
     "Email",
-    "GPX",
     "GPXModel",
     "Link",
     "Metadata",

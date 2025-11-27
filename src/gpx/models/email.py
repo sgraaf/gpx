@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from .base import GPXModel
 
 
-@dataclass(frozen=True)
+@dataclass(slots=True)
 class Email(GPXModel):
     """An email address.
 

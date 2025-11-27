@@ -6,7 +6,7 @@ or named feature on a map, following the GPX 1.1 specification.
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from dataclasses import KW_ONLY, dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
 from math import atan2, cos, radians, sin, sqrt
@@ -18,7 +18,7 @@ from .base import GPXModel
 from .link import Link  # noqa: TC001
 
 
-@dataclass(frozen=True)
+@dataclass(slots=True)
 class Waypoint(GPXModel):
     """A waypoint, point of interest, or named feature on a map.
 
@@ -52,6 +52,7 @@ class Waypoint(GPXModel):
 
     lat: Latitude
     lon: Longitude
+    _: KW_ONLY
     ele: Decimal | None = None
     time: datetime | None = None
     magvar: Degrees | None = None
