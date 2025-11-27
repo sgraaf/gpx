@@ -1,12 +1,12 @@
 """Tests for gpx.gpx module - main GPX class and I/O operations."""
 
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from gpx import GPX, Metadata, Person, Route, Track, Waypoint
+from gpx import GPX, Metadata, Route, Track, Waypoint
 from gpx.errors import InvalidGPXError
 from gpx.types import Latitude
 
@@ -213,25 +213,10 @@ class TestGPXMetadataProxies:
         gpx = GPX.from_string(minimal_gpx_string)
         assert gpx.name is None
 
-    # Dataclass models don't support setting properties - metadata is immutable
-    # def test_name_proxy_set_creates_metadata(self, minimal_gpx_string: str) -> None:
-    #     """Test setting name creates metadata if needed."""
-    #     gpx = GPX.from_string(minimal_gpx_string)
-    #     gpx.name = "New Name"
-    #     assert gpx.metadata is not None
-    #     assert gpx.name == "New Name"
-
     def test_desc_proxy(self, gpx_with_metadata_string: str) -> None:
         """Test description proxy."""
         gpx = GPX.from_string(gpx_with_metadata_string)
         assert gpx.desc == "A test GPX file for unit testing"
-
-    # Dataclass models don't support setting properties - metadata is immutable
-    # def test_desc_proxy_set(self, minimal_gpx_string: str) -> None:
-    #     """Test setting description via proxy."""
-    #     gpx = GPX.from_string(minimal_gpx_string)
-    #     gpx.desc = "New Description"
-    #     assert gpx.desc == "New Description"
 
     def test_author_proxy(self, gpx_with_metadata_string: str) -> None:
         """Test author proxy."""
@@ -239,28 +224,11 @@ class TestGPXMetadataProxies:
         assert gpx.author is not None
         assert gpx.author.name == "Test Author"
 
-    # Dataclass models don't support setting properties - metadata is immutable
-    # def test_author_proxy_set(self, minimal_gpx_string: str) -> None:
-    #     """Test setting author via proxy."""
-    #     gpx = GPX.from_string(minimal_gpx_string)
-    #     person = Person(name="New Author")
-    #     gpx.author = person
-    #     assert gpx.author is not None
-    #     assert gpx.author.name == "New Author"
-
     def test_time_proxy(self, gpx_with_metadata_string: str) -> None:
         """Test time proxy."""
         gpx = GPX.from_string(gpx_with_metadata_string)
-        expected = datetime(2023, 6, 15, 10, 0, 0, tzinfo=timezone.utc)
+        expected = datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC)
         assert gpx.time == expected
-
-    # Dataclass models don't support setting properties - metadata is immutable
-    # def test_time_proxy_set(self, minimal_gpx_string: str) -> None:
-    #     """Test setting time via proxy."""
-    #     gpx = GPX.from_string(minimal_gpx_string)
-    #     new_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
-    #     gpx.time = new_time
-    #     assert gpx.time == new_time
 
     def test_keywords_proxy(self, gpx_with_metadata_string: str) -> None:
         """Test keywords proxy."""

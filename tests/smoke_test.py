@@ -5,7 +5,7 @@ They are designed to catch major breakage and ensure basic operations succeed.
 """
 
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -141,7 +141,7 @@ class TestProgrammaticCreation:
             lon=Longitude("13.4050"),
             ele=Decimal("100.5"),
             name="Test Point",
-            time=datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+            time=datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC),
         )
 
         assert wpt.lat == Latitude("52.5200")
@@ -154,13 +154,13 @@ class TestProgrammaticCreation:
         pt1 = Waypoint(
             lat=Latitude("52.5200"),
             lon=Longitude("13.4050"),
-            time=datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+            time=datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC),
         )
 
         pt2 = Waypoint(
             lat=Latitude("52.5210"),
             lon=Longitude("13.4060"),
-            time=datetime(2024, 1, 1, 12, 1, 0, tzinfo=timezone.utc),
+            time=datetime(2024, 1, 1, 12, 1, 0, tzinfo=UTC),
         )
 
         # Create segment
@@ -194,7 +194,7 @@ class TestProgrammaticCreation:
         metadata = Metadata(
             name="My GPX File",
             desc="Created for smoke testing",
-            time=datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc),
+            time=datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC),
         )
 
         # Create GPX
@@ -207,6 +207,7 @@ class TestProgrammaticCreation:
 
         # Verify structure
         assert gpx.creator == "SmokeTest"
+        assert gpx.metadata is not None
         assert gpx.metadata.name == "My GPX File"
         assert len(gpx.waypoints) == 1
         assert len(gpx.tracks) == 1
@@ -336,7 +337,7 @@ class TestEndToEnd:
             pt = Waypoint(
                 lat=Latitude(f"52.{5200 + i}"),
                 lon=Longitude(f"13.{4050 + i}"),
-                time=datetime(2024, 1, 1, 12, i, 0, tzinfo=timezone.utc),
+                time=datetime(2024, 1, 1, 12, i, 0, tzinfo=UTC),
             )
             track_points.append(pt)
 

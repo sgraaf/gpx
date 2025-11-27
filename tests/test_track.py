@@ -43,21 +43,21 @@ class TestTrackSegmentParsing:
 class TestTrackSegmentBuilding:
     """Tests for building track segment XML."""
 
-    # def test_build_track_segment(self, sample_track_segment: TrackSegment) -> None:
-    #     """Test building track segment XML."""
-    #     element = sample_track_segment.to_xml()
-    #     assert element.tag == "{http://www.topografix.com/GPX/1/1}trkseg"
-    #     trkpts = element.findall("{http://www.topografix.com/GPX/1/1}trkpt")
-    #     assert len(trkpts) == 4
+    def test_build_track_segment(self, sample_track_segment: TrackSegment) -> None:
+        """Test building track segment XML."""
+        element = sample_track_segment.to_xml()
+        assert element.tag == "trkseg"
+        trkpts = element.findall("trkpt")
+        assert len(trkpts) == 4
 
-    # def test_build_track_segment_point_tag(
-    #     self, sample_track_segment: TrackSegment
-    # ) -> None:
-    #     """Test that track points use 'trkpt' tag."""
-    #     element = sample_track_segment.to_xml()
-    #     trkpts = element.findall("{http://www.topografix.com/GPX/1/1}trkpt")
-    #     assert len(trkpts) > 0
-    #     assert all(pt.tag == "{http://www.topografix.com/GPX/1/1}trkpt" for pt in trkpts)
+    def test_build_track_segment_point_tag(
+        self, sample_track_segment: TrackSegment
+    ) -> None:
+        """Test that track points use 'trkpt' tag."""
+        element = sample_track_segment.to_xml()
+        trkpts = element.findall("trkpt")
+        assert len(trkpts) > 0
+        assert all(pt.tag == "trkpt" for pt in trkpts)
 
 
 class TestTrackSegmentStatistics:
@@ -198,17 +198,17 @@ class TestTrackParsing:
 class TestTrackBuilding:
     """Tests for building track XML."""
 
-    # def test_build_track(self, sample_track: Track) -> None:
-    #     """Test building track XML."""
-    #     element = sample_track.to_xml()
-    #     assert element.tag == "{http://www.topografix.com/GPX/1/1}trk"
+    def test_build_track(self, sample_track: Track) -> None:
+        """Test building track XML."""
+        element = sample_track.to_xml()
+        assert element.tag == "trk"
 
-    # def test_build_track_name(self, sample_track: Track) -> None:
-    #     """Test building track with name."""
-    #     element = sample_track.to_xml()
-    #     name = element.find("{http://www.topografix.com/GPX/1/1}name")
-    #     assert name is not None
-    #     assert name.text == "Test Track"
+    def test_build_track_name(self, sample_track: Track) -> None:
+        """Test building track with name."""
+        element = sample_track.to_xml()
+        name = element.find("name")
+        assert name is not None
+        assert name.text == "Test Track"
 
     def test_build_track_roundtrip(self, gpx_with_track_string: str) -> None:
         """Test track parsing and building roundtrip."""

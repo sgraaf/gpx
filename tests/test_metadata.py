@@ -1,6 +1,6 @@
 """Tests for metadata-related classes: Metadata, Bounds, Link, Person, Email, Copyright."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from gpx import GPX, Bounds, Copyright, Email, Link, Metadata, Person
 from gpx.types import Latitude, Longitude
@@ -24,7 +24,7 @@ class TestMetadataParsing:
     def test_parse_metadata_time(self, gpx_with_metadata_string: str) -> None:
         """Test parsing metadata time."""
         gpx = GPX.from_string(gpx_with_metadata_string)
-        expected = datetime(2023, 6, 15, 10, 0, 0, tzinfo=timezone.utc)
+        expected = datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC)
         assert gpx.metadata is not None
         assert gpx.metadata.time == expected
 
@@ -69,17 +69,17 @@ class TestMetadataParsing:
 class TestMetadataBuilding:
     """Tests for building metadata XML."""
 
-    # def test_build_metadata(self, sample_metadata: Metadata) -> None:
-    #     """Test building metadata XML."""
-    #     element = sample_metadata.to_xml()
-    #     assert element.tag == "{http://www.topografix.com/GPX/1/1}metadata"
+    def test_build_metadata(self, sample_metadata: Metadata) -> None:
+        """Test building metadata XML."""
+        element = sample_metadata.to_xml()
+        assert element.tag == "metadata"
 
-    # def test_build_metadata_name(self, sample_metadata: Metadata) -> None:
-    #     """Test building metadata with name."""
-    #     element = sample_metadata.to_xml()
-    #     name = element.find("{http://www.topografix.com/GPX/1/1}name")
-    #     assert name is not None
-    #     assert name.text == "Test GPX"
+    def test_build_metadata_name(self, sample_metadata: Metadata) -> None:
+        """Test building metadata with name."""
+        element = sample_metadata.to_xml()
+        name = element.find("name")
+        assert name is not None
+        assert name.text == "Test GPX"
 
     def test_build_metadata_roundtrip(self, gpx_with_metadata_string: str) -> None:
         """Test metadata roundtrip."""
@@ -109,7 +109,7 @@ class TestMetadataCreation:
         meta = Metadata(
             name="Test",
             desc="Description",
-            time=datetime(2023, 6, 15, 10, 0, 0, tzinfo=timezone.utc),
+            time=datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC),
             keywords="test, metadata",
         )
 
@@ -136,14 +136,14 @@ class TestBoundsParsing:
 class TestBoundsBuilding:
     """Tests for building bounds XML."""
 
-    # def test_build_bounds(self, sample_bounds: Bounds) -> None:
-    #     """Test building bounds XML."""
-    #     element = sample_bounds.to_xml()
-    #     assert element.tag == "{http://www.topografix.com/GPX/1/1}bounds"
-    #     assert element.get("minlat") == "52.5"
-    #     assert element.get("minlon") == "13.4"
-    #     assert element.get("maxlat") == "52.6"
-    #     assert element.get("maxlon") == "13.5"
+    def test_build_bounds(self, sample_bounds: Bounds) -> None:
+        """Test building bounds XML."""
+        element = sample_bounds.to_xml()
+        assert element.tag == "bounds"
+        assert element.get("minlat") == "52.5"
+        assert element.get("minlon") == "13.4"
+        assert element.get("maxlat") == "52.6"
+        assert element.get("maxlon") == "13.5"
 
     def test_bounds_roundtrip(self, gpx_with_metadata_string: str) -> None:
         """Test bounds roundtrip."""
@@ -203,18 +203,18 @@ class TestLinkParsing:
 class TestLinkBuilding:
     """Tests for building link XML."""
 
-    # def test_build_link(self, sample_link: Link) -> None:
-    #     """Test building link XML."""
-    #     element = sample_link.to_xml()
-    #     assert element.tag == "{http://www.topografix.com/GPX/1/1}link"
-    #     assert element.get("href") == "https://example.com"
+    def test_build_link(self, sample_link: Link) -> None:
+        """Test building link XML."""
+        element = sample_link.to_xml()
+        assert element.tag == "link"
+        assert element.get("href") == "https://example.com"
 
-    # def test_build_link_text(self, sample_link: Link) -> None:
-    #     """Test building link with text."""
-    #     element = sample_link.to_xml()
-    #     text = element.find("{http://www.topografix.com/GPX/1/1}text")
-    #     assert text is not None
-    #     assert text.text == "Example Link"
+    def test_build_link_text(self, sample_link: Link) -> None:
+        """Test building link with text."""
+        element = sample_link.to_xml()
+        text = element.find("text")
+        assert text is not None
+        assert text.text == "Example Link"
 
     def test_link_roundtrip(self, gpx_with_metadata_string: str) -> None:
         """Test link roundtrip."""
@@ -277,23 +277,23 @@ class TestPersonParsing:
 class TestPersonBuilding:
     """Tests for building person XML."""
 
-    # def test_build_person(self, sample_person: Person) -> None:
-    #     """Test building person XML."""
-    #     element = sample_person.to_xml()
-    #     # Default tag is "author"
-    #     assert element.tag == "{http://www.topografix.com/GPX/1/1}author"
+    def test_build_person(self, sample_person: Person) -> None:
+        """Test building person XML."""
+        element = sample_person.to_xml()
+        # Default tag is "author"
+        assert element.tag == "author"
 
-    # def test_build_person_as_author(self, sample_person: Person) -> None:
-    #     """Test building person XML with author tag (as used in metadata)."""
-    #     element = sample_person.to_xml()
-    #     assert element.tag == "{http://www.topografix.com/GPX/1/1}author"
+    def test_build_person_as_author(self, sample_person: Person) -> None:
+        """Test building person XML with author tag (as used in metadata)."""
+        element = sample_person.to_xml()
+        assert element.tag == "author"
 
-    # def test_build_person_name(self, sample_person: Person) -> None:
-    #     """Test building person with name."""
-    #     element = sample_person.to_xml()
-    #     name = element.find("{http://www.topografix.com/GPX/1/1}name")
-    #     assert name is not None
-    #     assert name.text == "Test Author"
+    def test_build_person_name(self, sample_person: Person) -> None:
+        """Test building person with name."""
+        element = sample_person.to_xml()
+        name = element.find("name")
+        assert name is not None
+        assert name.text == "Test Author"
 
     def test_person_roundtrip(self, gpx_with_metadata_string: str) -> None:
         """Test person roundtrip."""
@@ -323,6 +323,7 @@ class TestPersonCreation:
 
         person = Person(name="John Doe", email=email)
 
+        assert person.email is not None
         assert person.email.id == "john"
 
 
@@ -343,14 +344,14 @@ class TestEmailParsing:
 class TestEmailBuilding:
     """Tests for building email XML."""
 
-    # def test_build_email(self) -> None:
-    #     """Test building email XML."""
-    #     email = Email(id="test", domain="example.com")
+    def test_build_email(self) -> None:
+        """Test building email XML."""
+        email = Email(id="test", domain="example.com")
 
-    #     element = email.to_xml()
-    #     assert element.tag == "{http://www.topografix.com/GPX/1/1}email"
-    #     assert element.get("id") == "test"
-    #     assert element.get("domain") == "example.com"
+        element = email.to_xml()
+        assert element.tag == "email"
+        assert element.get("id") == "test"
+        assert element.get("domain") == "example.com"
 
 
 class TestEmailCreation:
@@ -395,17 +396,17 @@ class TestCopyrightParsing:
 class TestCopyrightBuilding:
     """Tests for building copyright XML."""
 
-    # def test_build_copyright(self) -> None:
-    #     """Test building copyright XML."""
-    #     copyright_ = Copyright(
-    #         author="Test Author",
-    #         year=2023,
-    #         license="https://example.com/license",
-    #     )
+    def test_build_copyright(self) -> None:
+        """Test building copyright XML."""
+        copyright_ = Copyright(
+            author="Test Author",
+            year=2023,
+            license="https://example.com/license",
+        )
 
-    #     element = copyright_.to_xml()
-    #     assert element.tag == "{http://www.topografix.com/GPX/1/1}copyright"
-    #     assert element.get("author") == "Test Author"
+        element = copyright_.to_xml()
+        assert element.tag == "copyright"
+        assert element.get("author") == "Test Author"
 
     def test_copyright_roundtrip(self, gpx_with_metadata_string: str) -> None:
         """Test copyright roundtrip."""

@@ -22,16 +22,14 @@ from .track_segment import TrackSegment
 from .types import Degrees, DGPSStation, Fix, Latitude, Longitude
 from .waypoint import Waypoint
 
-__version__ = "0.2.1"
-
 __all__ = [
+    "GPX",
     "Bounds",
     "Copyright",
-    "Degrees",
     "DGPSStation",
+    "Degrees",
     "Email",
     "Fix",
-    "GPX",
     "GPXModel",
     "Latitude",
     "Link",

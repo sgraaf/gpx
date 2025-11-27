@@ -2,13 +2,8 @@
 
 from __future__ import annotations
 
-import sys
 from decimal import Decimal, InvalidOperation
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
+from typing import Self
 
 
 class Latitude(Decimal):

@@ -1,6 +1,6 @@
 """Tests for gpx.waypoint module."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -29,7 +29,7 @@ class TestWaypointParsing:
         """Test parsing waypoint timestamp."""
         gpx = GPX.from_string(gpx_with_waypoint_string)
         wpt = gpx.waypoints[0]
-        expected_time = datetime(2023, 6, 15, 10, 30, 0, tzinfo=timezone.utc)
+        expected_time = datetime(2023, 6, 15, 10, 30, 0, tzinfo=UTC)
         assert wpt.time == expected_time
 
     def test_parse_waypoint_name(self, gpx_with_waypoint_string: str) -> None:
@@ -102,33 +102,33 @@ class TestWaypointParsing:
 class TestWaypointBuilding:
     """Tests for building waypoint XML."""
 
-    # def test_build_waypoint_basic(self, sample_waypoint: Waypoint) -> None:
-    #     """Test building basic waypoint XML."""
-    #     element = sample_waypoint.to_xml()
-    #     assert element.get("lat") == "52.5200"
-    #     assert element.get("lon") == "13.4050"
+    def test_build_waypoint_basic(self, sample_waypoint: Waypoint) -> None:
+        """Test building basic waypoint XML."""
+        element = sample_waypoint.to_xml()
+        assert element.get("lat") == "52.5200"
+        assert element.get("lon") == "13.4050"
 
-    # def test_build_waypoint_elevation(self, sample_waypoint: Waypoint) -> None:
-    #     """Test building waypoint with elevation."""
-    #     element = sample_waypoint.to_xml()
-    #     ele = element.find("{http://www.topografix.com/GPX/1/1}ele")
-    #     assert ele is not None
-    #     assert ele.text == "34.5"
+    def test_build_waypoint_elevation(self, sample_waypoint: Waypoint) -> None:
+        """Test building waypoint with elevation."""
+        element = sample_waypoint.to_xml()
+        ele = element.find("ele")
+        assert ele is not None
+        assert ele.text == "34.5"
 
-    # def test_build_waypoint_name(self, sample_waypoint: Waypoint) -> None:
-    #     """Test building waypoint with name."""
-    #     element = sample_waypoint.to_xml()
-    #     name = element.find("{http://www.topografix.com/GPX/1/1}name")
-    #     assert name is not None
-    #     assert name.text == "Berlin"
+    def test_build_waypoint_name(self, sample_waypoint: Waypoint) -> None:
+        """Test building waypoint with name."""
+        element = sample_waypoint.to_xml()
+        name = element.find("name")
+        assert name is not None
+        assert name.text == "Berlin"
 
-    # def test_build_waypoint_time_format(self, sample_waypoint: Waypoint) -> None:
-    #     """Test that time is formatted correctly in XML."""
-    #     element = sample_waypoint.to_xml()
-    #     time = element.find("{http://www.topografix.com/GPX/1/1}time")
-    #     assert time is not None
-    #     assert "2023-06-15T10:30:00" in time.text
-    #     assert time.text.endswith("Z")
+    def test_build_waypoint_time_format(self, sample_waypoint: Waypoint) -> None:
+        """Test that time is formatted correctly in XML."""
+        element = sample_waypoint.to_xml()
+        time = element.find("time")
+        assert time is not None
+        assert "2023-06-15T10:30:00" in time.text
+        assert time.text.endswith("Z")
 
     def test_build_waypoint_roundtrip(self, gpx_with_waypoint_string: str) -> None:
         """Test that parsing and building produces equivalent output."""
@@ -151,7 +151,7 @@ class TestWaypointCalculations:
             lat=Latitude("52.5200"),
             lon=Longitude("13.4050"),
             ele=Decimal("34.0"),
-            time=datetime(2023, 6, 15, 10, 0, 0, tzinfo=timezone.utc),
+            time=datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC),
         )
 
     @pytest.fixture
@@ -161,7 +161,7 @@ class TestWaypointCalculations:
             lat=Latitude("48.1351"),
             lon=Longitude("11.5820"),
             ele=Decimal("520.0"),
-            time=datetime(2023, 6, 15, 14, 0, 0, tzinfo=timezone.utc),
+            time=datetime(2023, 6, 15, 14, 0, 0, tzinfo=UTC),
         )
 
     @pytest.fixture
@@ -171,7 +171,7 @@ class TestWaypointCalculations:
             lat=Latitude("52.5210"),
             lon=Longitude("13.4060"),
             ele=Decimal("35.0"),
-            time=datetime(2023, 6, 15, 10, 1, 0, tzinfo=timezone.utc),
+            time=datetime(2023, 6, 15, 10, 1, 0, tzinfo=UTC),
         )
 
     def test_distance_to_same_point(self, berlin_waypoint: Waypoint) -> None:
@@ -310,7 +310,7 @@ class TestWaypointCreation:
             lat=Latitude("52.5200"),
             lon=Longitude("13.4050"),
             ele=Decimal("34.5"),
-            time=datetime(2023, 6, 15, 10, 30, 0, tzinfo=timezone.utc),
+            time=datetime(2023, 6, 15, 10, 30, 0, tzinfo=UTC),
             magvar=Degrees("15.5"),
             geoidheight=Decimal("10.0"),
             name="Test Point",

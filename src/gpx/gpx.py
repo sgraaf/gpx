@@ -6,9 +6,8 @@ following the GPX 1.1 specification.
 
 from __future__ import annotations
 
-import sys
 from dataclasses import KW_ONLY, dataclass, field
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Self
 
 from lxml import etree
 
@@ -22,11 +21,6 @@ from .route import Route  # noqa: TC001
 from .track import Track  # noqa: TC001
 from .utils import build_to_xml
 from .waypoint import Waypoint  # noqa: TC001
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
 
 if TYPE_CHECKING:
     from datetime import datetime

@@ -3,8 +3,7 @@
 from datetime import timedelta
 from decimal import Decimal
 
-from gpx import GPX, Route, Waypoint
-from gpx.link import Link
+from gpx import GPX, Link, Route, Waypoint
 from gpx.types import Latitude, Longitude
 
 
@@ -73,24 +72,24 @@ class TestRouteParsing:
 class TestRouteBuilding:
     """Tests for building route XML."""
 
-    # def test_build_route(self, sample_route: Route) -> None:
-    #     """Test building route XML."""
-    #     element = sample_route.to_xml()
-    #     assert element.tag == "{http://www.topografix.com/GPX/1/1}rte"
+    def test_build_route(self, sample_route: Route) -> None:
+        """Test building route XML."""
+        element = sample_route.to_xml()
+        assert element.tag == "rte"
 
-    # def test_build_route_name(self, sample_route: Route) -> None:
-    #     """Test building route with name."""
-    #     element = sample_route.to_xml()
-    #     name = element.find("{http://www.topografix.com/GPX/1/1}name")
-    #     assert name is not None
-    #     assert name.text == "Test Route"
+    def test_build_route_name(self, sample_route: Route) -> None:
+        """Test building route with name."""
+        element = sample_route.to_xml()
+        name = element.find("name")
+        assert name is not None
+        assert name.text == "Test Route"
 
-    # def test_build_route_points_tag(self, sample_route: Route) -> None:
-    #     """Test that route points use 'rtept' tag."""
-    #     element = sample_route.to_xml()
-    #     rtepts = element.findall("{http://www.topografix.com/GPX/1/1}rtept")
-    #     assert len(rtepts) == 4
-    #     assert all(pt.tag == "{http://www.topografix.com/GPX/1/1}rtept" for pt in rtepts)
+    def test_build_route_points_tag(self, sample_route: Route) -> None:
+        """Test that route points use 'rtept' tag."""
+        element = sample_route.to_xml()
+        rtepts = element.findall("rtept")
+        assert len(rtepts) == 4
+        assert all(pt.tag == "rtept" for pt in rtepts)
 
     def test_build_route_roundtrip(self, gpx_with_route_string: str) -> None:
         """Test route parsing and building roundtrip."""
@@ -175,27 +174,6 @@ class TestRouteSequence:
         assert len(points) == 4
         assert all(isinstance(p, Waypoint) for p in points)
 
-    # Dataclasses don't support insert on immutable fields
-    # def test_route_insert(self, sample_route: Route) -> None:
-    #     """Test inserting a point into route."""
-    #     new_point = Waypoint(
-    #         lat=Latitude("52.5215"),
-    #         lon=Longitude("13.4065"),
-    #     )
-
-    #     original_len = len(sample_route)
-    #     sample_route.insert(2, new_point)
-
-    #     assert len(sample_route) == original_len + 1
-    #     assert sample_route[2] == new_point
-
-    # Dataclasses don't support delitem on immutable fields
-    # def test_route_delitem(self, sample_route: Route) -> None:
-    #     """Test deleting a point from route."""
-    #     original_len = len(sample_route)
-    #     del sample_route[0]
-    #     assert len(sample_route) == original_len - 1
-
 
 class TestRouteCreation:
     """Tests for creating routes programmatically."""
@@ -226,9 +204,9 @@ class TestRouteCreation:
         assert rte.number == 1
         assert len(rte.rtept) == 4
 
-    # def test_route_with_links(self, sample_route: Route, sample_link: Link) -> None:
-    #     """Test route with links."""
-    #     sample_route.links = [sample_link]
-    #     element = sample_route.to_xml()
-    #     links = element.findall("{http://www.topografix.com/GPX/1/1}link")
-    #     assert len(links) == 1
+    def test_route_with_links(self, sample_route: Route, sample_link: Link) -> None:
+        """Test route with links."""
+        sample_route.link = [sample_link]
+        element = sample_route.to_xml()
+        links = element.findall("link")
+        assert len(links) == 1

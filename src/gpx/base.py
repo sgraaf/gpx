@@ -6,17 +6,11 @@ implementing common XML parsing and serialization logic.
 
 from __future__ import annotations
 
-import sys
-from typing import ClassVar
+from typing import ClassVar, Self
 
 from lxml import etree
 
 from .utils import build_to_xml, parse_from_xml
-
-if sys.version_info < (3, 11):
-    from typing_extensions import Self
-else:
-    from typing import Self
 
 #: GPX 1.1 namespace
 GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
