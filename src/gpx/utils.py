@@ -156,6 +156,10 @@ def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:  
     result: dict[str, Any] = {}
 
     for field in fields(cls):
+        # Skip KW_ONLY marker
+        if field.name == "_":
+            continue
+
         field_type = type_hints.get(field.name, field.type)
 
         # Lists are always treated as optional child elements (even without | None)
@@ -235,6 +239,10 @@ def build_to_xml(  # noqa: C901, PLR0912
     type_hints = get_type_hints(obj.__class__)
 
     for field in fields(obj):
+        # Skip KW_ONLY marker
+        if field.name == "_":
+            continue
+
         field_type = type_hints.get(field.name, field.type)
         value = getattr(obj, field.name)
 
