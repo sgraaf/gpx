@@ -1,65 +1,31 @@
-"""This module provides a Link object to contain GPX links to external resources (Web page, digital photo, video clip, etc) with additional information."""
+"""Link model for GPX data.
+
+This module provides the Link model representing a link to an external resource
+(Web page, digital photo, video clip, etc) with additional information, following
+the GPX 1.1 specification.
+"""
 
 from __future__ import annotations
 
-from lxml import etree
+from dataclasses import KW_ONLY, dataclass
 
-from .element import Element
+from .base import GPXModel
 
 
-class Link(Element):
-    """A link class for the GPX data format.
-
-    A link to an external resource (Web page, digital photo, video clip, etc)
-    with additional information.
+@dataclass(slots=True)
+class Link(GPXModel):
+    """A link to an external resource with additional information.
 
     Args:
-        element: The link XML element. Defaults to `None`.
+        href: URL of hyperlink.
+        text: Text of hyperlink. Defaults to None.
+        type: Mime type of content (e.g. image/jpeg). Defaults to None.
 
     """
 
-    def __init__(self, element: etree._Element | None = None) -> None:
-        super().__init__(element)
+    _tag = "link"
 
-        #: URL of hyperlink.
-        self.href: str
-
-        #: Text of hyperlink.
-        self.text: str | None = None
-
-        #: Mime type of content (e.g. image/jpeg)
-        self.type: str | None = None
-
-        if self._element is not None:
-            self._parse()
-
-    def _parse(self) -> None:
-        super()._parse()
-
-        # assertion to satisfy mypy
-        assert self._element is not None
-
-        # required
-        self.href = self._element.get("href")
-
-        # text
-        if (text := self._element.find("text", namespaces=self._nsmap)) is not None:
-            self.text = text.text
-
-        # type
-        if (_type := self._element.find("type", namespaces=self._nsmap)) is not None:
-            self.type = _type.text
-
-    def _build(self, tag: str = "link") -> etree._Element:
-        link = super()._build(tag)
-        link.set("href", self.href)
-
-        if self.text is not None:
-            text = etree.SubElement(link, "text", nsmap=self._nsmap)
-            text.text = self.text
-
-        if self.type is not None:
-            _type = etree.SubElement(link, "type", nsmap=self._nsmap)
-            _type.text = self.type
-
-        return link
+    href: str
+    _: KW_ONLY
+    text: str | None = None
+    type: str | None = None

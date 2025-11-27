@@ -1,121 +1,231 @@
-"""This module provides a Route object to contain GPX routes - ordered lists of waypoints representing a series of turn points leading to a destination."""
+"""Route model for GPX data.
+
+This module provides the Route model representing an ordered list of waypoints
+representing a series of turn points leading to a destination, following the
+GPX 1.1 specification.
+"""
 
 from __future__ import annotations
 
-from lxml import etree
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta
+from decimal import Decimal
+from typing import TYPE_CHECKING, overload
 
-from .element import Element
-from .link import Link
-from .mixins import PointsMutableSequenceMixin, PointsStatisticsMixin
-from .waypoint import Waypoint
+from .base import GPXModel
+from .link import Link  # noqa: TC001
+from .waypoint import Waypoint  # noqa: TC001
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
+
+    from gpx.types import Latitude, Longitude
 
 
-class Route(Element, PointsMutableSequenceMixin, PointsStatisticsMixin):
-    """A route class for the GPX data format.
+@dataclass(kw_only=True, slots=True)
+class Route(GPXModel):
+    """An ordered list of waypoints representing a series of turn points.
 
-    A route represents an ordered list of waypoints representing a series of
-    turn points leading to a destination.
+    A route represents waypoints leading to a destination.
 
     Args:
-        element: The route XML element. Defaults to `None`.
+        name: GPS name of route. Defaults to None.
+        cmt: GPS comment for route. Defaults to None.
+        desc: Text description of route for user. Defaults to None.
+        src: Source of data. Defaults to None.
+        link: Links to external information about the route. Defaults to
+            empty list.
+        number: GPS route number. Defaults to None.
+        type: Type (classification) of route. Defaults to None.
+        rtept: List of route points. Defaults to empty list.
 
     """
 
-    def __init__(self, element: etree._Element | None = None) -> None:
-        super().__init__(element)
+    _tag = "rte"
 
-        #: GPS name of route.
-        self.name: str | None = None
+    name: str | None = None
+    cmt: str | None = None
+    desc: str | None = None
+    src: str | None = None
+    link: list[Link] = field(default_factory=list)
+    number: int | None = None
+    type: str | None = None
+    rtept: list[Waypoint] = field(default_factory=list)
 
-        #: GPS comment for route.
-        self.cmt: str | None = None
+    @property
+    def points(self) -> list[Waypoint]:
+        """Alias for rtept."""
+        return self.rtept
 
-        #: Text description of route for user. Not sent to GPS.
-        self.desc: str | None = None
+    @overload
+    def __getitem__(self, index: int) -> Waypoint: ...
 
-        #: Source of data. Included to give user some idea of reliability and
-        #: accuracy of data.
-        self.src: str | None = None
+    @overload
+    def __getitem__(self, index: slice) -> list[Waypoint]: ...
 
-        #: Links to external information about the route.
-        self.links: list[Link] = []
+    def __getitem__(self, index: int | slice) -> Waypoint | list[Waypoint]:
+        """Get a route point by index or slice."""
+        return self.rtept[index]
 
-        #: GPS route number.
-        self.number: int | None = None
+    def __len__(self) -> int:
+        """Return the number of route points."""
+        return len(self.rtept)
 
-        #: Type (classification) of route.
-        self.type: str | None = None
+    def __iter__(self) -> Iterator[Waypoint]:
+        """Iterate over route points."""
+        yield from self.rtept
 
-        #: A list of route points.
-        self.rtepts: list[Waypoint] = []
-        self.points = self.rtepts  #: Alias of :attr:`rtepts`.
+    @property
+    def bounds(self) -> tuple[Latitude, Longitude, Latitude, Longitude]:
+        """The bounds of the route."""
+        return (
+            min(point.lat for point in self.rtept),
+            min(point.lon for point in self.rtept),
+            max(point.lat for point in self.rtept),
+            max(point.lon for point in self.rtept),
+        )
 
-        if self._element is not None:
-            self._parse()
+    @property
+    def total_distance(self) -> float:
+        """The total distance (in metres)."""
+        return sum(
+            point.distance_to(self.rtept[i + 1])
+            for i, point in enumerate(self.rtept[:-1])
+        )
 
-    def _parse(self) -> None:
-        super()._parse()
+    @property
+    def distance(self) -> float:
+        """Alias of :attr:`total_distance`."""
+        return self.total_distance
 
-        # assertion to satisfy mypy
-        assert self._element is not None
+    @property
+    def total_duration(self) -> timedelta:
+        """The total duration."""
+        return self.rtept[0].duration_to(self.rtept[-1])
 
-        # name
-        if (name := self._element.find("name", namespaces=self._nsmap)) is not None:
-            self.name = name.text
-        # comment
-        if (cmt := self._element.find("cmt", namespaces=self._nsmap)) is not None:
-            self.cmt = cmt.text
-        # description
-        if (desc := self._element.find("desc", namespaces=self._nsmap)) is not None:
-            self.desc = desc.text
-        # source of data
-        if (src := self._element.find("src", namespaces=self._nsmap)) is not None:
-            self.src = src.text
-        # links
-        for link in self._element.iterfind("link", namespaces=self._nsmap):
-            self.links.append(Link(link))
-        # GPS route number
-        if (number := self._element.find("number", namespaces=self._nsmap)) is not None:
-            self.number = int(number.text)
-        # track type (classification)
-        if (_type := self._element.find("type", namespaces=self._nsmap)) is not None:
-            self.type = _type.text
+    @property
+    def duration(self) -> timedelta:
+        """Alias of :attr:`total_duration`."""
+        return self.total_duration
 
-        # route points
-        for rtept in self._element.iterfind("rtept", namespaces=self._nsmap):
-            self.rtepts.append(Waypoint(rtept))
+    @property
+    def moving_duration(self) -> timedelta:
+        """The moving duration.
 
-    def _build(self, tag: str = "rte") -> etree._Element:
-        route = super()._build(tag)
+        The moving duration is the total duration with a
+        speed greater than 0.5 km/h.
+        """
+        duration = timedelta()
+        for i, point in enumerate(self.rtept[:-1]):
+            if point.speed_to(self.rtept[i + 1]) > 0.5 / 3.6:  # 0.5 km/h
+                duration += point.duration_to(self.rtept[i + 1])
+        return duration
 
-        if self.name is not None:
-            name = etree.SubElement(route, "name", nsmap=self._nsmap)
-            name.text = self.name
+    @property
+    def avg_speed(self) -> float:
+        """The average speed (in metres / second)."""
+        return self.total_distance / self.total_duration.total_seconds()
 
-        if self.cmt is not None:
-            cmt = etree.SubElement(route, "cmt", nsmap=self._nsmap)
-            cmt.text = self.cmt
+    @property
+    def speed(self) -> float:
+        """Alias of :attr:`avg_speed`."""
+        return self.avg_speed
 
-        if self.desc is not None:
-            desc = etree.SubElement(route, "desc", nsmap=self._nsmap)
-            desc.text = self.desc
+    @property
+    def avg_moving_speed(self) -> float:
+        """The average moving speed (in metres / second)."""
+        return self.total_distance / self.moving_duration.total_seconds()
 
-        if self.src is not None:
-            src = etree.SubElement(route, "src", nsmap=self._nsmap)
-            src.text = self.src
+    @property
+    def _speeds(self) -> list[float]:
+        return [
+            point.speed_to(self.rtept[i + 1]) for i, point in enumerate(self.rtept[:-1])
+        ]
 
-        for link in self.links:
-            route.append(link._build())
+    @property
+    def max_speed(self) -> float:
+        """The maximum speed (in metres / second)."""
+        return max(self._speeds)
 
-        if self.number is not None:
-            number = etree.SubElement(route, "number", nsmap=self._nsmap)
-            number.text = str(self.number)
+    @property
+    def min_speed(self) -> float:
+        """The minimum speed (in metres / second)."""
+        return min(self._speeds)
 
-        if self.type is not None:
-            _type = etree.SubElement(route, "type", nsmap=self._nsmap)
-            _type.text = self.type
+    @property
+    def speed_profile(self) -> list[tuple[datetime, float]]:
+        """The speed profile.
 
-        for _rtept in self.rtepts:
-            route.append(_rtept._build(tag="rtept"))
+        The speed profile is a list of (timestamp, speed) tuples.
+        """
+        return [
+            (point.time, point.speed_to(self.rtept[i + 1]))
+            for i, point in enumerate(self.rtept[:-1])
+            if point.time is not None
+        ]
 
-        return route
+    @property
+    def _points_with_ele(self) -> list[Waypoint]:
+        return [point for point in self.rtept if point.ele is not None]
+
+    @property
+    def _eles(self) -> list[Decimal]:
+        return [point.ele for point in self.rtept if point.ele is not None]
+
+    @property
+    def avg_elevation(self) -> Decimal:
+        """The average elevation (in metres)."""
+        return sum(self._eles, Decimal(0)) / len(self._eles)
+
+    @property
+    def elevation(self) -> Decimal:
+        """Alias of :attr:`avg_elevation`."""
+        return self.avg_elevation
+
+    @property
+    def max_elevation(self) -> Decimal:
+        """The maximum elevation (in metres)."""
+        return max(self._eles)
+
+    @property
+    def min_elevation(self) -> Decimal:
+        """The minimum elevation (in metres)."""
+        return min(self._eles)
+
+    @property
+    def diff_elevation(self) -> Decimal:
+        """The difference in elevation (in metres)."""
+        return self.max_elevation - self.min_elevation
+
+    @property
+    def _gains(self) -> list[Decimal]:
+        return [
+            point.gain_to(self._points_with_ele[i + 1])
+            for i, point in enumerate(self._points_with_ele[:-1])
+        ]
+
+    @property
+    def total_ascent(self) -> Decimal:
+        """The total ascent (in metres)."""
+        return sum([gain for gain in self._gains if gain > 0], Decimal(0))
+
+    @property
+    def total_descent(self) -> Decimal:
+        """The total descent (in metres)."""
+        return abs(sum([gain for gain in self._gains if gain < 0], Decimal(0)))
+
+    @property
+    def elevation_profile(self) -> list[tuple[float, Decimal]]:
+        """The elevation profile.
+
+        The elevation profile is a list of (distance, elevation) tuples.
+        """
+        distance = 0.0
+        profile = []
+        if self._points_with_ele[0].ele is not None:
+            profile.append((distance, self._points_with_ele[0].ele))
+        for i, point in enumerate(self._points_with_ele[1:], 1):
+            if point.ele is not None:
+                distance += self._points_with_ele[i - 1].distance_to(point)
+                profile.append((distance, point.ele))
+        return profile

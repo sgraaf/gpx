@@ -1,71 +1,32 @@
-"""This module provides a Person object to contain a person or organization."""
+"""Person model for GPX data.
+
+This module provides the Person model representing a person or organization,
+following the GPX 1.1 specification.
+"""
 
 from __future__ import annotations
 
-from lxml import etree
+from dataclasses import dataclass
 
-from .element import Element
-from .email import Email
-from .link import Link
-from .mixins import AttributesMutableMappingMixin
+from .base import GPXModel
+from .email import Email  # noqa: TC001
+from .link import Link  # noqa: TC001
 
 
-class Person(Element, AttributesMutableMappingMixin):
-    """A person class for the GPX data format.
-
-    A person or organization.
+@dataclass(kw_only=True, slots=True)
+class Person(GPXModel):
+    """A person or organization.
 
     Args:
-        element: The person XML element. Defaults to `None`.
+        name: Name of person or organization. Defaults to None.
+        email: Email address. Defaults to None.
+        link: Link to Web site or other external information about person.
+            Defaults to None.
 
     """
 
-    __keys__ = ("name", "email", "link")
+    _tag = "author"
 
-    def __init__(self, element: etree._Element | None = None) -> None:
-        super().__init__(element)
-
-        #: Name of person or organization.
-        self.name: str | None = None
-
-        #: Email address.
-        self.email: Email | None = None
-
-        #: Link to Web site or other external information about person.
-        self.link: Link | None = None
-
-        if self._element is not None:
-            self._parse()
-
-    def _parse(self) -> None:
-        super()._parse()
-
-        # assertion to satisfy mypy
-        assert self._element is not None
-
-        # name
-        if (name := self._element.find("name", namespaces=self._nsmap)) is not None:
-            self.name = name.text
-
-        # email
-        if (email := self._element.find("email", namespaces=self._nsmap)) is not None:
-            self.email = Email(email)
-
-        # link
-        if (link := self._element.find("link", namespaces=self._nsmap)) is not None:
-            self.link = Link(link)
-
-    def _build(self, tag: str = "person") -> etree._Element:
-        person = super()._build(tag)
-
-        if self.name is not None:
-            name = etree.SubElement(person, "name", nsmap=self._nsmap)
-            name.text = self.name
-
-        if self.email is not None:
-            person.append(self.email._build())
-
-        if self.link is not None:
-            person.append(self.link._build())
-
-        return person
+    name: str | None = None
+    email: Email | None = None
+    link: Link | None = None

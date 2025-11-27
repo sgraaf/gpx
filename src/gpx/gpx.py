@@ -1,19 +1,26 @@
-"""This module provides a GPX object to contain GPX files, consisting of waypoints, routes and tracks."""
+"""GPX model for GPX data.
+
+This module provides the GPX model representing the root GPX document,
+following the GPX 1.1 specification.
+"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from dataclasses import KW_ONLY, dataclass, field
+from typing import TYPE_CHECKING, Self
 
 from lxml import etree
 
-from . import gpx_schema
-from .element import Element
-from .errors import InvalidGPXError
-from .metadata import Metadata
-from .route import Route
-from .track import Track
-from .utils import remove_encoding_from_string
-from .waypoint import Waypoint
+from gpx import gpx_schema
+from gpx.errors import InvalidGPXError
+from gpx.utils import remove_encoding_from_string
+
+from .base import GPXModel
+from .metadata import Metadata  # noqa: TC001
+from .route import Route  # noqa: TC001
+from .track import Track  # noqa: TC001
+from .utils import build_to_xml
+from .waypoint import Waypoint  # noqa: TC001
 
 if TYPE_CHECKING:
     from datetime import datetime
@@ -24,327 +31,289 @@ if TYPE_CHECKING:
     from .link import Link
     from .person import Person
 
+#: GPX 1.1 namespace
+GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
+#: XML Schema instance namespace
+XSI_NAMESPACE = "http://www.w3.org/2001/XMLSchema-instance"
 
-class GPX(Element):
-    """A GPX class for the GPX data format.
+
+@dataclass(slots=True)
+class GPX(GPXModel):
+    """The root GPX document.
 
     GPX documents contain a metadata header, followed by waypoints, routes, and
     tracks. You can add your own elements to the extensions section of the GPX
     document.
 
+    Note: The GPX version is always "1.1" per the specification and is
+    automatically set during XML serialization.
+
     Args:
-        element: The GPX XML element. Defaults to `None`.
+        creator: The name or URL of the software that created the GPX document.
+            Defaults to "PyGPX".
+        metadata: Metadata about the file. Defaults to None.
+        wpt: List of waypoints. Defaults to empty list.
+        rte: List of routes. Defaults to empty list.
+        trk: List of tracks. Defaults to empty list.
 
     """
 
-    def __init__(self, element: etree._Element | None = None) -> None:
-        super().__init__(element)
+    _tag = "gpx"
 
-        self._nsmap: dict[str | None, str] = {
-            None: "http://www.topografix.com/GPX/1/1",
-            "xsi": "http://www.w3.org/2001/XMLSchema-instance",
-        }
+    creator: str = "PyGPX"
+    _: KW_ONLY
+    metadata: Metadata | None = None
+    wpt: list[Waypoint] = field(default_factory=list)
+    rte: list[Route] = field(default_factory=list)
+    trk: list[Track] = field(default_factory=list)
 
-        self._schema_locations: dict[str, str] = {
-            "http://www.topografix.com/GPX/1/1": "http://www.topografix.com/GPX/1/1/gpx.xsd",
-        }
+    @property
+    def waypoints(self) -> list[Waypoint]:
+        """Alias for wpt."""
+        return self.wpt
 
-        #: The name or URL of the software that created your GPX document.
-        #: Defaults to "PyGPX".
-        self.creator: str = "PyGPX"
+    @property
+    def routes(self) -> list[Route]:
+        """Alias for rte."""
+        return self.rte
 
-        #: Metadata about the file.
-        self.metadata: Metadata | None = None
-
-        #: A list of waypoints.
-        self.waypoints: list[Waypoint] = []
-
-        #: A list of routes.
-        self.routes: list[Route] = []
-
-        #: A list of tracks.
-        self.tracks: list[Track] = []
-
-        if self._element is not None:
-            self._parse()
+    @property
+    def tracks(self) -> list[Track]:
+        """Alias for trk."""
+        return self.trk
 
     @property
     def name(self) -> str | None:
         """The name of the GPX file.
 
-        Proxy of :attr:`gpx.metadata.Metadata.name`.
+        Proxy of :attr:`gpx.models.metadata.Metadata.name`.
         """
         if self.metadata is not None:
             return self.metadata.name
         return None
 
-    @name.setter
-    def name(self, value: str) -> None:
-        if self.metadata is None:
-            self.metadata = Metadata()
-        self.metadata.name = value
-
     @property
     def desc(self) -> str | None:
         """A description of the contents of the GPX file.
 
-        Proxy of :attr:`gpx.metadata.Metadata.desc`.
+        Proxy of :attr:`gpx.models.metadata.Metadata.desc`.
         """
         if self.metadata is not None:
             return self.metadata.desc
         return None
 
-    @desc.setter
-    def desc(self, value: str) -> None:
-        if self.metadata is None:
-            self.metadata = Metadata()
-        self.metadata.desc = value
-
     @property
     def author(self) -> Person | None:
         """The person or organization who created the GPX file.
 
-        Proxy of :attr:`gpx.metadata.Metadata.author`.
+        Proxy of :attr:`gpx.models.metadata.Metadata.author`.
         """
         if self.metadata is not None:
             return self.metadata.author
         return None
 
-    @author.setter
-    def author(self, value: Person) -> None:
-        if self.metadata is None:
-            self.metadata = Metadata()
-        self.metadata.author = value
-
     @property
     def copyright(self) -> Copyright | None:
         """Copyright and license information governing use of the file.
 
-        Proxy of :attr:`gpx.metadata.Metadata.copyright`.
+        Proxy of :attr:`gpx.models.metadata.Metadata.copyright`.
         """
         if self.metadata is not None:
             return self.metadata.copyright
         return None
 
-    @copyright.setter
-    def copyright(self, value: Copyright) -> None:
-        if self.metadata is None:
-            self.metadata = Metadata()
-        self.metadata.copyright = value
-
     @property
     def links(self) -> list[Link] | None:
         """URLs associated with the location described in the file.
 
-        Proxy of :attr:`gpx.metadata.Metadata.links`.
+        Proxy of :attr:`gpx.models.metadata.Metadata.link`.
         """
         if self.metadata is not None:
-            return self.metadata.links
+            return self.metadata.link
         return None
-
-    @links.setter
-    def links(self, value: list[Link]) -> None:
-        if self.metadata is None:
-            self.metadata = Metadata()
-        self.metadata.links = value
 
     @property
     def time(self) -> datetime | None:
         """The creation date of the file.
 
-        Proxy of :attr:`gpx.metadata.Metadata.time`.
+        Proxy of :attr:`gpx.models.metadata.Metadata.time`.
         """
         if self.metadata is not None:
             return self.metadata.time
         return None
 
-    @time.setter
-    def time(self, value: datetime) -> None:
-        if self.metadata is None:
-            self.metadata = Metadata()
-        self.metadata.time = value
-
     @property
     def keywords(self) -> str | None:
-        """Keywords associated with the file. Search engines or databases can use this information to classify the data.
+        """Keywords associated with the file.
 
-        Proxy of :attr:`gpx.metadata.Metadata.keywords`.
+        Search engines or databases can use this information to classify the data.
+
+        Proxy of :attr:`gpx.models.metadata.Metadata.keywords`.
         """
         if self.metadata is not None:
             return self.metadata.keywords
         return None
 
-    @keywords.setter
-    def keywords(self, value: str) -> None:
-        if self.metadata is None:
-            self.metadata = Metadata()
-        self.metadata.keywords = value
-
     @property
     def bounds(self) -> Bounds | None:
         """Minimum and maximum coordinates which describe the extent of the coordinates in the file.
 
-        Proxy of :attr:`gpx.metadata.Metadata.bounds`.
+        Proxy of :attr:`gpx.models.metadata.Metadata.bounds`.
         """
         if self.metadata is not None:
             return self.metadata.bounds
         return None
 
-    @bounds.setter
-    def bounds(self, value: Bounds) -> None:
-        if self.metadata is None:
-            self.metadata = Metadata()
-        self.metadata.bounds = value
+    def to_xml(
+        self, tag: str | None = None, nsmap: dict[str | None, str] | None = None
+    ) -> etree._Element:
+        """Convert the GPX to an XML element.
 
-    def _parse(self) -> None:
-        super()._parse()
+        Args:
+            tag: The XML tag name. Defaults to "gpx".
+            nsmap: Optional namespace mapping. Defaults to GPX 1.1 namespace
+                with XML Schema instance namespace.
 
-        # assertion to satisfy mypy
-        assert self._element is not None
+        Returns:
+            The XML element.
 
-        # schema location
-        if (
-            schema_location := self._element.get(
-                f"{{{self._nsmap['xsi']}}}schemaLocation",
-            )
-        ) is not None:
-            self._schema_locations.update(
-                (x, y)
-                for x, y in zip(
-                    schema_location.split(" ")[0::2],
-                    schema_location.split(" ")[1::2],
-                    strict=False,
-                )
-            )
+        """
+        if tag is None:
+            tag = self._tag
 
-        # creator
-        if (creator := self._element.get("creator")) is not None:
-            self.creator = creator
+        if nsmap is None:
+            nsmap = {
+                None: GPX_NAMESPACE,
+                "xsi": XSI_NAMESPACE,
+            }
 
-        # metadata
-        if (
-            metadata := self._element.find("metadata", namespaces=self._nsmap)
-        ) is not None:
-            self.metadata = Metadata(metadata)
+        # Create the element with namespaces
+        element = etree.Element(tag, nsmap=nsmap)
 
-        # waypoints
-        for wpt in self._element.iterfind("wpt", namespaces=self._nsmap):
-            self.waypoints.append(Waypoint(wpt))
-
-        # routes
-        for rte in self._element.iterfind("rte", namespaces=self._nsmap):
-            self.routes.append(Route(rte))
-
-        # tracks
-        for trk in self._element.iterfind("trk", namespaces=self._nsmap):
-            self.tracks.append(Track(trk))
-
-    def _build(self, tag: str = "gpx") -> etree._Element:
-        gpx = super()._build(tag)
-
-        # filter schema locations
-        self._schema_locations = {
-            k: v for k, v in self._schema_locations.items() if k in self._nsmap.values()
-        }
-        # set version and creator attributes
-        gpx.set("version", "1.1")
-        gpx.set("creator", self.creator)
-        gpx.set(
-            f"{{{self._nsmap['xsi']}}}schemaLocation",
-            " ".join(f"{k} {v}" for k, v in self._schema_locations.items()),
+        # Add GPX-specific attributes
+        element.set("version", "1.1")
+        element.set(
+            f"{{{XSI_NAMESPACE}}}schemaLocation",
+            f"{GPX_NAMESPACE} {GPX_NAMESPACE}/gpx.xsd",
         )
 
-        # metadata
-        if self.metadata:
-            gpx.append(self.metadata._build())
+        # Use parent's build_to_xml for fields
+        build_to_xml(self, element, nsmap=nsmap)
 
-        # waypoints
-        for _waypoint in self.waypoints:
-            gpx.append(_waypoint._build())
-
-        # routes
-        for _route in self.routes:
-            gpx.append(_route._build())
-
-        # tracks
-        for _track in self.tracks:
-            gpx.append(_track._build())
-
-        return gpx
+        return element
 
     @classmethod
-    def from_string(cls, gpx_str: str, *, validate: bool = False) -> GPX:
-        """Create an GPX instance from a string.
-
-            >>> from gpx import GPX
-            >>> gpx = GPX.from_str(\"\"\"<?xml version="1.0" encoding="UTF-8" ?>
-            ... <gpx xmlns="http://www.topografix.com/GPX/1/1" creator="PyGPX" version="1.1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd">
-            ...     [...]
-            ... </gpx>\"\"\")
-            >>> print(gpx.bounds)
+    def from_string(cls, gpx_str: str, *, validate: bool = False) -> Self:
+        """Create a GPX instance from a string.
 
         Args:
             gpx_str: The string containing the GPX data.
-            validate: Whether to validate the GPX data.
+            validate: Whether to validate the GPX data against the GPX 1.1 schema.
+                Defaults to False.
 
         Returns:
             The GPX instance.
+
+        Raises:
+            InvalidGPXError: If validation is enabled and the GPX data is invalid.
+
+        Example:
+            >>> from gpx import GPX
+            >>> gpx = GPX.from_string('''<?xml version="1.0"?>
+            ... <gpx version="1.1" creator="MyApp">
+            ...     <metadata><name>My Track</name></metadata>
+            ... </gpx>''')
+            >>> print(gpx.creator)
+            MyApp
 
         """
-        # etree.fromstring() does not support encoding declarations in the string itself.
+        # etree.fromstring() does not support encoding declarations in the string
         gpx_str = remove_encoding_from_string(gpx_str)
-        gpx = etree.fromstring(gpx_str)
-        if validate and not gpx_schema.validate(gpx):  # invalid GPX
+        element = etree.fromstring(gpx_str)
+
+        if validate and not gpx_schema.validate(element):
             msg = "The GPX data is invalid."
             raise InvalidGPXError(msg)
-        return cls(gpx)
+
+        return cls.from_xml(element)
 
     @classmethod
-    def from_file(cls, gpx_file: str | Path, *, validate: bool = False) -> GPX:
-        """Create an GPX instance from a file.
-
-            >>> from gpx import GPX
-            >>> gpx = GPX.from_file("path/to/file.gpx")
-            >>> print(gpx.bounds)
+    def from_file(cls, gpx_file: str | Path, *, validate: bool = False) -> Self:
+        """Create a GPX instance from a file.
 
         Args:
-            gpx_file: The file containing the GPX data.
-            validate: Whether to validate the GPX data.
+            gpx_file: The file path containing the GPX data.
+            validate: Whether to validate the GPX data against the GPX 1.1 schema.
+                Defaults to False.
 
         Returns:
             The GPX instance.
+
+        Raises:
+            InvalidGPXError: If validation is enabled and the GPX data is invalid.
+
+        Example:
+            >>> from gpx import GPX
+            >>> gpx = GPX.from_file("path/to/file.gpx")
+            >>> print(gpx.creator)
 
         """
         gpx_tree = etree.parse(str(gpx_file))
-        gpx = gpx_tree.getroot()
-        if validate and not gpx_schema.validate(gpx):  # invalid GPX
+        element = gpx_tree.getroot()
+
+        if validate and not gpx_schema.validate(element):
             msg = "The GPX data is invalid."
             raise InvalidGPXError(msg)
-        return cls(gpx)
 
-    def to_string(self) -> str:
+        return cls.from_xml(element)
+
+    def to_string(self, *, pretty_print: bool = True) -> str:
         """Serialize the GPX instance to a string.
+
+        Args:
+            pretty_print: Whether to format the output with indentation.
+                Defaults to True.
 
         Returns:
             The GPX data as a string.
 
-        """
-        gpx = self._build()
-        gpx_tree = etree.ElementTree(gpx)
-        return etree.tostring(gpx_tree, encoding="unicode", pretty_print=True)
+        Example:
+            >>> from gpx import GPX
+            >>> gpx = GPX(creator="MyApp")
+            >>> xml_string = gpx.to_string()
+            >>> print(xml_string[:50])
+            <?xml version='1.0' encoding='UTF-8'?>
+            <gpx ve
 
-    def to_file(self, gpx_file: str | Path) -> None:
+        """
+        element = self.to_xml()
+        xml_bytes = etree.tostring(
+            element,
+            encoding="utf-8",
+            pretty_print=pretty_print,
+            xml_declaration=True,
+        )
+        return xml_bytes.decode("utf-8")
+
+    def to_file(self, gpx_file: str | Path, *, pretty_print: bool = True) -> None:
         """Serialize the GPX instance to a file.
 
         Args:
-            gpx_file: The file to write the GPX data to.
+            gpx_file: The file path to write the GPX data to.
+            pretty_print: Whether to format the output with indentation.
+                Defaults to True.
+
+        Example:
+            >>> from gpx import GPX
+            >>> gpx = GPX(creator="MyApp")
+            >>> gpx.to_file("output.gpx")
 
         """
-        gpx = self._build()
-        gpx_tree = etree.ElementTree(gpx)
-        gpx_tree.write(
+        element = self.to_xml()
+        tree = etree.ElementTree(element)
+        tree.write(
             str(gpx_file),
-            pretty_print=True,
+            pretty_print=pretty_print,
             xml_declaration=True,
             encoding="utf-8",
         )

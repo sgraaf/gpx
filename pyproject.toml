@@ -15,18 +15,16 @@ classifiers = [
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Typing :: Typed",
 ]
-requires-python = ">=3.10, <4"
+requires-python = ">=3.11, <4"
 dependencies = [
     "lxml",
     "python-dateutil",
-    "typing-extensions; python_version < '3.11'",
 ]
 
 [project.optional-dependencies]
@@ -86,3 +84,6 @@ pydocstyle.convention = "google"
 "tests/smoke_test.py" = [
     "PLR2004",   # magic-value-comparison (Pylint)
 ]
+
+[tool.mypy]
+python_version = "3.11"

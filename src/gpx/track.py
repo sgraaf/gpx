@@ -1,170 +1,107 @@
-"""This module provides a Track object to contain GPX routes - an ordered list of points describing a path."""
+"""Track model for GPX data.
+
+This module provides the Track model representing an ordered list of points
+describing a path, following the GPX 1.1 specification.
+"""
 
 from __future__ import annotations
 
+from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, overload
 
-from lxml import etree
-
-from .element import Element
-from .link import Link
-from .track_segment import TrackSegment
+from .base import GPXModel
+from .link import Link  # noqa: TC001
+from .track_segment import TrackSegment  # noqa: TC001
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from .types import Latitude, Longitude
+    from gpx.types import Latitude, Longitude
 
 
-class Track(Element):
-    """A track class for the GPX data format.
+@dataclass(kw_only=True, slots=True)
+class Track(GPXModel):
+    """An ordered list of points describing a path.
 
-    A track represents an ordered list of points describing a path.
+    A track represents a GPS track consisting of track segments.
 
     Args:
-        element: The track XML element. Defaults to `None`.
+        name: GPS name of track. Defaults to None.
+        cmt: GPS comment for track. Defaults to None.
+        desc: User description of track. Defaults to None.
+        src: Source of data. Defaults to None.
+        link: Links to external information about track. Defaults to empty list.
+        number: GPS track number. Defaults to None.
+        type: Type (classification) of track. Defaults to None.
+        trkseg: List of track segments. Defaults to empty list.
 
     """
 
-    def __init__(self, element: etree._Element | None = None) -> None:
-        super().__init__(element)
+    _tag = "trk"
 
-        #: GPS name of track.
-        self.name: str | None = None
+    name: str | None = None
+    cmt: str | None = None
+    desc: str | None = None
+    src: str | None = None
+    link: list[Link] = field(default_factory=list)
+    number: int | None = None
+    type: str | None = None
+    trkseg: list[TrackSegment] = field(default_factory=list)
 
-        #: GPS comment for track.
-        self.cmt: str | None = None
+    @property
+    def segments(self) -> list[TrackSegment]:
+        """Alias for trkseg."""
+        return self.trkseg
 
-        #: User description of track.
-        self.desc: str | None = None
+    @overload
+    def __getitem__(self, index: int) -> TrackSegment: ...
 
-        #: Source of data. Included to give user some idea of reliability and
-        #: accuracy of data.
-        self.src: str | None = None
+    @overload
+    def __getitem__(self, index: slice) -> list[TrackSegment]: ...
 
-        #: Links to external information about track.
-        self.links: list[Link] = []
-
-        #: GPS track number.
-        self.number: int | None = None
-
-        #: Type (classification) of track.
-        self.type: str | None = None
-
-        #: A Track Segment holds a list of Track Points which are logically
-        #: connected in order. To represent a single GPS track where GPS
-        #: reception was lost, or the GPS receiver was turned off, start a new
-        #: Track Segment for each continuous span of track data.
-        self.trksegs: list[TrackSegment] = []
-        self.segments = self.trksegs  #: Alias of :attr:`trksegs`.
-
-        if self._element is not None:
-            self._parse()
-
-    def __getitem__(self, index: int) -> TrackSegment:
-        """Return the track segment at the given index."""
-        return self.trksegs[index]
+    def __getitem__(self, index: int | slice) -> TrackSegment | list[TrackSegment]:
+        """Get a track segment by index or slice."""
+        return self.trkseg[index]
 
     def __len__(self) -> int:
         """Return the number of track segments."""
-        return len(self.trksegs)
+        return len(self.trkseg)
 
     def __iter__(self) -> Iterator[TrackSegment]:
-        """Iterates over the track segments."""
-        yield from self.trksegs
-
-    def _parse(self) -> None:
-        super()._parse()
-
-        # assertion to satisfy mypy
-        assert self._element is not None
-
-        # name
-        if (name := self._element.find("name", namespaces=self._nsmap)) is not None:
-            self.name = name.text
-        # comment
-        if (cmt := self._element.find("cmt", namespaces=self._nsmap)) is not None:
-            self.cmt = cmt.text
-        # description
-        if (desc := self._element.find("desc", namespaces=self._nsmap)) is not None:
-            self.desc = desc.text
-        # source of data
-        if (src := self._element.find("src", namespaces=self._nsmap)) is not None:
-            self.src = src.text
-        # links
-        for link in self._element.iterfind("link", namespaces=self._nsmap):
-            self.links.append(Link(link))
-        # GPS track number
-        if (number := self._element.find("number", namespaces=self._nsmap)) is not None:
-            self.number = int(number.text)
-        # track type (classification)
-        if (_type := self._element.find("type", namespaces=self._nsmap)) is not None:
-            self.type = _type.text
-
-        # segments
-        for trkseg in self._element.iterfind("trkseg", namespaces=self._nsmap):
-            self.trksegs.append(TrackSegment(trkseg))
-
-    def _build(self, tag: str = "trk") -> etree._Element:
-        track = super()._build(tag)
-
-        if self.name is not None:
-            name = etree.SubElement(track, "name", nsmap=self._nsmap)
-            name.text = self.name
-
-        if self.cmt is not None:
-            cmt = etree.SubElement(track, "cmt", nsmap=self._nsmap)
-            cmt.text = self.cmt
-
-        if self.desc is not None:
-            desc = etree.SubElement(track, "desc", nsmap=self._nsmap)
-            desc.text = self.desc
-
-        if self.src is not None:
-            src = etree.SubElement(track, "src", nsmap=self._nsmap)
-            src.text = self.src
-
-        for link in self.links:
-            track.append(link._build())
-
-        if self.number is not None:
-            number = etree.SubElement(track, "number", nsmap=self._nsmap)
-            number.text = str(self.number)
-
-        if self.type is not None:
-            _type = etree.SubElement(track, "type", nsmap=self._nsmap)
-            _type.text = self.type
-
-        for segment in self.trksegs:
-            track.append(segment._build())
-
-        return track
+        """Iterate over track segments."""
+        yield from self.trkseg
 
     @property
     def bounds(self) -> tuple[Latitude, Longitude, Latitude, Longitude]:
         """The bounds of the track."""
         return (
-            min(trkpt.lat for trkseg in self.trksegs for trkpt in trkseg),
-            min(trkpt.lon for trkseg in self.trksegs for trkpt in trkseg),
-            max(trkpt.lat for trkseg in self.trksegs for trkpt in trkseg),
-            max(trkpt.lon for trkseg in self.trksegs for trkpt in trkseg),
+            min(trkpt.lat for trkseg in self.trkseg for trkpt in trkseg),
+            min(trkpt.lon for trkseg in self.trkseg for trkpt in trkseg),
+            max(trkpt.lat for trkseg in self.trkseg for trkpt in trkseg),
+            max(trkpt.lon for trkseg in self.trkseg for trkpt in trkseg),
         )
 
     @property
     def total_distance(self) -> float:
         """The total distance of the track (in metres)."""
-        return sum(trkseg.total_distance for trkseg in self.trksegs)
+        return sum(trkseg.total_distance for trkseg in self.trkseg)
 
-    distance = total_distance  #: Alias of :attr:`total_distance`.
+    @property
+    def distance(self) -> float:
+        """Alias of :attr:`total_distance`."""
+        return self.total_distance
 
     @property
     def total_duration(self) -> timedelta:
         """The total duration of the track (in seconds)."""
-        return sum([trkseg.total_duration for trkseg in self.trksegs], timedelta())
+        return sum([trkseg.total_duration for trkseg in self.trkseg], timedelta())
 
-    duration = total_duration  #: Alias of :attr:`total_duration`.
+    @property
+    def duration(self) -> timedelta:
+        """Alias of :attr:`total_duration`."""
+        return self.total_duration
 
     @property
     def moving_duration(self) -> timedelta:
@@ -173,14 +110,17 @@ class Track(Element):
         The moving duration is the total duration with a
         speed greater than 0.5 km/h.
         """
-        return sum([trkseg.moving_duration for trkseg in self.trksegs], timedelta())
+        return sum([trkseg.moving_duration for trkseg in self.trkseg], timedelta())
 
     @property
     def avg_speed(self) -> float:
         """The average speed of the track (in metres / second)."""
         return self.total_distance / self.total_duration.total_seconds()
 
-    speed = avg_speed  #: Alias of :attr:`avg_speed`.
+    @property
+    def speed(self) -> float:
+        """Alias of :attr:`avg_speed`."""
+        return self.avg_speed
 
     @property
     def avg_moving_speed(self) -> float:
@@ -190,12 +130,12 @@ class Track(Element):
     @property
     def max_speed(self) -> float:
         """The maximum speed of the track (in metres / second)."""
-        return max(trkseg.max_speed for trkseg in self.trksegs)
+        return max(trkseg.max_speed for trkseg in self.trkseg)
 
     @property
     def min_speed(self) -> float:
         """The minimum speed of the track (in metres / second)."""
-        return min(trkseg.min_speed for trkseg in self.trksegs)
+        return min(trkseg.min_speed for trkseg in self.trkseg)
 
     @property
     def speed_profile(self) -> list[tuple[datetime, float]]:
@@ -204,7 +144,7 @@ class Track(Element):
         The speed profile is a list of (timestamp, speed) tuples.
         """
         profile = []
-        for trkseg in self.trksegs:
+        for trkseg in self.trkseg:
             profile += trkseg.speed_profile
         return profile
 
@@ -213,23 +153,26 @@ class Track(Element):
         """The average elevation (in metres)."""
         _eles = [
             trkpt.ele
-            for trkseg in self.trksegs
+            for trkseg in self.trkseg
             for trkpt in trkseg
             if trkpt.ele is not None
         ]
         return sum(_eles, Decimal(0)) / len(_eles)
 
-    elevation = avg_elevation  #: Alias of :attr:`avg_elevation`.
+    @property
+    def elevation(self) -> Decimal:
+        """Alias of :attr:`avg_elevation`."""
+        return self.avg_elevation
 
     @property
     def max_elevation(self) -> Decimal:
         """The maximum elevation of the track (in metres)."""
-        return max(trkseg.max_elevation for trkseg in self.trksegs)
+        return max(trkseg.max_elevation for trkseg in self.trkseg)
 
     @property
     def min_elevation(self) -> Decimal:
         """The minimum elevation of the track (in metres)."""
-        return min(trkseg.min_elevation for trkseg in self.trksegs)
+        return min(trkseg.min_elevation for trkseg in self.trkseg)
 
     @property
     def diff_elevation(self) -> Decimal:
@@ -239,12 +182,12 @@ class Track(Element):
     @property
     def total_ascent(self) -> Decimal:
         """The total ascent of the track (in metres)."""
-        return sum([trkseg.total_ascent for trkseg in self.trksegs], Decimal(0))
+        return sum([trkseg.total_ascent for trkseg in self.trkseg], Decimal(0))
 
     @property
     def total_descent(self) -> Decimal:
         """The total descent of the track (in metres)."""
-        return abs(sum([trkseg.total_descent for trkseg in self.trksegs], Decimal(0)))
+        return abs(sum([trkseg.total_descent for trkseg in self.trkseg], Decimal(0)))
 
     @property
     def elevation_profile(self) -> list[tuple[float, Decimal]]:
@@ -254,9 +197,9 @@ class Track(Element):
         """
         distance = 0.0
         profile = []
-        if self.trksegs[0]._points_with_ele[0].ele is not None:
-            profile.append((distance, self.trksegs[0]._points_with_ele[0].ele))
-        for trkseg in self.trksegs:
+        if self.trkseg[0]._points_with_ele[0].ele is not None:
+            profile.append((distance, self.trkseg[0]._points_with_ele[0].ele))
+        for trkseg in self.trkseg:
             for i, point in enumerate(trkseg._points_with_ele[1:], 1):
                 if point.ele is not None:
                     distance += trkseg._points_with_ele[i - 1].distance_to(point)

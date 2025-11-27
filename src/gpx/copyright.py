@@ -1,68 +1,34 @@
-"""This module provides a Copyright object to contain GPX copyright, containing information about the copyright holder and any license governing use of the GPX data."""
+"""Copyright model for GPX data.
+
+This module provides the Copyright model containing information about the
+copyright holder and any license governing use of the GPX data, following the
+GPX 1.1 specification.
+"""
 
 from __future__ import annotations
 
-from lxml import etree
+from dataclasses import KW_ONLY, dataclass
 
-from .element import Element
+from .base import GPXModel
 
 
-class Copyright(Element):
-    """A copyright class for the GPX data format.
+@dataclass(slots=True)
+class Copyright(GPXModel):
+    """Information about the copyright holder and any license.
 
-    Information about the copyright holder and any license governing use of this
-    file. By linking to an appropriate license, you may place your data into the
+    By linking to an appropriate license, you may place your data into the
     public domain or grant additional usage rights.
 
     Args:
-        element: The copyright XML element. Defaults to `None`.
+        author: Copyright holder (e.g. TopoSoft, Inc.)
+        year: Year of copyright. Defaults to None.
+        license: Link to external file containing license text. Defaults to None.
 
     """
 
-    def __init__(self, element: etree._Element | None = None) -> None:
-        super().__init__(element)
+    _tag = "copyright"
 
-        #: Copyright holder (e.g. TopoSoft, Inc.).
-        self.author: str
-
-        #: Year of copyright.
-        self.year: int | None = None
-
-        #: Link to external file containing license text.
-        self.license: str | None = None
-
-        if self._element is not None:
-            self._parse()
-
-    def _parse(self) -> None:
-        super()._parse()
-
-        # assertion to satisfy mypy
-        assert self._element is not None
-
-        # required
-        self.author = self._element.get("author")
-
-        # year
-        if (year := self._element.find("year", namespaces=self._nsmap)) is not None:
-            self.year = int(year.text)
-
-        # license
-        if (
-            license_ := self._element.find("license", namespaces=self._nsmap)
-        ) is not None:
-            self.license = license_.text
-
-    def _build(self, tag: str = "copyright") -> etree._Element:
-        copyright_ = super()._build(tag)
-        copyright_.set("author", self.author)
-
-        if self.year is not None:
-            year = etree.SubElement(copyright_, "year", nsmap=self._nsmap)
-            year.text = str(self.year)
-
-        if self.license is not None:
-            license_ = etree.SubElement(copyright_, "license", nsmap=self._nsmap)
-            license_.text = self.license
-
-        return copyright_
+    author: str
+    _: KW_ONLY
+    year: int | None = None
+    license: str | None = None

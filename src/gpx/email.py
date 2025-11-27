@@ -1,54 +1,39 @@
-"""This module provides a Email object to contain an email address."""
+"""Email model for GPX data.
+
+This module provides the Email model representing an email address broken into
+two parts (id and domain) to help prevent email harvesting, following the GPX
+1.1 specification.
+"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
 
-from .element import Element
-
-if TYPE_CHECKING:
-    from lxml import etree
+from .base import GPXModel
 
 
-class Email(Element):
-    """An email class for the GPX data format.
+@dataclass(slots=True)
+class Email(GPXModel):
+    """An email address.
 
-    An email address. Broken into two parts (id and domain) to help prevent
-    email harvesting.
+    Broken into two parts (id and domain) to help prevent email harvesting.
 
     Args:
-        element: The email XML element. Defaults to `None`.
+        id: id half of email address (e.g. billgates2004)
+        domain: domain half of email address (e.g. hotmail.com)
 
     """
 
-    def __init__(self, element: etree._Element | None = None) -> None:
-        super().__init__(element)
+    _tag = "email"
 
-        #: id half of email address (e.g. billgates2004)
-        self.id: str
-
-        #: domain half of email address (e.g. hotmail.com)
-        self.domain: str
-
-        if self._element is not None:
-            self._parse()
-
-    def _parse(self) -> None:
-        super()._parse()
-
-        # assertion to satisfy mypy
-        assert self._element is not None
-
-        # required
-        self.id = self._element.get("id")
-        self.domain = self._element.get("domain")
-
-    def _build(self, tag: str = "email") -> etree._Element:
-        email = super()._build(tag)
-        email.set("id", self.id)
-        email.set("domain", self.domain)
-
-        return email
+    id: str
+    domain: str
 
     def __str__(self) -> str:
+        """Return the email address as a string.
+
+        Returns:
+            The email address in standard format (id@domain).
+
+        """
         return f"{self.id}@{self.domain}"

@@ -5,7 +5,7 @@ They are designed to catch major breakage and ensure basic operations succeed.
 """
 
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -49,8 +49,7 @@ class TestBasicReadWrite:
 
     def test_write_gpx_to_string(self) -> None:
         """Test writing GPX to string."""
-        gpx = GPX()
-        gpx.creator = "SmokeTest"
+        gpx = GPX(creator="SmokeTest")
         output = gpx.to_string()
         assert "<gpx" in output
         assert 'creator="SmokeTest"' in output
@@ -58,8 +57,7 @@ class TestBasicReadWrite:
 
     def test_write_gpx_to_file(self) -> None:
         """Test writing GPX to file."""
-        gpx = GPX()
-        gpx.creator = "SmokeTest"
+        gpx = GPX(creator="SmokeTest")
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
             temp_path = Path(f.name)
@@ -138,12 +136,13 @@ class TestProgrammaticCreation:
 
     def test_create_waypoint(self) -> None:
         """Test creating a waypoint programmatically."""
-        wpt = Waypoint()
-        wpt.lat = Latitude("52.5200")
-        wpt.lon = Longitude("13.4050")
-        wpt.ele = Decimal("100.5")
-        wpt.name = "Test Point"
-        wpt.time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        wpt = Waypoint(
+            lat=Latitude("52.5200"),
+            lon=Longitude("13.4050"),
+            ele=Decimal("100.5"),
+            name="Test Point",
+            time=datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC),
+        )
 
         assert wpt.lat == Latitude("52.5200")
         assert wpt.lon == Longitude("13.4050")
@@ -152,62 +151,63 @@ class TestProgrammaticCreation:
     def test_create_track(self) -> None:
         """Test creating a track with segments and points."""
         # Create points
-        pt1 = Waypoint()
-        pt1.lat = Latitude("52.5200")
-        pt1.lon = Longitude("13.4050")
-        pt1.time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        pt1 = Waypoint(
+            lat=Latitude("52.5200"),
+            lon=Longitude("13.4050"),
+            time=datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC),
+        )
 
-        pt2 = Waypoint()
-        pt2.lat = Latitude("52.5210")
-        pt2.lon = Longitude("13.4060")
-        pt2.time = datetime(2024, 1, 1, 12, 1, 0, tzinfo=timezone.utc)
+        pt2 = Waypoint(
+            lat=Latitude("52.5210"),
+            lon=Longitude("13.4060"),
+            time=datetime(2024, 1, 1, 12, 1, 0, tzinfo=UTC),
+        )
 
         # Create segment
-        seg = TrackSegment()
-        seg.trkpts = [pt1, pt2]
+        seg = TrackSegment(trkpt=[pt1, pt2])
 
         # Create track
-        track = Track()
-        track.name = "Test Track"
-        track.trksegs = [seg]
+        track = Track(name="Test Track", trkseg=[seg])
 
         assert track.name == "Test Track"
-        assert len(track.trksegs) == 1
-        assert len(track.trksegs[0].trkpts) == 2
+        assert len(track.trkseg) == 1
+        assert len(track.trkseg[0].trkpt) == 2
 
     def test_create_complete_gpx(self) -> None:
         """Test creating a complete GPX structure programmatically."""
         # Create waypoint
-        wpt = Waypoint()
-        wpt.lat = Latitude("52.5200")
-        wpt.lon = Longitude("13.4050")
-        wpt.name = "Start"
+        wpt = Waypoint(
+            lat=Latitude("52.5200"),
+            lon=Longitude("13.4050"),
+            name="Start",
+        )
 
         # Create track
-        track = Track()
-        track.name = "My Track"
-        seg = TrackSegment()
-        pt = Waypoint()
-        pt.lat = Latitude("52.5210")
-        pt.lon = Longitude("13.4060")
-        seg.trkpts = [pt]
-        track.trksegs = [seg]
+        pt = Waypoint(
+            lat=Latitude("52.5210"),
+            lon=Longitude("13.4060"),
+        )
+        seg = TrackSegment(trkpt=[pt])
+        track = Track(name="My Track", trkseg=[seg])
 
         # Create metadata
-        metadata = Metadata()
-        metadata.name = "My GPX File"
-        metadata.desc = "Created for smoke testing"
-        metadata.time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
+        metadata = Metadata(
+            name="My GPX File",
+            desc="Created for smoke testing",
+            time=datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC),
+        )
 
         # Create GPX
-        gpx = GPX()
-        gpx.creator = "SmokeTest"
-        gpx.metadata = metadata
-        gpx.waypoints = [wpt]
-        gpx.tracks = [track]
+        gpx = GPX(
+            creator="SmokeTest",
+            metadata=metadata,
+            wpt=[wpt],
+            trk=[track],
+        )
 
         # Verify structure
         assert gpx.creator == "SmokeTest"
+        assert gpx.metadata is not None
         assert gpx.metadata.name == "My GPX File"
         assert len(gpx.waypoints) == 1
         assert len(gpx.tracks) == 1
@@ -238,9 +238,9 @@ class TestKeyFeatures:
         assert len(gpx.tracks) == 1
         track = gpx.tracks[0]
         assert track.name == "Morning Run"
-        assert len(track.trksegs) == 2
+        assert len(track.trkseg) == 2
         # First segment has 3 points
-        assert len(track.trksegs[0].trkpts) == 3
+        assert len(track.trkseg[0].trkpt) == 3
 
     def test_routes(self, gpx_with_route_string: str) -> None:
         """Test route parsing and access."""
@@ -248,7 +248,7 @@ class TestKeyFeatures:
         assert len(gpx.routes) == 1
         route = gpx.routes[0]
         assert route.name == "City Tour"
-        assert len(route.rtepts) == 3
+        assert len(route.rtept) == 3
 
     def test_metadata(self, gpx_with_metadata_string: str) -> None:
         """Test metadata parsing and access."""
@@ -324,32 +324,32 @@ class TestEndToEnd:
     def test_complete_workflow(self) -> None:
         """Test a complete workflow: create, modify, save, load, verify."""
         # 1. Create a GPX file programmatically
-        gpx1 = GPX()
-        gpx1.creator = "E2E Test"
-        gpx1.name = "My Activity"
-
         # Add a waypoint
-        wpt = Waypoint()
-        wpt.lat = Latitude("52.5200")
-        wpt.lon = Longitude("13.4050")
-        wpt.name = "Start Point"
-        gpx1.waypoints = [wpt]
-
-        # Add a track
-        track = Track()
-        track.name = "My Track"
-        seg = TrackSegment()
+        wpt = Waypoint(
+            lat=Latitude("52.5200"),
+            lon=Longitude("13.4050"),
+            name="Start Point",
+        )
 
         # Add track points
+        track_points = []
         for i in range(3):
-            pt = Waypoint()
-            pt.lat = Latitude(f"52.{5200 + i}")
-            pt.lon = Longitude(f"13.{4050 + i}")
-            pt.time = datetime(2024, 1, 1, 12, i, 0, tzinfo=timezone.utc)
-            seg.trkpts.append(pt)
+            pt = Waypoint(
+                lat=Latitude(f"52.{5200 + i}"),
+                lon=Longitude(f"13.{4050 + i}"),
+                time=datetime(2024, 1, 1, 12, i, 0, tzinfo=UTC),
+            )
+            track_points.append(pt)
 
-        track.trksegs = [seg]
-        gpx1.tracks = [track]
+        seg = TrackSegment(trkpt=track_points)
+        track = Track(name="My Track", trkseg=[seg])
+
+        gpx1 = GPX(
+            creator="E2E Test",
+            metadata=Metadata(name="My Activity"),
+            wpt=[wpt],
+            trk=[track],
+        )
 
         # 2. Save to file
         with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
@@ -368,11 +368,18 @@ class TestEndToEnd:
             assert gpx2.waypoints[0].name == "Start Point"
             assert len(gpx2.tracks) == 1
             assert gpx2.tracks[0].name == "My Track"
-            assert len(gpx2.tracks[0].trksegs[0].trkpts) == 3
+            assert len(gpx2.tracks[0].trkseg[0].trkpt) == 3
 
             # 5. Modify and re-save
-            gpx2.name = "Modified Activity"
-            gpx2.to_file(temp_path)
+            # Note: GPX objects are immutable, so we need to create a new one
+            modified_metadata = Metadata(name="Modified Activity")
+            gpx_modified = GPX(
+                creator=gpx2.creator,
+                metadata=modified_metadata,
+                wpt=gpx2.wpt,
+                trk=gpx2.trk,
+            )
+            gpx_modified.to_file(temp_path)
 
             # 6. Load again and verify modification
             gpx3 = GPX.from_file(temp_path)

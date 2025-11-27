@@ -1,12 +1,12 @@
 """Tests for gpx.gpx module - main GPX class and I/O operations."""
 
 import tempfile
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 
-from gpx import GPX, Metadata, Person, Route, Track, Waypoint
+from gpx import GPX, Metadata, Route, Track, Waypoint
 from gpx.errors import InvalidGPXError
 from gpx.types import Latitude
 
@@ -98,7 +98,8 @@ class TestGPXValidation:
     ) -> None:
         """Test that invalid GPX can be parsed when validation is disabled."""
         # This may raise a different error due to missing lat/lon attributes
-        with pytest.raises(KeyError):
+        # In dataclass models, it raises ValueError instead of KeyError
+        with pytest.raises((KeyError, ValueError)):
             GPX.from_string(invalid_gpx_string, validate=False)
 
 
@@ -117,8 +118,7 @@ class TestGPXBuilding:
 
     def test_build_gpx_preserves_creator(self) -> None:
         """Test that creator attribute is preserved."""
-        gpx = GPX()
-        gpx.creator = "TestApp"
+        gpx = GPX(creator="TestApp")
         output = gpx.to_string()
         assert 'creator="TestApp"' in output
 
@@ -131,24 +131,21 @@ class TestGPXBuilding:
 
     def test_build_gpx_with_waypoints(self, sample_waypoint: Waypoint) -> None:
         """Test building GPX with waypoints."""
-        gpx = GPX()
-        gpx.waypoints = [sample_waypoint]
+        gpx = GPX(wpt=[sample_waypoint])
         output = gpx.to_string()
         assert "<wpt" in output
         assert 'lat="52.5200"' in output
 
     def test_build_gpx_with_tracks(self, sample_track: Track) -> None:
         """Test building GPX with tracks."""
-        gpx = GPX()
-        gpx.tracks = [sample_track]
+        gpx = GPX(trk=[sample_track])
         output = gpx.to_string()
         assert "<trk>" in output
         assert "<trkseg>" in output
 
     def test_build_gpx_with_routes(self, sample_route: Route) -> None:
         """Test building GPX with routes."""
-        gpx = GPX()
-        gpx.routes = [sample_route]
+        gpx = GPX(rte=[sample_route])
         output = gpx.to_string()
         assert "<rte>" in output
         assert "<rtept" in output
@@ -216,23 +213,10 @@ class TestGPXMetadataProxies:
         gpx = GPX.from_string(minimal_gpx_string)
         assert gpx.name is None
 
-    def test_name_proxy_set_creates_metadata(self, minimal_gpx_string: str) -> None:
-        """Test setting name creates metadata if needed."""
-        gpx = GPX.from_string(minimal_gpx_string)
-        gpx.name = "New Name"
-        assert gpx.metadata is not None
-        assert gpx.name == "New Name"
-
     def test_desc_proxy(self, gpx_with_metadata_string: str) -> None:
         """Test description proxy."""
         gpx = GPX.from_string(gpx_with_metadata_string)
         assert gpx.desc == "A test GPX file for unit testing"
-
-    def test_desc_proxy_set(self, minimal_gpx_string: str) -> None:
-        """Test setting description via proxy."""
-        gpx = GPX.from_string(minimal_gpx_string)
-        gpx.desc = "New Description"
-        assert gpx.desc == "New Description"
 
     def test_author_proxy(self, gpx_with_metadata_string: str) -> None:
         """Test author proxy."""
@@ -240,27 +224,11 @@ class TestGPXMetadataProxies:
         assert gpx.author is not None
         assert gpx.author.name == "Test Author"
 
-    def test_author_proxy_set(self, minimal_gpx_string: str) -> None:
-        """Test setting author via proxy."""
-        gpx = GPX.from_string(minimal_gpx_string)
-        person = Person()
-        person.name = "New Author"
-        gpx.author = person
-        assert gpx.author is not None
-        assert gpx.author.name == "New Author"
-
     def test_time_proxy(self, gpx_with_metadata_string: str) -> None:
         """Test time proxy."""
         gpx = GPX.from_string(gpx_with_metadata_string)
-        expected = datetime(2023, 6, 15, 10, 0, 0, tzinfo=timezone.utc)
+        expected = datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC)
         assert gpx.time == expected
-
-    def test_time_proxy_set(self, minimal_gpx_string: str) -> None:
-        """Test setting time via proxy."""
-        gpx = GPX.from_string(minimal_gpx_string)
-        new_time = datetime(2024, 1, 1, 12, 0, 0, tzinfo=timezone.utc)
-        gpx.time = new_time
-        assert gpx.time == new_time
 
     def test_keywords_proxy(self, gpx_with_metadata_string: str) -> None:
         """Test keywords proxy."""
@@ -306,12 +274,13 @@ class TestGPXCreation:
         sample_metadata: Metadata,
     ) -> None:
         """Test creating GPX with all elements."""
-        gpx = GPX()
-        gpx.creator = "TestApp"
-        gpx.metadata = sample_metadata
-        gpx.waypoints = [sample_waypoint]
-        gpx.routes = [sample_route]
-        gpx.tracks = [sample_track]
+        gpx = GPX(
+            creator="TestApp",
+            metadata=sample_metadata,
+            wpt=[sample_waypoint],
+            rte=[sample_route],
+            trk=[sample_track],
+        )
 
         output = gpx.to_string()
         assert 'creator="TestApp"' in output
@@ -328,12 +297,13 @@ class TestGPXCreation:
         sample_metadata: Metadata,
     ) -> None:
         """Test that roundtrip preserves all data."""
-        gpx1 = GPX()
-        gpx1.creator = "TestApp"
-        gpx1.metadata = sample_metadata
-        gpx1.waypoints = [sample_waypoint]
-        gpx1.routes = [sample_route]
-        gpx1.tracks = [sample_track]
+        gpx1 = GPX(
+            creator="TestApp",
+            metadata=sample_metadata,
+            wpt=[sample_waypoint],
+            rte=[sample_route],
+            trk=[sample_track],
+        )
 
         output = gpx1.to_string()
         gpx2 = GPX.from_string(output)

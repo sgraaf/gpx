@@ -55,13 +55,14 @@ print(f"Number of routes: {len(gpx.routes)}")
 from gpx import Waypoint
 from decimal import Decimal
 
-# Add a new waypoint
-waypoint = Waypoint()
-waypoint.lat = Decimal("52.3676")
-waypoint.lon = Decimal("4.9041")
-waypoint.name = "Amsterdam"
-waypoint.desc = "Capital of the Netherlands"
-waypoint.ele = Decimal("2.0")
+# Create a new waypoint
+waypoint = Waypoint(
+    lat=Decimal("52.3676"),
+    lon=Decimal("4.9041"),
+    name="Amsterdam",
+    desc="Capital of the Netherlands",
+    ele=Decimal("2.0"),
+)
 
 gpx.waypoints.append(waypoint)
 
@@ -98,34 +99,34 @@ from gpx import GPX, Metadata, Track, TrackSegment, Waypoint
 from datetime import datetime, timezone
 from decimal import Decimal
 
-# Create a new GPX object
-gpx = GPX()
-gpx.creator = "My Application"
-
-# Add metadata
-metadata = Metadata()
-metadata.name = "My GPS Track"
-metadata.desc = "A sample track"
-metadata.time = datetime.now(timezone.utc)
-gpx.metadata = metadata
+# Create track points
+points = []
+for i in range(5):
+    point = Waypoint(
+        lat=Decimal("52.0") + Decimal(i) * Decimal("0.01"),
+        lon=Decimal("4.0") + Decimal(i) * Decimal("0.01"),
+        ele=Decimal("10.0") + Decimal(i) * Decimal("2.0"),
+        time=datetime.now(timezone.utc),
+    )
+    points.append(point)
 
 # Create a track with segments
-track = Track()
-track.name = "Morning Run"
+segment = TrackSegment(trkpt=points)
+track = Track(name="Morning Run", trkseg=[segment])
 
-segment = TrackSegment()
+# Create metadata
+metadata = Metadata(
+    name="My GPS Track",
+    desc="A sample track",
+    time=datetime.now(timezone.utc),
+)
 
-# Add track points
-for i in range(5):
-    point = Waypoint()
-    point.lat = Decimal("52.0") + Decimal(i) * Decimal("0.01")
-    point.lon = Decimal("4.0") + Decimal(i) * Decimal("0.01")
-    point.ele = Decimal("10.0") + Decimal(i) * Decimal("2.0")
-    point.time = datetime.now(timezone.utc)
-    segment.points.append(point)
-
-track.segments.append(segment)
-gpx.tracks.append(track)
+# Create GPX object (creator defaults to "PyGPX")
+gpx = GPX(
+    creator="My Application",
+    metadata=metadata,
+    trk=[track],
+)
 ```
 
 ### Writing and validating GPX files
@@ -147,22 +148,21 @@ gpx = GPX.from_string(gpx_string, validate=True)
 ```python
 from gpx import Route
 
+# Create route points (waypoints)
+point1 = Waypoint(
+    lat=Decimal("52.3676"),
+    lon=Decimal("4.9041"),
+    name="Start: Amsterdam Centraal",
+)
+
+point2 = Waypoint(
+    lat=Decimal("52.3731"),
+    lon=Decimal("4.8922"),
+    name="Dam Square",
+)
+
 # Create a route
-route = Route()
-route.name = "City Tour"
-
-# Add route points (waypoints)
-point1 = Waypoint()
-point1.lat = Decimal("52.3676")
-point1.lon = Decimal("4.9041")
-point1.name = "Start: Amsterdam Centraal"
-
-point2 = Waypoint()
-point2.lat = Decimal("52.3731")
-point2.lon = Decimal("4.8922")
-point2.name = "Dam Square"
-
-route.points.extend([point1, point2])
+route = Route(name="City Tour", rtept=[point1, point2])
 gpx.routes.append(route)
 
 # Access route statistics

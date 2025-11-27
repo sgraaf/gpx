@@ -1,6 +1,6 @@
 """Tests for metadata-related classes: Metadata, Bounds, Link, Person, Email, Copyright."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from gpx import GPX, Bounds, Copyright, Email, Link, Metadata, Person
 from gpx.types import Latitude, Longitude
@@ -24,7 +24,7 @@ class TestMetadataParsing:
     def test_parse_metadata_time(self, gpx_with_metadata_string: str) -> None:
         """Test parsing metadata time."""
         gpx = GPX.from_string(gpx_with_metadata_string)
-        expected = datetime(2023, 6, 15, 10, 0, 0, tzinfo=timezone.utc)
+        expected = datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC)
         assert gpx.metadata is not None
         assert gpx.metadata.time == expected
 
@@ -54,8 +54,8 @@ class TestMetadataParsing:
         """Test parsing metadata links."""
         gpx = GPX.from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
-        assert gpx.metadata.links is not None
-        assert len(gpx.metadata.links) == 1
+        assert gpx.metadata.link is not None
+        assert len(gpx.metadata.link) == 1
 
     def test_parse_metadata_bounds(self, gpx_with_metadata_string: str) -> None:
         """Test parsing metadata bounds."""
@@ -71,12 +71,12 @@ class TestMetadataBuilding:
 
     def test_build_metadata(self, sample_metadata: Metadata) -> None:
         """Test building metadata XML."""
-        element = sample_metadata._build()
+        element = sample_metadata.to_xml()
         assert element.tag == "metadata"
 
     def test_build_metadata_name(self, sample_metadata: Metadata) -> None:
         """Test building metadata with name."""
-        element = sample_metadata._build()
+        element = sample_metadata.to_xml()
         name = element.find("name")
         assert name is not None
         assert name.text == "Test GPX"
@@ -102,15 +102,16 @@ class TestMetadataCreation:
         assert meta.name is None
         assert meta.desc is None
         assert meta.author is None
-        assert meta.links == []
+        assert meta.link == []
 
     def test_create_metadata_with_all_fields(self) -> None:
         """Test creating metadata with all fields."""
-        meta = Metadata()
-        meta.name = "Test"
-        meta.desc = "Description"
-        meta.time = datetime(2023, 6, 15, 10, 0, 0, tzinfo=timezone.utc)
-        meta.keywords = "test, metadata"
+        meta = Metadata(
+            name="Test",
+            desc="Description",
+            time=datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC),
+            keywords="test, metadata",
+        )
 
         assert meta.name == "Test"
         assert meta.desc == "Description"
@@ -137,7 +138,7 @@ class TestBoundsBuilding:
 
     def test_build_bounds(self, sample_bounds: Bounds) -> None:
         """Test building bounds XML."""
-        element = sample_bounds._build()
+        element = sample_bounds.to_xml()
         assert element.tag == "bounds"
         assert element.get("minlat") == "52.5"
         assert element.get("minlon") == "13.4"
@@ -163,11 +164,12 @@ class TestBoundsCreation:
 
     def test_create_bounds(self) -> None:
         """Test creating bounds."""
-        bounds = Bounds()
-        bounds.minlat = Latitude("52.5")
-        bounds.minlon = Longitude("13.4")
-        bounds.maxlat = Latitude("52.6")
-        bounds.maxlon = Longitude("13.5")
+        bounds = Bounds(
+            minlat=Latitude("52.5"),
+            minlon=Longitude("13.4"),
+            maxlat=Latitude("52.6"),
+            maxlon=Longitude("13.5"),
+        )
 
         assert bounds.minlat == Latitude("52.5")
         assert bounds.maxlat == Latitude("52.6")
@@ -180,21 +182,21 @@ class TestLinkParsing:
         """Test parsing link href."""
         gpx = GPX.from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
-        link = gpx.metadata.links[0]
+        link = gpx.metadata.link[0]
         assert link.href == "https://example.com/gpx"
 
     def test_parse_link_text(self, gpx_with_metadata_string: str) -> None:
         """Test parsing link text."""
         gpx = GPX.from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
-        link = gpx.metadata.links[0]
+        link = gpx.metadata.link[0]
         assert link.text == "GPX File Link"
 
     def test_parse_link_type(self, gpx_with_metadata_string: str) -> None:
         """Test parsing link type."""
         gpx = GPX.from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
-        link = gpx.metadata.links[0]
+        link = gpx.metadata.link[0]
         assert link.type == "text/html"
 
 
@@ -203,13 +205,13 @@ class TestLinkBuilding:
 
     def test_build_link(self, sample_link: Link) -> None:
         """Test building link XML."""
-        element = sample_link._build()
+        element = sample_link.to_xml()
         assert element.tag == "link"
         assert element.get("href") == "https://example.com"
 
     def test_build_link_text(self, sample_link: Link) -> None:
         """Test building link with text."""
-        element = sample_link._build()
+        element = sample_link.to_xml()
         text = element.find("text")
         assert text is not None
         assert text.text == "Example Link"
@@ -222,7 +224,7 @@ class TestLinkBuilding:
 
         assert gpx.metadata is not None
         assert gpx2.metadata is not None
-        assert gpx2.metadata.links[0].href == gpx.metadata.links[0].href
+        assert gpx2.metadata.link[0].href == gpx.metadata.link[0].href
 
 
 class TestLinkCreation:
@@ -230,10 +232,11 @@ class TestLinkCreation:
 
     def test_create_link(self) -> None:
         """Test creating link."""
-        link = Link()
-        link.href = "https://example.com"
-        link.text = "Example"
-        link.type = "text/html"
+        link = Link(
+            href="https://example.com",
+            text="Example",
+            type="text/html",
+        )
 
         assert link.href == "https://example.com"
         assert link.text == "Example"
@@ -276,18 +279,18 @@ class TestPersonBuilding:
 
     def test_build_person(self, sample_person: Person) -> None:
         """Test building person XML."""
-        element = sample_person._build()
-        # Default tag is "person", but when built from metadata it uses "author"
-        assert element.tag == "person"
+        element = sample_person.to_xml()
+        # Default tag is "author"
+        assert element.tag == "author"
 
     def test_build_person_as_author(self, sample_person: Person) -> None:
         """Test building person XML with author tag (as used in metadata)."""
-        element = sample_person._build("author")
+        element = sample_person.to_xml()
         assert element.tag == "author"
 
     def test_build_person_name(self, sample_person: Person) -> None:
         """Test building person with name."""
-        element = sample_person._build()
+        element = sample_person.to_xml()
         name = element.find("name")
         assert name is not None
         assert name.text == "Test Author"
@@ -310,21 +313,17 @@ class TestPersonCreation:
 
     def test_create_person(self) -> None:
         """Test creating person."""
-        person = Person()
-        person.name = "John Doe"
+        person = Person(name="John Doe")
 
         assert person.name == "John Doe"
 
     def test_create_person_with_email(self) -> None:
         """Test creating person with email."""
-        email = Email()
-        email.id = "john"
-        email.domain = "example.com"
+        email = Email(id="john", domain="example.com")
 
-        person = Person()
-        person.name = "John Doe"
-        person.email = email
+        person = Person(name="John Doe", email=email)
 
+        assert person.email is not None
         assert person.email.id == "john"
 
 
@@ -347,11 +346,9 @@ class TestEmailBuilding:
 
     def test_build_email(self) -> None:
         """Test building email XML."""
-        email = Email()
-        email.id = "test"
-        email.domain = "example.com"
+        email = Email(id="test", domain="example.com")
 
-        element = email._build()
+        element = email.to_xml()
         assert element.tag == "email"
         assert element.get("id") == "test"
         assert element.get("domain") == "example.com"
@@ -362,9 +359,7 @@ class TestEmailCreation:
 
     def test_create_email(self) -> None:
         """Test creating email."""
-        email = Email()
-        email.id = "john"
-        email.domain = "example.com"
+        email = Email(id="john", domain="example.com")
 
         assert email.id == "john"
         assert email.domain == "example.com"
@@ -403,12 +398,13 @@ class TestCopyrightBuilding:
 
     def test_build_copyright(self) -> None:
         """Test building copyright XML."""
-        copyright_ = Copyright()
-        copyright_.author = "Test Author"
-        copyright_.year = 2023
-        copyright_.license = "https://example.com/license"
+        copyright_ = Copyright(
+            author="Test Author",
+            year=2023,
+            license="https://example.com/license",
+        )
 
-        element = copyright_._build()
+        element = copyright_.to_xml()
         assert element.tag == "copyright"
         assert element.get("author") == "Test Author"
 
@@ -431,10 +427,11 @@ class TestCopyrightCreation:
 
     def test_create_copyright(self) -> None:
         """Test creating copyright."""
-        copyright_ = Copyright()
-        copyright_.author = "Test Author"
-        copyright_.year = 2023
-        copyright_.license = "MIT"
+        copyright_ = Copyright(
+            author="Test Author",
+            year=2023,
+            license="MIT",
+        )
 
         assert copyright_.author == "Test Author"
         assert copyright_.year == 2023

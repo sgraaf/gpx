@@ -16,8 +16,8 @@ class TestTrackSegmentParsing:
         """Test parsing track segment track points."""
         gpx = GPX.from_string(gpx_with_track_string)
         trk = gpx.tracks[0]
-        seg = trk.trksegs[0]
-        assert len(seg.trkpts) == 3
+        seg = trk.trkseg[0]
+        assert len(seg.trkpt) == 3
         assert len(seg.points) == 3  # alias
 
     def test_parse_track_segment_point_coordinates(
@@ -25,19 +25,19 @@ class TestTrackSegmentParsing:
     ) -> None:
         """Test parsing track point coordinates."""
         gpx = GPX.from_string(gpx_with_track_string)
-        seg = gpx.tracks[0].trksegs[0]
-        assert seg.trkpts[0].lat == Latitude("52.5200")
-        assert seg.trkpts[0].lon == Longitude("13.4050")
+        seg = gpx.tracks[0].trkseg[0]
+        assert seg.trkpt[0].lat == Latitude("52.5200")
+        assert seg.trkpt[0].lon == Longitude("13.4050")
 
     def test_parse_track_segment_point_elevation(
         self, gpx_with_track_string: str
     ) -> None:
         """Test parsing track point elevation."""
         gpx = GPX.from_string(gpx_with_track_string)
-        seg = gpx.tracks[0].trksegs[0]
-        assert seg.trkpts[0].ele == Decimal("34.5")
-        assert seg.trkpts[1].ele == Decimal("35.0")
-        assert seg.trkpts[2].ele == Decimal("36.5")
+        seg = gpx.tracks[0].trkseg[0]
+        assert seg.trkpt[0].ele == Decimal("34.5")
+        assert seg.trkpt[1].ele == Decimal("35.0")
+        assert seg.trkpt[2].ele == Decimal("36.5")
 
 
 class TestTrackSegmentBuilding:
@@ -45,7 +45,7 @@ class TestTrackSegmentBuilding:
 
     def test_build_track_segment(self, sample_track_segment: TrackSegment) -> None:
         """Test building track segment XML."""
-        element = sample_track_segment._build()
+        element = sample_track_segment.to_xml()
         assert element.tag == "trkseg"
         trkpts = element.findall("trkpt")
         assert len(trkpts) == 4
@@ -54,7 +54,7 @@ class TestTrackSegmentBuilding:
         self, sample_track_segment: TrackSegment
     ) -> None:
         """Test that track points use 'trkpt' tag."""
-        element = sample_track_segment._build()
+        element = sample_track_segment.to_xml()
         trkpts = element.findall("trkpt")
         assert len(trkpts) > 0
         assert all(pt.tag == "trkpt" for pt in trkpts)
@@ -191,7 +191,7 @@ class TestTrackParsing:
         """Test parsing track segments."""
         gpx = GPX.from_string(gpx_with_track_string)
         trk = gpx.tracks[0]
-        assert len(trk.trksegs) == 2
+        assert len(trk.trkseg) == 2
         assert len(trk.segments) == 2  # alias
 
 
@@ -200,12 +200,12 @@ class TestTrackBuilding:
 
     def test_build_track(self, sample_track: Track) -> None:
         """Test building track XML."""
-        element = sample_track._build()
+        element = sample_track.to_xml()
         assert element.tag == "trk"
 
     def test_build_track_name(self, sample_track: Track) -> None:
         """Test building track with name."""
-        element = sample_track._build()
+        element = sample_track.to_xml()
         name = element.find("name")
         assert name is not None
         assert name.text == "Test Track"
@@ -217,7 +217,7 @@ class TestTrackBuilding:
         gpx2 = GPX.from_string(output)
 
         assert gpx2.tracks[0].name == gpx.tracks[0].name
-        assert len(gpx2.tracks[0].trksegs) == len(gpx.tracks[0].trksegs)
+        assert len(gpx2.tracks[0].trkseg) == len(gpx.tracks[0].trkseg)
 
 
 class TestTrackStatistics:
@@ -228,7 +228,7 @@ class TestTrackStatistics:
         gpx = GPX.from_string(gpx_with_track_string)
         trk = gpx.tracks[0]
         # Distance should be sum of all segment distances
-        total = sum(seg.total_distance for seg in trk.trksegs)
+        total = sum(seg.total_distance for seg in trk.trkseg)
         assert trk.total_distance == pytest.approx(total)
 
     def test_track_total_duration(self, gpx_with_track_string: str) -> None:
@@ -236,7 +236,7 @@ class TestTrackStatistics:
         gpx = GPX.from_string(gpx_with_track_string)
         trk = gpx.tracks[0]
         # Duration should be sum of all segment durations
-        total = sum([seg.total_duration for seg in trk.trksegs], timedelta())
+        total = sum([seg.total_duration for seg in trk.trkseg], timedelta())
         assert trk.total_duration == total
 
     def test_track_bounds(self, gpx_with_track_string: str) -> None:
@@ -291,23 +291,18 @@ class TestTrackCreation:
         trk = Track()
         assert trk.name is None
         assert trk.desc is None
-        assert trk.trksegs == []
-        assert trk.links == []
+        assert trk.trkseg == []
+        assert trk.link == []
 
     def test_create_track_with_segments(
         self,
         sample_waypoints_for_track: list[Waypoint],
     ) -> None:
         """Test creating a track with segments."""
-        seg = TrackSegment()
-        seg.trkpts = sample_waypoints_for_track
-        seg.points = seg.trkpts
+        seg = TrackSegment(trkpt=sample_waypoints_for_track)
 
-        trk = Track()
-        trk.name = "Custom Track"
-        trk.trksegs = [seg]
-        trk.segments = trk.trksegs
+        trk = Track(name="Custom Track", trkseg=[seg])
 
         assert trk.name == "Custom Track"
-        assert len(trk.trksegs) == 1
-        assert len(trk.trksegs[0].trkpts) == 4
+        assert len(trk.trkseg) == 1
+        assert len(trk.trkseg[0].trkpt) == 4

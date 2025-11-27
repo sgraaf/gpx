@@ -1,6 +1,6 @@
 """Pytest configuration and fixtures for GPX tests."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from decimal import Decimal
 
 import pytest
@@ -235,106 +235,98 @@ def invalid_gpx_string() -> str:
 @pytest.fixture
 def sample_waypoint() -> Waypoint:
     """Create a sample waypoint programmatically."""
-    wpt = Waypoint()
-    wpt.lat = Latitude("52.5200")
-    wpt.lon = Longitude("13.4050")
-    wpt.ele = Decimal("34.5")
-    wpt.time = datetime(2023, 6, 15, 10, 30, 0, tzinfo=timezone.utc)
-    wpt.name = "Berlin"
-    wpt.desc = "Capital of Germany"
-    return wpt
+    return Waypoint(
+        lat=Latitude("52.5200"),
+        lon=Longitude("13.4050"),
+        ele=Decimal("34.5"),
+        time=datetime(2023, 6, 15, 10, 30, 0, tzinfo=UTC),
+        name="Berlin",
+        desc="Capital of Germany",
+    )
 
 
 @pytest.fixture
 def sample_waypoints_for_track() -> list[Waypoint]:
     """Create sample waypoints for track/route testing with timestamps."""
-    waypoints = []
     coords = [
         ("52.5200", "13.4050", "34.5", "2023-06-15T06:00:00Z"),
         ("52.5210", "13.4060", "35.0", "2023-06-15T06:01:00Z"),
         ("52.5220", "13.4070", "36.5", "2023-06-15T06:02:00Z"),
         ("52.5230", "13.4080", "35.5", "2023-06-15T06:03:00Z"),
     ]
-    for lat, lon, ele, time_str in coords:
-        wpt = Waypoint()
-        wpt.lat = Latitude(lat)
-        wpt.lon = Longitude(lon)
-        wpt.ele = Decimal(ele)
-        wpt.time = datetime.fromisoformat(time_str.replace("Z", "+00:00"))
-        waypoints.append(wpt)
-    return waypoints
+    return [
+        Waypoint(
+            lat=Latitude(lat),
+            lon=Longitude(lon),
+            ele=Decimal(ele),
+            time=datetime.fromisoformat(time_str),
+        )
+        for lat, lon, ele, time_str in coords
+    ]
 
 
 @pytest.fixture
 def sample_track_segment(sample_waypoints_for_track: list[Waypoint]) -> TrackSegment:
     """Create a sample track segment."""
-    seg = TrackSegment()
-    seg.trkpts = sample_waypoints_for_track
-    seg.points = seg.trkpts
-    return seg
+    return TrackSegment(trkpt=sample_waypoints_for_track)
 
 
 @pytest.fixture
 def sample_track(sample_track_segment: TrackSegment) -> Track:
     """Create a sample track."""
-    track = Track()
-    track.name = "Test Track"
-    track.desc = "A test track"
-    track.trksegs = [sample_track_segment]
-    track.segments = track.trksegs
-    return track
+    return Track(
+        name="Test Track",
+        desc="A test track",
+        trkseg=[sample_track_segment],
+    )
 
 
 @pytest.fixture
 def sample_route(sample_waypoints_for_track: list[Waypoint]) -> Route:
     """Create a sample route."""
-    route = Route()
-    route.name = "Test Route"
-    route.desc = "A test route"
-    route.rtepts = sample_waypoints_for_track
-    route.points = route.rtepts
-    return route
+    return Route(
+        name="Test Route",
+        desc="A test route",
+        rtept=sample_waypoints_for_track,
+    )
 
 
 @pytest.fixture
 def sample_metadata() -> Metadata:
     """Create a sample metadata object."""
-    metadata = Metadata()
-    metadata.name = "Test GPX"
-    metadata.desc = "A test GPX file"
-    metadata.time = datetime(2023, 6, 15, 10, 0, 0, tzinfo=timezone.utc)
-    metadata.keywords = "test, gpx"
-    return metadata
+    return Metadata(
+        name="Test GPX",
+        desc="A test GPX file",
+        time=datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC),
+        keywords="test, gpx",
+    )
 
 
 @pytest.fixture
 def sample_link() -> Link:
     """Create a sample link object."""
-    link = Link()
-    link.href = "https://example.com"
-    link.text = "Example Link"
-    link.type = "text/html"
-    return link
+    return Link(
+        href="https://example.com",
+        text="Example Link",
+        type="text/html",
+    )
 
 
 @pytest.fixture
 def sample_person() -> Person:
     """Create a sample person object."""
-    person = Person()
-    person.name = "Test Author"
-    email = Email()
-    email.id = "test"
-    email.domain = "example.com"
-    person.email = email
-    return person
+    return Person(
+        name="Test Author",
+        email=Email(id="test", domain="example.com"),
+    )
 
 
 @pytest.fixture
 def sample_bounds() -> Bounds:
     """Create a sample bounds object."""
-    bounds = Bounds()
-    bounds.minlat = Latitude("52.5")
-    bounds.minlon = Longitude("13.4")
-    bounds.maxlat = Latitude("52.6")
-    bounds.maxlon = Longitude("13.5")
-    return bounds
+    return Bounds(
+        minlat=Latitude("52.5"),
+        minlon=Longitude("13.4"),
+        maxlat=Latitude("52.6"),
+        maxlon=Longitude("13.5"),
+    )
