@@ -1,276 +1,105 @@
-"""This module provides a Waypoint object to contain GPX waypoints."""
+"""Waypoint model for GPX data.
+
+This module provides the Waypoint model representing a waypoint, point of interest,
+or named feature on a map, following the GPX 1.1 specification.
+"""
 
 from __future__ import annotations
 
+from dataclasses import KW_ONLY, dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
 from math import atan2, cos, radians, sin, sqrt
+from typing import Any
 
-from dateutil.parser import isoparse
-from lxml import etree
+from gpx.types import Degrees, DGPSStation, Fix, Latitude, Longitude  # noqa: TC001
 
-from .element import Element
-from .link import Link
-from .types import Degrees, DGPSStation, Fix, Latitude, Longitude
+from .base import GPXModel
+from .link import Link  # noqa: TC001
 
 
-class Waypoint(Element):
-    """A waypoint class for the GPX data format.
-
-    A waypoint represents a waypoint, point of interest, or named feature on a
-    map.
+@dataclass(slots=True)
+class Waypoint(GPXModel):
+    """A waypoint, point of interest, or named feature on a map.
 
     Args:
-        element: The waypoint XML element. Defaults to `None`.
+        lat: Latitude of the point in decimal degrees, WGS84 datum.
+        lon: Longitude of the point in decimal degrees, WGS84 datum.
+        ele: Elevation (in meters) of the point. Defaults to None.
+        time: Creation/modification timestamp for element (UTC). Defaults to None.
+        magvar: Magnetic variation (in degrees) at the point. Defaults to None.
+        geoidheight: Height (in meters) of geoid (mean sea level) above WGS84
+            earth ellipsoid. Defaults to None.
+        name: GPS name of the waypoint. Defaults to None.
+        cmt: GPS waypoint comment. Defaults to None.
+        desc: Text description of the element. Defaults to None.
+        src: Source of data. Defaults to None.
+        link: Links to additional information about the waypoint. Defaults to
+            empty list.
+        sym: Text of GPS symbol name. Defaults to None.
+        type: Type (classification) of the waypoint. Defaults to None.
+        fix: Type of GPX fix. Defaults to None.
+        sat: Number of satellites used to calculate the GPX fix. Defaults to None.
+        hdop: Horizontal dilution of precision. Defaults to None.
+        vdop: Vertical dilution of precision. Defaults to None.
+        pdop: Position dilution of precision. Defaults to None.
+        ageofdgpsdata: Number of seconds since last DGPS update. Defaults to None.
+        dgpsid: ID of DGPS station used in differential correction. Defaults to None.
 
     """
 
-    def __init__(self, element: etree._Element | None = None) -> None:
-        super().__init__(element)
+    _tag = "wpt"
 
-        #: The latitude of the point. Decimal degrees, WGS84 datum.
-        self.lat: Latitude
+    lat: Latitude
+    lon: Longitude
+    _: KW_ONLY
+    ele: Decimal | None = None
+    time: datetime | None = None
+    magvar: Degrees | None = None
+    geoidheight: Decimal | None = None
+    name: str | None = None
+    cmt: str | None = None
+    desc: str | None = None
+    src: str | None = None
+    link: list[Link] = field(default_factory=list)
+    sym: str | None = None
+    type: str | None = None
+    fix: Fix | None = None
+    sat: int | None = None
+    hdop: Decimal | None = None
+    vdop: Decimal | None = None
+    pdop: Decimal | None = None
+    ageofdgpsdata: Decimal | None = None
+    dgpsid: DGPSStation | None = None
 
-        #: The longitude of the point. Decimal degrees, WGS84 datum.
-        self.lon: Longitude
+    @property
+    def __geo_interface__(self) -> dict[str, Any]:
+        """Return the waypoint as a GeoJSON-like Point geometry.
 
-        #: Elevation (in meters) of the point.
-        self.ele: Decimal | None = None
+        Returns:
+            A dictionary representing a GeoJSON Point geometry.
 
-        #: Creation/modification timestamp for element. Date and time in are in
-        #: Universal Coordinated Time (UTC), not local time! Conforms to ISO
-        #: 8601 specification for date/time representation. Fractional seconds
-        #: are allowed for millisecond timing in tracklogs.
-        self.time: datetime | None = None
-
-        #: Magnetic variation (in degrees) at the point
-        self.magvar: Degrees | None = None
-
-        #: Height (in meters) of geoid (mean sea level) above WGS84 earth
-        #: ellipsoid. As defined in NMEA GGA message.
-        self.geoidheight: Decimal | None = None
-
-        #: The GPS name of the waypoint. This field will be transferred to and
-        #: from the GPS. GPX does not place restrictions on the length of this
-        #: field or the characters contained in it. It is up to the receiving
-        #: application to validate the field before sending it to the GPS.
-        self.name: str | None = None
-
-        #: GPS waypoint comment. Sent to GPS as comment.
-        self.cmt: str | None = None
-
-        #: A text description of the element. Holds additional information about
-        #: the element intended for the user, not the GPS.
-        self.desc: str | None = None
-
-        #: Source of data. Included to give user some idea of reliability and
-        #: accuracy of data. "Garmin eTrex", "USGS quad Boston North", e.g.
-        self.src: str | None = None
-
-        #: Link to additional information about the waypoint.
-        self.links: list[Link] = []
-
-        #: Text of GPS symbol name. For interchange with other programs, use the
-        #: exact spelling of the symbol as displayed on the GPS. If the GPS
-        #: abbreviates words, spell them out.
-        self.sym: str | None = None
-
-        #: Type (classification) of the waypoint.
-        self.type: str | None = None
-
-        #: Type of GPX fix.
-        self.fix: Fix | None = None
-
-        #: Number of satellites used to calculate the GPX fix.
-        self.sat: int | None = None
-
-        #: Horizontal dilution of precision.
-        self.hdop: Decimal | None = None
-
-        #: Vertical dilution of precision.
-        self.vdop: Decimal | None = None
-
-        #: Position dilution of precision.
-        self.pdop: Decimal | None = None
-
-        #: Number of seconds since last DGPS update.
-        self.ageofdgpsdata: Decimal | None = None
-
-        #: ID of DGPS station used in differential correction.
-        self.dgpsid: DGPSStation | None = None
-
-        if self._element is not None:
-            self._parse()
-
-    def _parse(self) -> None:  # noqa: C901, PLR0912
-        super()._parse()
-
-        # assertion to satisfy mypy
-        assert self._element is not None
-
-        # required
-        self.lat = Latitude(self._element.get("lat"))
-        self.lon = Longitude(self._element.get("lon"))
-
-        # position info
-        # elevation
-        if (ele := self._element.find("ele", namespaces=self._nsmap)) is not None:
-            self.ele = Decimal(ele.text)
-        # time
-        if (time := self._element.find("time", namespaces=self._nsmap)) is not None:
-            self.time = isoparse(time.text)
-        # magnetic variation
-        if (magvar := self._element.find("magvar", namespaces=self._nsmap)) is not None:
-            self.magvar = Degrees(magvar.text)
-        # geoid height
-        if (
-            geoidheight := self._element.find("geoidheight", namespaces=self._nsmap)
-        ) is not None:
-            self.geoidheight = Decimal(geoidheight.text)
-
-        # description info
-        # name
-        if (name := self._element.find("name", namespaces=self._nsmap)) is not None:
-            self.name = name.text
-        # comment
-        if (cmt := self._element.find("cmt", namespaces=self._nsmap)) is not None:
-            self.cmt = cmt.text
-        # description
-        if (desc := self._element.find("desc", namespaces=self._nsmap)) is not None:
-            self.desc = desc.text
-        # source of data
-        if (src := self._element.find("src", namespaces=self._nsmap)) is not None:
-            self.src = src.text
-        # links
-        for link in self._element.iterfind("link", namespaces=self._nsmap):
-            self.links.append(Link(link))
-        # GPS symbol name
-        if (sym := self._element.find("sym", namespaces=self._nsmap)) is not None:
-            self.sym = sym.text
-        # waypoint type (classification)
-        if (_type := self._element.find("type", namespaces=self._nsmap)) is not None:
-            self.type = _type.text
-
-        # accuracy info
-        # GPX fix type
-        if (fix := self._element.find("fix", namespaces=self._nsmap)) is not None:
-            self.fix = Fix(fix.text)
-        # number of satellites used to calculate the GPX fix
-        if (sat := self._element.find("sat", namespaces=self._nsmap)) is not None:
-            self.sat = int(sat.text)
-        # horizontal dilution of precision
-        if (hdop := self._element.find("hdop", namespaces=self._nsmap)) is not None:
-            self.hdop = Decimal(hdop.text)
-        # vertical dilution of precision
-        if (vdop := self._element.find("vdop", namespaces=self._nsmap)) is not None:
-            self.vdop = Decimal(vdop.text)
-        # position dilution of precision
-        if (pdop := self._element.find("pdop", namespaces=self._nsmap)) is not None:
-            self.pdop = Decimal(pdop.text)
-        # number of seconds since last DGPS update
-        if (
-            ageofdgpsdata := self._element.find("ageofdgpsdata", namespaces=self._nsmap)
-        ) is not None:
-            self.ageofdgpsdata = Decimal(ageofdgpsdata.text)
-        # DGPS station id used in differential correction
-        if (dgpsid := self._element.find("dgpsid", namespaces=self._nsmap)) is not None:
-            self.dgpsid = DGPSStation(dgpsid.text)
-
-    def _build(self, tag: str = "wpt") -> etree._Element:  # noqa: C901, PLR0912, PLR0915
-        waypoint = super()._build(tag)
-        waypoint.set("lat", str(self.lat))
-        waypoint.set("lon", str(self.lon))
-
+        """
+        coordinates = [float(self.lon), float(self.lat)]
         if self.ele is not None:
-            ele = etree.SubElement(waypoint, "ele", nsmap=self._nsmap)
-            ele.text = str(self.ele)
+            coordinates.append(float(self.ele))
 
-        if self.time is not None:
-            time = etree.SubElement(waypoint, "time", nsmap=self._nsmap)
-            time.text = self.time.isoformat(
-                timespec="milliseconds" if self.time.microsecond else "seconds",
-            ).replace("+00:00", "Z")
-
-        if self.magvar is not None:
-            magvar = etree.SubElement(waypoint, "magvar", nsmap=self._nsmap)
-            magvar.text = str(self.magvar)
-
-        if self.geoidheight is not None:
-            geoidheight = etree.SubElement(waypoint, "geoidheight", nsmap=self._nsmap)
-            geoidheight.text = str(self.geoidheight)
-
-        if self.name is not None:
-            name = etree.SubElement(waypoint, "name", nsmap=self._nsmap)
-            name.text = self.name
-
-        if self.cmt is not None:
-            cmt = etree.SubElement(waypoint, "cmt", nsmap=self._nsmap)
-            cmt.text = self.cmt
-
-        if self.desc is not None:
-            desc = etree.SubElement(waypoint, "desc", nsmap=self._nsmap)
-            desc.text = self.desc
-
-        if self.src is not None:
-            src = etree.SubElement(waypoint, "src", nsmap=self._nsmap)
-            src.text = self.src
-
-        for link in self.links:
-            waypoint.append(link._build())
-
-        if self.sym is not None:
-            sym = etree.SubElement(waypoint, "sym", nsmap=self._nsmap)
-            sym.text = self.sym
-
-        if self.type is not None:
-            _type = etree.SubElement(waypoint, "type", nsmap=self._nsmap)
-            _type.text = self.type
-
-        if self.fix is not None:
-            fix = etree.SubElement(waypoint, "fix", nsmap=self._nsmap)
-            fix.text = self.fix
-
-        if self.sat is not None:
-            sat = etree.SubElement(waypoint, "sat", nsmap=self._nsmap)
-            sat.text = str(self.sat)
-
-        if self.hdop is not None:
-            hdop = etree.SubElement(waypoint, "hdop", nsmap=self._nsmap)
-            hdop.text = str(self.hdop)
-
-        if self.vdop is not None:
-            vdop = etree.SubElement(waypoint, "vdop", nsmap=self._nsmap)
-            vdop.text = str(self.vdop)
-
-        if self.pdop is not None:
-            pdop = etree.SubElement(waypoint, "pdop", nsmap=self._nsmap)
-            pdop.text = str(self.pdop)
-
-        if self.ageofdgpsdata is not None:
-            ageofdgpsdata = etree.SubElement(
-                waypoint,
-                "ageofdgpsdata",
-                nsmap=self._nsmap,
-            )
-            ageofdgpsdata.text = str(self.ageofdgpsdata)
-
-        if self.dgpsid is not None:
-            dgpsid = etree.SubElement(waypoint, "dgpsid", nsmap=self._nsmap)
-            dgpsid.text = str(self.dgpsid)
-
-        return waypoint
+        return {
+            "type": "Point",
+            "coordinates": coordinates,
+        }
 
     def distance_to(self, other: Waypoint, radius: int = 6_378_137) -> float:
-        """Return the distance to the other waypoint (in metres) using a simple spherical earth model (haversine formula).
+        """Return the distance to another waypoint using the haversine formula.
+
+        Uses a simple spherical earth model (haversine formula).
 
         Args:
             other: The other waypoint.
-            radius: The radius of the earth (defaults to 6,378,137 metres).
+            radius: The radius of the earth. Defaults to 6,378,137 metres.
 
         Returns:
             The distance to the other waypoint (in metres).
-
-        Adapted from: https://github.com/chrisveness/geodesy/blob/33d1bf53c069cd7dd83c6bf8531f5f3e0955c16e/latlon-spherical.js#L187-L205
 
         """
         R = radius  # noqa: N806
@@ -283,13 +112,14 @@ class Waypoint(Element):
         return R * δ
 
     def duration_to(self, other: Waypoint) -> timedelta:
-        """Return the duration to the other waypoint.
+        """Return the duration to another waypoint.
 
         Args:
             other: The other waypoint.
 
         Returns:
-            The duration to the other waypoint.
+            The duration to the other waypoint. Returns zero timedelta if either
+            waypoint lacks a timestamp.
 
         """
         if self.time is None or other.time is None:
@@ -297,7 +127,7 @@ class Waypoint(Element):
         return other.time - self.time
 
     def speed_to(self, other: Waypoint) -> float:
-        """Return the speed to the other waypoint (in metres per second).
+        """Return the speed to another waypoint.
 
         Args:
             other: The other waypoint.
@@ -309,13 +139,14 @@ class Waypoint(Element):
         return self.distance_to(other) / self.duration_to(other).total_seconds()
 
     def gain_to(self, other: Waypoint) -> Decimal:
-        """Return the elevation gain to the other waypoint (in metres).
+        """Return the elevation gain to another waypoint.
 
         Args:
             other: The other waypoint.
 
         Returns:
-            The elevation gain to the other waypoint (in metres).
+            The elevation gain to the other waypoint (in metres). Returns zero
+            if either waypoint lacks elevation data.
 
         """
         if self.ele is None or other.ele is None:
@@ -323,7 +154,7 @@ class Waypoint(Element):
         return other.ele - self.ele
 
     def slope_to(self, other: Waypoint) -> Decimal:
-        """Return the slope to the other waypoint (in percent).
+        """Return the slope to another waypoint.
 
         Args:
             other: The other waypoint.

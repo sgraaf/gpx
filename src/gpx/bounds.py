@@ -1,76 +1,102 @@
-"""This module provides a Bounds object to contain two lat/lon pairs defining the extent of an element."""
+"""Bounds model for GPX data.
+
+This module provides the Bounds model representing two lat/lon pairs defining
+the extent of an element, following the GPX 1.1 specification.
+"""
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from dataclasses import dataclass
+from typing import TYPE_CHECKING, Any
 
-from .element import Element
-from .types import Latitude, Longitude
+from gpx.types import Latitude, Longitude  # noqa: TC001
+
+from .base import GPXModel
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from lxml import etree
 
-
-class Bounds(Element):
-    """A bounds class for the GPX data format.
-
-    Two lat/lon pairs defining the extent of an element.
+@dataclass(slots=True)
+class Bounds(GPXModel):
+    """Two lat/lon pairs defining the extent of an element.
 
     Args:
-        element: The bounds XML element. Defaults to `None`.
+        minlat: The minimum latitude.
+        minlon: The minimum longitude.
+        maxlat: The maximum latitude.
+        maxlon: The maximum longitude.
 
     """
 
-    def __init__(self, element: etree._Element | None = None) -> None:
-        super().__init__(element)
+    _tag = "bounds"
 
-        #: The minimum latitude.
-        self.minlat: Latitude
+    minlat: Latitude
+    minlon: Longitude
+    maxlat: Latitude
+    maxlon: Longitude
 
-        #: The minimum longitude.
-        self.minlon: Longitude
+    @property
+    def __geo_interface__(self) -> dict[str, Any]:
+        """Return the Bounds as a GeoJSON-like Polygon.
 
-        #: The maximum latitude.
-        self.maxlat: Latitude
+        The bounds are represented as a rectangular Polygon following the
+        GeoJSON specification.
 
-        #: The maximum longitude.
-        self.maxlon: Longitude
+        Returns:
+            A dictionary with 'type' and 'coordinates' keys representing
+            the bounds as a Polygon. Coordinates use [longitude, latitude]
+            order as per GeoJSON convention.
 
-        if self._element is not None:
-            self._parse()
+        """
+        return {
+            "type": "Polygon",
+            "coordinates": [
+                [
+                    [float(self.minlon), float(self.minlat)],
+                    [float(self.maxlon), float(self.minlat)],
+                    [float(self.maxlon), float(self.maxlat)],
+                    [float(self.minlon), float(self.maxlat)],
+                    [float(self.minlon), float(self.minlat)],  # Close the ring
+                ],
+            ],
+        }
 
     def as_tuple(self) -> tuple[Latitude, Longitude, Latitude, Longitude]:
-        """Return the bounds as a tuple."""
+        """Return the bounds as a tuple.
+
+        Returns:
+            A tuple of (minlat, minlon, maxlat, maxlon).
+
+        """
         return (self.minlat, self.minlon, self.maxlat, self.maxlon)
 
     def __getitem__(self, index: int) -> Latitude | Longitude:
+        """Get a bound coordinate by index.
+
+        Args:
+            index: The index (0=minlat, 1=minlon, 2=maxlat, 3=maxlon).
+
+        Returns:
+            The coordinate at the given index.
+
+        """
         return self.as_tuple()[index]
 
     def __iter__(self) -> Iterator[Latitude | Longitude]:
+        """Iterate over the bounds coordinates.
+
+        Yields:
+            Each coordinate in order: minlat, minlon, maxlat, maxlon.
+
+        """
         return iter(self.as_tuple())
 
     def __len__(self) -> int:
+        """Return the number of coordinates.
+
+        Returns:
+            Always returns 4 (minlat, minlon, maxlat, maxlon).
+
+        """
         return len(self.as_tuple())
-
-    def _parse(self) -> None:
-        super()._parse()
-
-        # assertion to satisfy mypy
-        assert self._element is not None
-
-        # required
-        self.minlat = Latitude(self._element.get("minlat"))
-        self.minlon = Longitude(self._element.get("minlon"))
-        self.maxlat = Latitude(self._element.get("maxlat"))
-        self.maxlon = Longitude(self._element.get("maxlon"))
-
-    def _build(self, tag: str = "bounds") -> etree._Element:
-        bounds = super()._build(tag)
-        bounds.set("minlat", str(self.minlat))
-        bounds.set("minlon", str(self.minlon))
-        bounds.set("maxlat", str(self.maxlat))
-        bounds.set("maxlon", str(self.maxlon))
-
-        return bounds

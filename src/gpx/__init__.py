@@ -8,6 +8,7 @@ from lxml import etree
 # initialize the GPX schema
 gpx_schema = etree.XMLSchema(etree.parse(Path(__file__).parent / "gpx.xsd"))
 
+from .base import GPXModel
 from .bounds import Bounds
 from .copyright import Copyright
 from .email import Email
@@ -22,3 +23,23 @@ from .types import Degrees, DGPSStation, Fix, Latitude, Longitude
 from .waypoint import Waypoint
 
 __version__ = "0.2.1"
+
+__all__ = [
+    "Bounds",
+    "Copyright",
+    "Degrees",
+    "DGPSStation",
+    "Email",
+    "Fix",
+    "GPX",
+    "GPXModel",
+    "Latitude",
+    "Link",
+    "Longitude",
+    "Metadata",
+    "Person",
+    "Route",
+    "Track",
+    "TrackSegment",
+    "Waypoint",
+]
