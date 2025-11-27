@@ -35,7 +35,22 @@ gpx/
 │   ├── errors.py         # Custom exceptions: InvalidGPXError, ParseError
 │   ├── utils.py          # Utility functions
 │   ├── gpx.xsd           # GPX 1.1 XML schema for validation
-│   └── py.typed          # PEP 561 marker for type hints
+│   ├── py.typed          # PEP 561 marker for type hints
+│   └── models/           # Dataclass-based models (new architecture)
+│       ├── __init__.py   # Model exports
+│       ├── base.py       # GPXModel base class with from_xml/to_xml
+│       ├── utils.py      # Automatic type conversion utilities for XML parsing
+│       ├── gpx.py        # GPX root element model
+│       ├── waypoint.py   # Waypoint dataclass model
+│       ├── track.py      # Track dataclass model
+│       ├── track_segment.py  # TrackSegment dataclass model
+│       ├── route.py      # Route dataclass model
+│       ├── metadata.py   # Metadata dataclass model
+│       ├── bounds.py     # Bounds dataclass model
+│       ├── link.py       # Link dataclass model
+│       ├── person.py     # Person dataclass model
+│       ├── email.py      # Email dataclass model
+│       └── copyright.py  # Copyright dataclass model
 ├── docs/                 # Sphinx documentation (MyST Markdown)
 ├── tests/                # Test suite
 │   ├── conftest.py       # Pytest configuration and fixtures
@@ -47,7 +62,8 @@ gpx/
 ├── .readthedocs.yaml     # ReadTheDocs configuration
 └── .github/
     └── workflows/
-        └── publish.yml   # PyPI publishing workflow
+        ├── publish.yml   # PyPI publishing workflow
+        └── test.yml      # Python test workflow (3.10-3.14)
 ```
 
 ### Key Configuration Files
@@ -114,7 +130,31 @@ uv build --sdist
 
 ## Code Architecture
 
-### Class Hierarchy
+The project now has **two parallel implementations** of GPX elements:
+
+1. **Original Element-based classes** (`src/gpx/*.py`) - Mutable, stateful classes with internal XML element management
+2. **Dataclass-based models** (`src/gpx/models/*.py`) - Immutable, clean dataclasses with functional XML conversion
+
+### Dual Implementation Overview
+
+**Element-based classes** (original):
+- Inherit from `Element` base class
+- Store internal `_element` and `_nsmap` state
+- Use `_parse()` and `_build()` methods for XML conversion
+- Mutable by default
+- Include mixins for statistics and sequence behavior
+
+**Dataclass models** (new):
+- Use `@dataclass` decorator with `slots=True`
+- Inherit from `GPXModel` base class
+- Use `from_xml()` classmethod and `to_xml()` method
+- Mark optional arguments as keyword-only using `KW_ONLY`
+- No internal state management
+- Clean separation of concerns
+- Immutable (not frozen to allow post-initialization)
+- Automatic type conversion via `models/utils.py`
+
+### Element-based Class Hierarchy
 
 All GPX element classes inherit from `Element` base class:
 
@@ -133,20 +173,60 @@ Element (element.py)
 └── Copyright (copyright.py)
 ```
 
+### Dataclass Model Hierarchy
+
+All GPX dataclass models inherit from `GPXModel` base class:
+
+```
+GPXModel (models/base.py)
+├── GPX (models/gpx.py) - root element
+├── Waypoint (models/waypoint.py) - waypoint/track point/route point
+├── Track (models/track.py) - track
+├── TrackSegment (models/track_segment.py) - track segment
+├── Route (models/route.py) - route
+├── Metadata (models/metadata.py) - metadata
+├── Bounds (models/bounds.py) - bounding box
+├── Link (models/link.py) - web link
+├── Person (models/person.py) - person/author
+├── Email (models/email.py) - email address
+└── Copyright (models/copyright.py) - copyright
+```
+
 ### Design Patterns
 
-1. **Parse/Build Pattern**: Each element class implements:
+**Element-based classes:**
 
+1. **Parse/Build Pattern**: Each element class implements:
     - `_parse()`: Parse XML element to Python attributes
     - `_build()`: Build Python attributes back to XML element
 
 2. **Mixin Classes** (`mixins.py`):
-
     - `PointsStatisticsMixin`: Provides distance, duration, speed, elevation statistics
     - `PointsMutableSequenceMixin`: Makes point containers behave like lists
     - `AttributesMutableMappingMixin`: Dict-like access to attributes
 
-3. **Custom Types** (`types.py`):
+**Dataclass models:**
+
+1. **Dataclass Pattern**: Uses Python's `@dataclass` decorator with:
+    - `slots=True`: Memory-efficient attribute storage
+    - `KW_ONLY`: Marks optional arguments as keyword-only
+    - Field defaults and `field(default_factory=list)` for collections
+
+2. **GPXModel Base Class** (`models/base.py`):
+    - Provides `from_xml()` classmethod for parsing
+    - Provides `to_xml()` method for serialization
+    - Each model defines `_tag` class attribute for XML tag name
+
+3. **Automatic Type Conversion** (`models/utils.py`):
+    - `parse_from_xml()`: Auto-converts XML to Python types based on field annotations
+    - `build_to_xml()`: Auto-converts Python types to XML based on field annotations
+    - Uses `get_type_hints()` to introspect dataclass fields
+    - Distinguishes attributes (required) vs elements (optional) automatically
+    - GPX pattern: attributes have no `| None`, elements have `| None`
+
+**Shared:**
+
+1. **Custom Types** (`types.py`):
     - `Latitude`, `Longitude`: Validated Decimal subclasses with range checks
     - `Degrees`: For bearing/heading (0-360)
     - `Fix`: GPS fix type enum-like string
@@ -154,7 +234,9 @@ Element (element.py)
 
 ### Entry Points
 
-**Reading GPX files:**
+**Note**: The examples below use the original Element-based classes. For dataclass models, see the "Using Dataclass Models" section below.
+
+**Reading GPX files (Element-based):**
 
 ```python
 from gpx import GPX
@@ -244,6 +326,114 @@ print(f"Bounds: {track.bounds}")
 elevation_profile = track.elevation_profile
 speed_profile = track.speed_profile
 ```
+
+### Using Dataclass Models
+
+The new dataclass-based models provide a cleaner, more functional approach:
+
+**Reading GPX files (Dataclass models):**
+
+```python
+from lxml import etree
+from gpx.models import GPX
+
+# Parse from XML string
+xml_string = """<?xml version="1.0"?>
+<gpx version="1.1" creator="MyApp">
+  <metadata>
+    <name>My Track</name>
+  </metadata>
+</gpx>"""
+
+element = etree.fromstring(xml_string.encode())
+gpx = GPX.from_xml(element)
+
+print(gpx.creator)  # "MyApp"
+print(gpx.metadata.name)  # "My Track"
+```
+
+**Creating GPX data (Dataclass models):**
+
+```python
+from gpx.models import GPX, Waypoint, Track, TrackSegment, Metadata
+from decimal import Decimal
+from datetime import datetime, timezone
+
+# Create waypoint with keyword-only optional arguments
+waypoint = Waypoint(
+    lat=Decimal("52.3676"),
+    lon=Decimal("4.9041"),
+    name="Amsterdam",
+    ele=Decimal("2.0"),
+)
+
+# Create metadata
+metadata = Metadata(
+    name="My Track",
+    desc="A sample track",
+    time=datetime.now(timezone.utc),
+)
+
+# Create track with segments
+segment = TrackSegment(
+    trkpt=[
+        Waypoint(
+            lat=Decimal("52.0"),
+            lon=Decimal("4.0"),
+            time=datetime.now(timezone.utc),
+        )
+    ]
+)
+track = Track(name="Morning Run", trkseg=[segment])
+
+# Create GPX object
+gpx = GPX(creator="My Application", metadata=metadata, trk=[track])
+
+# Convert to XML
+element = gpx.to_xml()
+xml_bytes = etree.tostring(element, pretty_print=True, xml_declaration=True, encoding="UTF-8")
+```
+
+**Using waypoint calculation methods:**
+
+```python
+from gpx.models import Waypoint
+from decimal import Decimal
+from datetime import datetime, timezone, timedelta
+
+point1 = Waypoint(
+    lat=Decimal("52.0"),
+    lon=Decimal("4.0"),
+    ele=Decimal("10.0"),
+    time=datetime.now(timezone.utc),
+)
+
+point2 = Waypoint(
+    lat=Decimal("52.01"),
+    lon=Decimal("4.01"),
+    ele=Decimal("15.0"),
+    time=datetime.now(timezone.utc) + timedelta(minutes=5),
+)
+
+# Calculate distance, duration, speed, gain, slope
+distance = point1.distance_to(point2)  # meters
+duration = point1.duration_to(point2)  # timedelta
+speed = point1.speed_to(point2)  # m/s
+gain = point1.gain_to(point2)  # meters
+slope = point1.slope_to(point2)  # percent
+
+# GeoJSON interface
+geo = point1.__geo_interface__  # {"type": "Point", "coordinates": [4.0, 52.0, 10.0]}
+```
+
+**Key differences between implementations:**
+
+1. **Immutability**: Dataclass models are designed to be immutable (though not frozen)
+2. **Constructor**: Dataclass models use `from_xml()` classmethod; Element classes use `from_file()` / `from_string()`
+3. **Serialization**: Dataclass models use `to_xml()` returning lxml element; Element classes use `to_file()` / `to_string()`
+4. **Field names**: Dataclass models use exact GPX tag names (e.g., `trkpt`, `trkseg`); Element classes provide aliases (e.g., `points`, `segments`)
+5. **Keyword-only args**: Dataclass models mark optional arguments as keyword-only for clarity
+6. **No mixins**: Dataclass models don't include mixins; use helper functions or methods on individual classes
 
 ## Code Style and Conventions
 
@@ -417,22 +607,79 @@ The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (
 
 ### Adding a New GPX Element
 
+**For Element-based classes:**
+
 1. Create new module in `src/gpx/`
 2. Inherit from `Element`
 3. Implement `__init__`, `_parse()`, and `_build()` methods
 4. Add custom types to `types.py` if needed
-5. Export from `__init__.py`
+5. Export from `src/gpx/__init__.py`
 6. Add to documentation
 
+**For Dataclass models:**
+
+1. Create new module in `src/gpx/models/`
+2. Use `@dataclass(slots=True)` decorator
+3. Inherit from `GPXModel`
+4. Define `_tag` class attribute for XML tag name
+5. Define fields with type annotations:
+   - Required fields (XML attributes): no `| None`
+   - Optional fields (XML child elements): with `| None`
+   - Use `KW_ONLY` separator to mark optional args as keyword-only
+6. The `from_xml()` and `to_xml()` methods are inherited from `GPXModel`
+7. Add custom types to `types.py` if needed
+8. Export from `src/gpx/models/__init__.py`
+9. Add to documentation
+
+Example dataclass model:
+
+```python
+from __future__ import annotations
+
+from dataclasses import KW_ONLY, dataclass
+from lxml import etree
+
+from .base import GPXModel
+
+@dataclass(slots=True)
+class MyElement(GPXModel):
+    """My custom GPX element.
+
+    Args:
+        required_attr: A required XML attribute.
+        optional_elem: An optional XML child element. Defaults to None.
+
+    """
+
+    _tag = "myelem"
+
+    # Required fields (XML attributes)
+    required_attr: str
+    _: KW_ONLY
+    # Optional fields (XML child elements)
+    optional_elem: str | None = None
+```
+
 ### Working with XML Namespaces
+
+**Element-based classes:**
 
 -   Default namespace: `http://www.topografix.com/GPX/1/1`
 -   Use `self._nsmap` for namespace-aware XML operations
 -   `_filter_nsmap()` removes unused namespaces when building
 
+**Dataclass models:**
+
+-   Default namespace defined in `models/base.py`: `GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"`
+-   Namespace handling is automatic in `parse_from_xml()` and `build_to_xml()` utilities
+-   Uses XPath prefix approach with `namespaces` parameter for namespace-aware queries
+-   Pass custom `nsmap` to `to_xml(nsmap=...)` if needed
+
 ### Statistics and Calculations
 
-The `PointsStatisticsMixin` provides:
+**Element-based classes:**
+
+The `PointsStatisticsMixin` provides track and route statistics:
 
 -   `bounds`: Geographic bounding box
 -   `total_distance`, `total_duration`
@@ -443,10 +690,30 @@ The `PointsStatisticsMixin` provides:
 
 Distance calculations use Haversine formula (spherical earth model).
 
+**Dataclass models:**
+
+Waypoint-level calculations are available as methods on the `Waypoint` class:
+
+-   `distance_to(other)`: Distance to another waypoint (Haversine formula)
+-   `duration_to(other)`: Time duration to another waypoint
+-   `speed_to(other)`: Speed to another waypoint (m/s)
+-   `gain_to(other)`: Elevation gain to another waypoint
+-   `slope_to(other)`: Slope to another waypoint (percent)
+-   `__geo_interface__`: GeoJSON Point geometry representation
+
+Track and route level statistics are not yet implemented in dataclass models. Use Element-based classes for track/route statistics.
+
 ## Important Notes
 
+-   **Dual Implementation**: The package has two parallel implementations:
+    - Element-based classes (`src/gpx/*.py`) - Original, mutable, stateful
+    - Dataclass models (`src/gpx/models/*.py`) - New, immutable, functional
+    - Both are exported from the main package, but dataclass models are in `gpx.models` subpackage
+    - Choose based on your needs: Element classes for full features, dataclass models for cleaner code
 -   GPX extensions from other schemas (e.g., Garmin) are not supported and are ignored
--   XML validation against GPX 1.1 XSD is optional (`validate=True`)
+-   XML validation against GPX 1.1 XSD is optional (`validate=True` for Element-based classes)
 -   Coordinates use WGS84 datum
 -   Elevations are in meters
 -   Timestamps are UTC (ISO 8601 format)
+-   **Dataclass models use exact GPX tag names** (e.g., `trkpt`, `trkseg`, `wpt`) while Element classes provide aliases
+-   **Keyword-only arguments**: Dataclass models mark optional arguments as keyword-only for clarity
