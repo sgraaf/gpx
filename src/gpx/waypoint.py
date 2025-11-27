@@ -74,19 +74,92 @@ class Waypoint(GPXModel):
 
     @property
     def __geo_interface__(self) -> dict[str, Any]:
-        """Return the waypoint as a GeoJSON-like Point geometry.
+        """Return the waypoint as a GeoJSON-like Point geometry or Feature.
+
+        Returns a Feature if any optional fields (excluding ele) are set,
+        otherwise returns a pure Point geometry.
 
         Returns:
-            A dictionary representing a GeoJSON Point geometry.
+            A dictionary representing either a GeoJSON Point geometry or Feature.
 
         """
         coordinates = [float(self.lon), float(self.lat)]
         if self.ele is not None:
             coordinates.append(float(self.ele))
 
-        return {
+        geometry = {
             "type": "Point",
             "coordinates": coordinates,
+        }
+
+        # Check if any optional fields (excluding ele) are set
+        has_properties = bool(
+            self.time
+            or self.magvar
+            or self.geoidheight
+            or self.name
+            or self.cmt
+            or self.desc
+            or self.src
+            or self.link
+            or self.sym
+            or self.type
+            or self.fix
+            or self.sat is not None
+            or self.hdop
+            or self.vdop
+            or self.pdop
+            or self.ageofdgpsdata
+            or self.dgpsid is not None
+        )
+
+        if not has_properties:
+            return geometry
+
+        # Build properties dictionary with non-None values
+        properties: dict[str, Any] = {}
+        if self.time is not None:
+            properties["time"] = self.time.isoformat()
+        if self.magvar is not None:
+            properties["magvar"] = float(self.magvar)
+        if self.geoidheight is not None:
+            properties["geoidheight"] = float(self.geoidheight)
+        if self.name is not None:
+            properties["name"] = self.name
+        if self.cmt is not None:
+            properties["cmt"] = self.cmt
+        if self.desc is not None:
+            properties["desc"] = self.desc
+        if self.src is not None:
+            properties["src"] = self.src
+        if self.link:
+            properties["link"] = [
+                {"href": link.href, "text": link.text, "type": link.type}
+                for link in self.link
+            ]
+        if self.sym is not None:
+            properties["sym"] = self.sym
+        if self.type is not None:
+            properties["type"] = self.type
+        if self.fix is not None:
+            properties["fix"] = str(self.fix)
+        if self.sat is not None:
+            properties["sat"] = self.sat
+        if self.hdop is not None:
+            properties["hdop"] = float(self.hdop)
+        if self.vdop is not None:
+            properties["vdop"] = float(self.vdop)
+        if self.pdop is not None:
+            properties["pdop"] = float(self.pdop)
+        if self.ageofdgpsdata is not None:
+            properties["ageofdgpsdata"] = float(self.ageofdgpsdata)
+        if self.dgpsid is not None:
+            properties["dgpsid"] = int(self.dgpsid)
+
+        return {
+            "type": "Feature",
+            "geometry": geometry,
+            "properties": properties,
         }
 
     def distance_to(self, other: Waypoint, radius: int = 6_378_137) -> float:

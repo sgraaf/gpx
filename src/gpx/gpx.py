@@ -7,7 +7,7 @@ following the GPX 1.1 specification.
 from __future__ import annotations
 
 from dataclasses import KW_ONLY, dataclass, field
-from typing import TYPE_CHECKING, Self
+from typing import TYPE_CHECKING, Any, Self
 
 from lxml import etree
 
@@ -163,6 +163,64 @@ class GPX(GPXModel):
         if self.metadata is not None:
             return self.metadata.bounds
         return None
+
+    @property
+    def __geo_interface__(self) -> dict[str, Any]:
+        """Return the GPX as a GeoJSON-like FeatureCollection.
+
+        Returns:
+            A dictionary representing a GeoJSON FeatureCollection containing
+            all waypoints, routes, and tracks.
+
+        """
+        features = []
+
+        # Add waypoints
+        for waypoint in self.wpt:
+            geo = waypoint.__geo_interface__
+            # If waypoint returned a pure geometry, wrap it in a Feature
+            if geo.get("type") == "Point":
+                features.append({
+                    "type": "Feature",
+                    "geometry": geo,
+                    "properties": {},
+                })
+            else:
+                # Already a Feature
+                features.append(geo)
+
+        # Add routes
+        for route in self.rte:
+            geo = route.__geo_interface__
+            # If route returned a pure geometry, wrap it in a Feature
+            if geo.get("type") == "LineString":
+                features.append({
+                    "type": "Feature",
+                    "geometry": geo,
+                    "properties": {},
+                })
+            else:
+                # Already a Feature
+                features.append(geo)
+
+        # Add tracks
+        for track in self.trk:
+            geo = track.__geo_interface__
+            # If track returned a pure geometry, wrap it in a Feature
+            if geo.get("type") == "MultiLineString":
+                features.append({
+                    "type": "Feature",
+                    "geometry": geo,
+                    "properties": {},
+                })
+            else:
+                # Already a Feature
+                features.append(geo)
+
+        return {
+            "type": "FeatureCollection",
+            "features": features,
+        }
 
     def to_xml(
         self, tag: str | None = None, nsmap: dict[str | None, str] | None = None

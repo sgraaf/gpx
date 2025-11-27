@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from .base import GPXModel
 from .link import Link  # noqa: TC001
@@ -56,6 +56,64 @@ class Route(GPXModel):
     def points(self) -> list[Waypoint]:
         """Alias for rtept."""
         return self.rtept
+
+    @property
+    def __geo_interface__(self) -> dict[str, Any]:
+        """Return the route as a GeoJSON-like LineString geometry or Feature.
+
+        Returns a Feature if any optional fields are set, otherwise returns
+        a pure LineString geometry.
+
+        Returns:
+            A dictionary representing either a GeoJSON LineString geometry or Feature.
+
+        """
+        # Build LineString coordinates from all route points
+        coordinates = []
+        for point in self.rtept:
+            coord = [float(point.lon), float(point.lat)]
+            if point.ele is not None:
+                coord.append(float(point.ele))
+            coordinates.append(coord)
+
+        geometry = {
+            "type": "LineString",
+            "coordinates": coordinates,
+        }
+
+        # Check if any optional fields are set
+        has_properties = bool(
+            self.name or self.cmt or self.desc or self.src or self.link or self.number or self.type
+        )
+
+        if not has_properties:
+            return geometry
+
+        # Build properties dictionary with non-None values
+        properties: dict[str, Any] = {}
+        if self.name is not None:
+            properties["name"] = self.name
+        if self.cmt is not None:
+            properties["cmt"] = self.cmt
+        if self.desc is not None:
+            properties["desc"] = self.desc
+        if self.src is not None:
+            properties["src"] = self.src
+        if self.link:
+            properties["link"] = [
+                {"href": link.href, "text": link.text, "type": link.type}
+                for link in self.link
+            ]
+        if self.number is not None:
+            properties["number"] = self.number
+        if self.type is not None:
+            properties["type"] = self.type
+
+        return {
+            "type": "Feature",
+            "geometry": geometry,
+            "properties": properties,
+        }
 
     @overload
     def __getitem__(self, index: int) -> Waypoint: ...

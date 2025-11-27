@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from .base import GPXModel
 from .waypoint import Waypoint  # noqa: TC001
@@ -42,6 +42,26 @@ class TrackSegment(GPXModel):
     def points(self) -> list[Waypoint]:
         """Alias for trkpt."""
         return self.trkpt
+
+    @property
+    def __geo_interface__(self) -> dict[str, Any]:
+        """Return the track segment as a GeoJSON-like LineString geometry.
+
+        Returns:
+            A dictionary representing a GeoJSON LineString geometry.
+
+        """
+        coordinates = []
+        for point in self.trkpt:
+            coord = [float(point.lon), float(point.lat)]
+            if point.ele is not None:
+                coord.append(float(point.ele))
+            coordinates.append(coord)
+
+        return {
+            "type": "LineString",
+            "coordinates": coordinates,
+        }
 
     @overload
     def __getitem__(self, index: int) -> Waypoint: ...
