@@ -73,10 +73,10 @@ pip install uv
 uv sync
 
 # Install with dev dependencies
-uv sync --extra dev
+uv sync --dev
 
 # Install with test dependencies
-uv sync --extra tests
+uv sync --group tests
 
 # Or install with pip (traditional method)
 pip install -e ".[dev]"
@@ -368,7 +368,7 @@ pytest tests/smoke_test.py
 # Install test dependencies
 pip install -e ".[tests]"
 # Or with uv
-uv sync --extra tests
+uv sync --group tests
 ```
 
 The test suite includes:
@@ -385,7 +385,7 @@ The test suite includes:
 # Install docs dependencies
 pip install -e ".[docs]"
 # Or with uv
-uv sync --extra docs
+uv sync --group docs
 
 # Build docs
 cd docs
