@@ -98,11 +98,11 @@ class TestGPXBuilding:
         assert 'creator="TestApp"' in output
 
     def test_build_gpx_default_creator(self) -> None:
-        """Test default creator is PyGPX."""
+        """Test default creator is "https://github.com/sgraaf/gpx"."""
         gpx = GPX()
-        assert gpx.creator == "PyGPX"
+        assert gpx.creator == "https://github.com/sgraaf/gpx"
         output = gpx.to_string()
-        assert 'creator="PyGPX"' in output
+        assert 'creator="https://github.com/sgraaf/gpx"' in output
 
     def test_build_gpx_with_waypoints(self, sample_waypoint: Waypoint) -> None:
         """Test building GPX with waypoints."""
@@ -235,7 +235,7 @@ class TestGPXCreation:
     def test_create_empty_gpx(self) -> None:
         """Test creating empty GPX."""
         gpx = GPX()
-        assert gpx.creator == "PyGPX"
+        assert gpx.creator == "https://github.com/sgraaf/gpx"
         assert gpx.metadata is None
         assert gpx.waypoints == []
         assert gpx.routes == []

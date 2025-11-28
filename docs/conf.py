@@ -6,7 +6,7 @@ from typing import Any
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-project = "PyGPX"
+project = "gpx"
 author = "Steven van de Graaf"
 copyright = f"2021, {author}"  # noqa: A001
 

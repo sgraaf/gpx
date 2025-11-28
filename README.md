@@ -1,6 +1,6 @@
 <!-- start docs-include-index -->
 
-# PyGPX
+# gpx
 
 [![PyPI](https://img.shields.io/pypi/v/gpx)](https://img.shields.io/pypi/v/gpx)
 [![Supported Python Versions](https://img.shields.io/pypi/pyversions/gpx)](https://pypi.org/project/gpx/)
@@ -9,7 +9,7 @@
 [![Documentation Status](https://readthedocs.org/projects/gpx/badge/?version=latest)](https://gpx.readthedocs.io/en/latest/?badge=latest)
 [![PyPI - License](https://img.shields.io/pypi/l/gpx)](https://img.shields.io/pypi/l/gpx)
 
-PyGPX is a pure Python package that brings support for reading, manipulating, writing and converting GPX (GPS Exchange Format) files.
+*gpx* is a pure Python package that brings support for reading, manipulating, writing and converting GPX (GPS Exchange Format) files.
 
 <!-- end docs-include-index -->
 
@@ -17,7 +17,7 @@ PyGPX is a pure Python package that brings support for reading, manipulating, wr
 
 <!-- start docs-include-installation -->
 
-PyGPX is available on [PyPI](https://pypi.org/project/gpx/). Install with [uv](https://docs.astral.sh/uv/) or your package manager of choice:
+*gpx* is available on [PyPI](https://pypi.org/project/gpx/). Install with [uv](https://docs.astral.sh/uv/) or your package manager of choice:
 
 ```sh
 uv add gpx
@@ -27,7 +27,7 @@ uv add gpx
 
 ## Documentation
 
-Check out the [PyGPX documentation](https://gpx.readthedocs.io/en/stable/) for the [User's Guide](https://gpx.readthedocs.io/en/stable/usage.html) and [API Reference](https://gpx.readthedocs.io/en/stable/api.html).
+Check out the [*gpx* documentation](https://gpx.readthedocs.io/en/stable/) for the [User's Guide](https://gpx.readthedocs.io/en/stable/usage.html) and [API Reference](https://gpx.readthedocs.io/en/stable/api.html).
 
 ## Usage
 
@@ -121,7 +121,7 @@ metadata = Metadata(
     time=datetime.now(timezone.utc),
 )
 
-# Create GPX object (creator defaults to "PyGPX")
+# Create GPX object (creator defaults to "*gpx*")
 gpx = GPX(
     creator="My Application",
     metadata=metadata,

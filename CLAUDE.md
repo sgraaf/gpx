@@ -1,10 +1,10 @@
 # CLAUDE.md
 
-This file provides guidance for AI assistants working with the PyGPX codebase.
+This file provides guidance for AI assistants working with the *gpx* codebase.
 
 ## Project Overview
 
-PyGPX is a pure Python library for reading, manipulating, writing, and converting GPX (GPS Exchange Format) files. It provides a fully-typed, dataclass-based interface for working with GPX 1.1 specification data.
+*gpx* is a pure Python library for reading, manipulating, writing, and converting GPX (GPS Exchange Format) files. It provides a fully-typed, dataclass-based interface for working with GPX 1.1 specification data.
 
 -   **Package name**: `gpx` (on PyPI)
 -   **Current version**: 2025.1.0
@@ -220,7 +220,7 @@ segment = TrackSegment(
 )
 track = Track(name="Morning Run", trkseg=[segment])
 
-# Create GPX object (creator defaults to "PyGPX")
+# Create GPX object (creator defaults to "*gpx*")
 gpx = GPX(creator="My Application", metadata=metadata, trk=[track])
 
 # Save to file

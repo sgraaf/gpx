@@ -5,11 +5,11 @@ build-backend = "uv_build"
 [project]
 name = "gpx"
 version = "2025.1.0"
-description = "PyGPX is a pure Python package that brings support for reading, manipulating, writing and converting GPX files."
+description = "gpx is a pure Python package that brings support for reading, manipulating, writing and converting GPX files."
 authors = [{name = "Steven van de Graaf", email = "steven@vandegraaf.xyz"}]
 readme = "README.md"
 license = {file = "LICENSE"}
-keywords = ["gpx", "gps", "xml"]
+keywords = ["gpx", "gps", "xml", "geojson"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",

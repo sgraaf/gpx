@@ -47,7 +47,7 @@ class GPX(GPXModel):
 
     Args:
         creator: The name or URL of the software that created the GPX document.
-            Defaults to "PyGPX".
+            Defaults to "https://github.com/sgraaf/gpx".
         metadata: Metadata about the file. Defaults to None.
         wpt: List of waypoints. Defaults to empty list.
         rte: List of routes. Defaults to empty list.
@@ -57,7 +57,7 @@ class GPX(GPXModel):
 
     _tag = "gpx"
 
-    creator: str = "PyGPX"
+    creator: str = "https://github.com/sgraaf/gpx"
     _: KW_ONLY
     metadata: Metadata | None = None
     wpt: list[Waypoint] = field(default_factory=list)
