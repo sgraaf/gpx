@@ -13,6 +13,7 @@ This allows automatic determination of attributes vs elements based on type hint
 from __future__ import annotations
 
 import re
+import xml.etree.ElementTree as ET
 from dataclasses import fields
 from datetime import datetime
 from typing import (
@@ -25,10 +26,40 @@ from typing import (
     get_type_hints,
 )
 
-from lxml import etree
-
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+
+def _get_namespace(element: ET.Element) -> str:
+    """Extract the namespace from an element's tag.
+
+    Args:
+        element: The XML element.
+
+    Returns:
+        The namespace URI, or empty string if no namespace.
+
+    """
+    if element.tag.startswith("{"):
+        return element.tag[1 : element.tag.index("}")]
+    return ""
+
+
+def _ns_tag(tag: str, element: ET.Element) -> str:
+    """Return a namespaced tag in Clark notation based on the parent element's namespace.
+
+    Args:
+        tag: The tag name without namespace.
+        element: The parent element to extract namespace from.
+
+    Returns:
+        The tag with namespace in Clark notation, or just the tag if no namespace.
+
+    """
+    namespace = _get_namespace(element)
+    if namespace:
+        return f"{{{namespace}}}{tag}"
+    return tag
 
 
 def remove_encoding_from_string(s: str) -> str:
@@ -151,7 +182,7 @@ def has_to_xml(obj: Any) -> bool:  # noqa: ANN401
     return hasattr(obj, "to_xml") and callable(obj.to_xml)
 
 
-def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:  # noqa: C901, PLR0912
+def parse_from_xml(cls: type[Any], element: ET.Element) -> dict[str, Any]:  # noqa: C901, PLR0912
     """Parse XML element into dictionary by auto-detecting attributes vs elements.
 
     Uses the GPX specification pattern:
@@ -188,7 +219,7 @@ def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:  
         if is_list_type(field_type):
             item_type = get_list_item_type(field_type)
             items = []
-            for child in element.findall(field.name, element.nsmap):
+            for child in element.findall(_ns_tag(field.name, element)):
                 if has_from_xml(item_type):
                     items.append(item_type.from_xml(child))  # type: ignore[attr-defined]
                 else:
@@ -202,7 +233,7 @@ def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:  
             if is_list_type(inner_type):
                 item_type = get_list_item_type(inner_type)
                 items = []
-                for child in element.findall(field.name, element.nsmap):
+                for child in element.findall(_ns_tag(field.name, element)):
                     if has_from_xml(item_type):
                         items.append(item_type.from_xml(child))  # type: ignore[attr-defined]
                     else:
@@ -210,7 +241,7 @@ def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:  
                 result[field.name] = items
             else:
                 # Single optional element
-                child = element.find(field.name, element.nsmap)
+                child = element.find(_ns_tag(field.name, element))  # type: ignore[assignment]
                 if child is None:
                     result[field.name] = None
                 elif has_from_xml(inner_type):
@@ -238,7 +269,7 @@ def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:  
 
 def build_to_xml(  # noqa: C901, PLR0912
     obj: Any,  # noqa: ANN401
-    element: etree._Element,
+    element: ET.Element,
     nsmap: dict[str | None, str] | None = None,
 ) -> None:
     """Serialize dataclass to XML by auto-detecting attributes vs elements.
@@ -281,7 +312,7 @@ def build_to_xml(  # noqa: C901, PLR0912
                     element.append(child)
                 else:
                     # Simple type
-                    child = etree.SubElement(element, field.name, nsmap=nsmap)
+                    child = ET.SubElement(element, _ns_tag(field.name, element))
                     child.text = str(item)
         elif is_optional(field_type):
             # Optional field → serialize as XML child element
@@ -297,7 +328,7 @@ def build_to_xml(  # noqa: C901, PLR0912
                         element.append(child)
                     else:
                         # Simple type
-                        child = etree.SubElement(element, field.name, nsmap=nsmap)
+                        child = ET.SubElement(element, _ns_tag(field.name, element))
                         child.text = str(item)
             elif has_to_xml(value):
                 # Single nested model
@@ -305,7 +336,7 @@ def build_to_xml(  # noqa: C901, PLR0912
                 element.append(child)
             else:
                 # Simple type - handle datetime specially
-                child = etree.SubElement(element, field.name, nsmap=nsmap)
+                child = ET.SubElement(element, _ns_tag(field.name, element))
                 if isinstance(value, datetime):
                     child.text = to_isoformat(value)
                 else:

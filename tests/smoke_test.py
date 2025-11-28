@@ -268,22 +268,6 @@ class TestKeyFeatures:
         assert gpx.author.name == "Test Author"
 
 
-class TestValidation:
-    """Test GPX validation functionality."""
-
-    def test_validation_passes_for_valid_gpx(self, minimal_gpx_string: str) -> None:
-        """Test that valid GPX passes validation."""
-        # Should not raise
-        gpx = GPX.from_string(minimal_gpx_string, validate=True)
-        assert gpx is not None
-
-    def test_validation_disabled_by_default(self, minimal_gpx_string: str) -> None:
-        """Test that validation is disabled by default."""
-        # Should not raise even with malformed content (if parseable)
-        gpx = GPX.from_string(minimal_gpx_string)
-        assert gpx is not None
-
-
 class TestStatistics:
     """Test statistics functionality on tracks and routes."""
 

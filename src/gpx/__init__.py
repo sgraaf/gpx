@@ -1,13 +1,5 @@
 """PyGPX is a Python package that brings support for reading, writing and converting GPX files."""
 
-# ruff: noqa: E402
-from pathlib import Path
-
-from lxml import etree
-
-# initialize the GPX schema
-gpx_schema = etree.XMLSchema(etree.parse(Path(__file__).parent / "gpx.xsd"))
-
 from .base import GPXModel
 from .bounds import Bounds
 from .copyright import Copyright

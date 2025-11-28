@@ -5,6 +5,9 @@ from datetime import UTC, datetime
 from gpx import GPX, Bounds, Copyright, Email, Link, Metadata, Person
 from gpx.types import Latitude, Longitude
 
+#: GPX 1.1 namespace
+GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
+
 
 class TestMetadataParsing:
     """Tests for parsing metadata from XML."""
@@ -72,12 +75,13 @@ class TestMetadataBuilding:
     def test_build_metadata(self, sample_metadata: Metadata) -> None:
         """Test building metadata XML."""
         element = sample_metadata.to_xml()
-        assert element.tag == "metadata"
+        assert element.tag.endswith("}metadata")
 
     def test_build_metadata_name(self, sample_metadata: Metadata) -> None:
         """Test building metadata with name."""
+
         element = sample_metadata.to_xml()
-        name = element.find("name")
+        name = element.find(f"{{{GPX_NAMESPACE}}}name")
         assert name is not None
         assert name.text == "Test GPX"
 
@@ -139,7 +143,7 @@ class TestBoundsBuilding:
     def test_build_bounds(self, sample_bounds: Bounds) -> None:
         """Test building bounds XML."""
         element = sample_bounds.to_xml()
-        assert element.tag == "bounds"
+        assert element.tag.endswith("}bounds")
         assert element.get("minlat") == "52.5"
         assert element.get("minlon") == "13.4"
         assert element.get("maxlat") == "52.6"
@@ -206,13 +210,14 @@ class TestLinkBuilding:
     def test_build_link(self, sample_link: Link) -> None:
         """Test building link XML."""
         element = sample_link.to_xml()
-        assert element.tag == "link"
+        assert element.tag.endswith("}link")
         assert element.get("href") == "https://example.com"
 
     def test_build_link_text(self, sample_link: Link) -> None:
         """Test building link with text."""
+
         element = sample_link.to_xml()
-        text = element.find("text")
+        text = element.find(f"{{{GPX_NAMESPACE}}}text")
         assert text is not None
         assert text.text == "Example Link"
 
@@ -281,17 +286,18 @@ class TestPersonBuilding:
         """Test building person XML."""
         element = sample_person.to_xml()
         # Default tag is "author"
-        assert element.tag == "author"
+        assert element.tag.endswith("}author")
 
     def test_build_person_as_author(self, sample_person: Person) -> None:
         """Test building person XML with author tag (as used in metadata)."""
         element = sample_person.to_xml()
-        assert element.tag == "author"
+        assert element.tag.endswith("}author")
 
     def test_build_person_name(self, sample_person: Person) -> None:
         """Test building person with name."""
+
         element = sample_person.to_xml()
-        name = element.find("name")
+        name = element.find(f"{{{GPX_NAMESPACE}}}name")
         assert name is not None
         assert name.text == "Test Author"
 
@@ -349,7 +355,7 @@ class TestEmailBuilding:
         email = Email(id="test", domain="example.com")
 
         element = email.to_xml()
-        assert element.tag == "email"
+        assert element.tag.endswith("}email")
         assert element.get("id") == "test"
         assert element.get("domain") == "example.com"
 
@@ -405,7 +411,7 @@ class TestCopyrightBuilding:
         )
 
         element = copyright_.to_xml()
-        assert element.tag == "copyright"
+        assert element.tag.endswith("}copyright")
         assert element.get("author") == "Test Author"
 
     def test_copyright_roundtrip(self, gpx_with_metadata_string: str) -> None:

@@ -1,5 +1,6 @@
 """Pytest configuration and fixtures for GPX tests."""
 
+import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
@@ -19,6 +20,37 @@ from gpx import (
 )
 from gpx.types import Latitude, Longitude
 from gpx.utils import from_isoformat
+
+#: GPX 1.1 namespace
+GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
+
+
+def find_gpx(element: ET.Element, tag: str) -> ET.Element | None:
+    """Find a child element in the GPX namespace.
+
+    Args:
+        element: The parent element to search in.
+        tag: The tag name (without namespace).
+
+    Returns:
+        The found element, or None if not found.
+
+    """
+    return element.find(f"{{{GPX_NAMESPACE}}}{tag}")
+
+
+def findall_gpx(element: ET.Element, tag: str) -> list[ET.Element]:
+    """Find all child elements in the GPX namespace.
+
+    Args:
+        element: The parent element to search in.
+        tag: The tag name (without namespace).
+
+    Returns:
+        List of found elements.
+
+    """
+    return element.findall(f"{{{GPX_NAMESPACE}}}{tag}")
 
 
 @pytest.fixture

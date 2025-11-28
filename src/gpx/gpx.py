@@ -6,13 +6,10 @@ following the GPX 1.1 specification.
 
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET
 from dataclasses import KW_ONLY, dataclass, field
 from typing import TYPE_CHECKING, Any, Self
 
-from lxml import etree
-
-from gpx import gpx_schema
-from gpx.errors import InvalidGPXError
 from gpx.utils import remove_encoding_from_string
 
 from .base import GPXModel
@@ -227,7 +224,7 @@ class GPX(GPXModel):
 
     def to_xml(
         self, tag: str | None = None, nsmap: dict[str | None, str] | None = None
-    ) -> etree._Element:
+    ) -> ET.Element:
         """Convert the GPX to an XML element.
 
         Args:
@@ -248,8 +245,12 @@ class GPX(GPXModel):
                 "xsi": XSI_NAMESPACE,
             }
 
-        # Create the element with namespaces
-        element = etree.Element(tag, nsmap=nsmap)
+        # Register namespaces
+        ET.register_namespace("", GPX_NAMESPACE)
+        ET.register_namespace("xsi", XSI_NAMESPACE)
+
+        # Create the element with namespace
+        element = ET.Element(f"{{{GPX_NAMESPACE}}}{tag}")
 
         # Add GPX-specific attributes
         element.set("version", "1.1")
@@ -264,19 +265,14 @@ class GPX(GPXModel):
         return element
 
     @classmethod
-    def from_string(cls, gpx_str: str, *, validate: bool = False) -> Self:
+    def from_string(cls, gpx_str: str) -> Self:
         """Create a GPX instance from a string.
 
         Args:
             gpx_str: The string containing the GPX data.
-            validate: Whether to validate the GPX data against the GPX 1.1 schema.
-                Defaults to False.
 
         Returns:
             The GPX instance.
-
-        Raises:
-            InvalidGPXError: If validation is enabled and the GPX data is invalid.
 
         Example:
             >>> from gpx import GPX
@@ -288,30 +284,21 @@ class GPX(GPXModel):
             MyApp
 
         """
-        # etree.fromstring() does not support encoding declarations in the string
+        # ET.fromstring() does not support encoding declarations in the string
         gpx_str = remove_encoding_from_string(gpx_str)
-        element = etree.fromstring(gpx_str)
-
-        if validate and not gpx_schema.validate(element):
-            msg = "The GPX data is invalid."
-            raise InvalidGPXError(msg)
+        element = ET.fromstring(gpx_str)
 
         return cls.from_xml(element)
 
     @classmethod
-    def from_file(cls, gpx_file: str | Path, *, validate: bool = False) -> Self:
+    def from_file(cls, gpx_file: str | Path) -> Self:
         """Create a GPX instance from a file.
 
         Args:
             gpx_file: The file path containing the GPX data.
-            validate: Whether to validate the GPX data against the GPX 1.1 schema.
-                Defaults to False.
 
         Returns:
             The GPX instance.
-
-        Raises:
-            InvalidGPXError: If validation is enabled and the GPX data is invalid.
 
         Example:
             >>> from gpx import GPX
@@ -319,12 +306,8 @@ class GPX(GPXModel):
             >>> print(gpx.creator)
 
         """
-        gpx_tree = etree.parse(str(gpx_file))
+        gpx_tree = ET.parse(str(gpx_file))
         element = gpx_tree.getroot()
-
-        if validate and not gpx_schema.validate(element):
-            msg = "The GPX data is invalid."
-            raise InvalidGPXError(msg)
 
         return cls.from_xml(element)
 
@@ -348,12 +331,9 @@ class GPX(GPXModel):
 
         """
         element = self.to_xml()
-        xml_bytes = etree.tostring(
-            element,
-            encoding="utf-8",
-            pretty_print=pretty_print,
-            xml_declaration=True,
-        )
+        if pretty_print:
+            ET.indent(element, space="  ")
+        xml_bytes = ET.tostring(element, encoding="utf-8", xml_declaration=True)
         return xml_bytes.decode("utf-8")
 
     def to_file(self, gpx_file: str | Path, *, pretty_print: bool = True) -> None:
@@ -371,10 +351,7 @@ class GPX(GPXModel):
 
         """
         element = self.to_xml()
-        tree = etree.ElementTree(element)
-        tree.write(
-            str(gpx_file),
-            pretty_print=pretty_print,
-            xml_declaration=True,
-            encoding="utf-8",
-        )
+        if pretty_print:
+            ET.indent(element, space="  ")
+        tree = ET.ElementTree(element)
+        tree.write(str(gpx_file), xml_declaration=True, encoding="utf-8")

@@ -6,9 +6,8 @@ implementing common XML parsing and serialization logic.
 
 from __future__ import annotations
 
+import xml.etree.ElementTree as ET
 from typing import ClassVar, Self
-
-from lxml import etree
 
 from .utils import build_to_xml, parse_from_xml
 
@@ -30,7 +29,7 @@ class GPXModel:
     _tag: ClassVar[str]
 
     @classmethod
-    def from_xml(cls, element: etree._Element) -> Self:
+    def from_xml(cls, element: ET.Element) -> Self:
         """Parse the model from an XML element.
 
         Args:
@@ -47,7 +46,7 @@ class GPXModel:
 
     def to_xml(
         self, tag: str | None = None, nsmap: dict[str | None, str] | None = None
-    ) -> etree._Element:
+    ) -> ET.Element:
         """Convert the model to an XML element.
 
         Args:
@@ -64,7 +63,10 @@ class GPXModel:
         if nsmap is None:
             nsmap = {None: GPX_NAMESPACE}
 
-        element = etree.Element(tag, nsmap=nsmap)
+        # Register namespace and create element with namespaced tag
+        namespace = nsmap.get(None, GPX_NAMESPACE)
+        ET.register_namespace("", namespace)
+        element = ET.Element(f"{{{namespace}}}{tag}")
         build_to_xml(self, element, nsmap=nsmap)
 
         return element
