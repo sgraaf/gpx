@@ -129,7 +129,7 @@ gpx = GPX(
 )
 ```
 
-### Writing and validating GPX files
+### Writing GPX files
 
 ```python
 # Write GPX data to file
@@ -139,8 +139,8 @@ gpx.to_file("output.gpx")
 gpx_string = gpx.to_string()
 print(gpx_string)
 
-# Parse from string with validation
-gpx = GPX.from_string(gpx_string, validate=True)
+# Parse from string
+gpx = GPX.from_string(gpx_string)
 ```
 
 ### Working with routes

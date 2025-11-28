@@ -33,17 +33,27 @@ gpx/
 │   ├── types.py          # Custom types: Latitude, Longitude, Degrees, Fix, DGPSStation
 │   ├── errors.py         # Custom exceptions: InvalidGPXError, ParseError
 │   ├── utils.py          # Utility functions for XML parsing and serialization
-│   ├── gpx.xsd           # GPX 1.1 XML schema for validation
 │   └── py.typed          # PEP 561 marker for type hints
 ├── docs/                 # Sphinx documentation (MyST Markdown)
 ├── tests/                # Test suite
+│   ├── __init__.py       # Package marker
 │   ├── conftest.py       # Pytest configuration and fixtures
 │   ├── smoke_test.py     # Comprehensive smoke tests
-│   └── test_*.py         # Unit tests for each module
+│   ├── test_gpx.py       # GPX model tests
+│   ├── test_metadata.py  # Metadata model tests
+│   ├── test_route.py     # Route model tests
+│   ├── test_track.py     # Track model tests
+│   ├── test_types.py     # Custom types tests
+│   ├── test_utils.py     # Utilities tests
+│   └── test_waypoint.py  # Waypoint model tests
 ├── pyproject.toml        # Project configuration and dependencies
 ├── uv.lock               # Dependency lock file (managed by uv)
+├── CHANGELOG.md          # Project changelog (needs updating)
+├── CLAUDE.md             # AI assistant guidance (this file)
 ├── .pre-commit-config.yaml  # Pre-commit hooks configuration
 ├── .readthedocs.yaml     # ReadTheDocs configuration
+├── .editorconfig         # Editor settings
+├── .gitattributes        # Git attributes
 └── .github/
     └── workflows/
         ├── publish.yml   # PyPI publishing workflow
@@ -152,6 +162,11 @@ GPXModel (base.py)
     - `Fix`: GPS fix type enum-like string
     - `DGPSStation`: DGPS station ID (0-1023)
 
+5. **GeoJSON Support**:
+    - All geographic models (GPX, Waypoint, Track, Route) implement `__geo_interface__`
+    - Provides GeoJSON-compatible geometry representation
+    - GPX returns FeatureCollection, waypoints return Point, tracks return MultiLineString, routes return LineString
+
 ### Entry Points
 
 **Reading GPX files:**
@@ -162,8 +177,8 @@ from gpx import GPX
 # Read from file
 gpx = GPX.from_file("path/to/file.gpx")
 
-# Read from string with validation
-gpx = GPX.from_string(gpx_string, validate=True)
+# Read from string
+gpx = GPX.from_string(gpx_string)
 
 # Access basic properties
 print(gpx.creator)
@@ -444,6 +459,8 @@ The project uses pre-commit.ci for automated checks on pull requests. Configurat
 
 The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (e.g., `2025.1.0`).
 
+**Note**: The CHANGELOG.md file is currently outdated (last entry is 0.2.1 from 2023). When making significant changes, consider updating the changelog to reflect the current version.
+
 ## Common Tasks
 
 ### Adding a New GPX Element
@@ -520,10 +537,14 @@ Distance calculations use Haversine formula (spherical earth model).
 
 ## Important Notes
 
--   GPX extensions from other schemas (e.g., Garmin) are not supported and are ignored
--   XML validation against GPX 1.1 XSD is optional (`validate=True`)
--   Coordinates use WGS84 datum
--   Elevations are in meters
--   Timestamps are UTC (ISO 8601 format)
--   **Field names use exact GPX tag names** (e.g., `trkpt`, `trkseg`, `wpt`, `rte`, `trk`) with property aliases for convenience (e.g., `points`, `segments`, `waypoints`, `routes`, `tracks`)
+-   **Pure Python**: No external dependencies required for core functionality
+-   **GPX 1.1 Specification**: Fully compatible with GPX 1.1 (except extensions)
+-   **GPX extensions** from other schemas (e.g., Garmin) are not supported and are ignored
+-   **XML validation** is not currently implemented (no XSD validation)
+-   **XML parsing**: Uses built-in `xml.etree.ElementTree` module (replaced lxml in v2025.1.0)
+-   **Coordinates**: Use WGS84 datum
+-   **Elevations**: In meters
+-   **Timestamps**: UTC (ISO 8601 format)
+-   **Field names**: Use exact GPX tag names (e.g., `trkpt`, `trkseg`, `wpt`, `rte`, `trk`) with property aliases for convenience (e.g., `points`, `segments`, `waypoints`, `routes`, `tracks`)
 -   **Keyword-only arguments**: Models with all-optional fields use `kw_only=True` for clarity
+-   **GeoJSON compatibility**: All geographic models implement `__geo_interface__` for GeoJSON interoperability
