@@ -17,6 +17,7 @@ from gpx import (
     Waypoint,
 )
 from gpx.types import Latitude, Longitude
+from gpx.utils import from_isoformat
 
 
 @pytest.fixture
@@ -259,7 +260,7 @@ def sample_waypoints_for_track() -> list[Waypoint]:
             lat=Latitude(lat),
             lon=Longitude(lon),
             ele=Decimal(ele),
-            time=datetime.fromisoformat(time_str),
+            time=from_isoformat(time_str),
         )
         for lat, lon, ele, time_str in coords
     ]

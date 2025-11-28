@@ -15,9 +15,16 @@ from __future__ import annotations
 import re
 from dataclasses import fields
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, get_args, get_origin, get_type_hints
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    SupportsFloat,
+    SupportsInt,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
-from dateutil.parser import isoparse
 from lxml import etree
 
 if TYPE_CHECKING:
@@ -35,6 +42,18 @@ def remove_encoding_from_string(s: str) -> str:
 
     """
     return re.sub(r"(encoding=[\"\'].+[\"\'])", "", s)
+
+
+def from_isoformat(dt_str: str) -> datetime:
+    """Convert a string in ISO 8601 format to a `datetime` object."""
+    return datetime.fromisoformat(dt_str)
+
+
+def to_isoformat(dt: datetime) -> str:
+    """Convert a `datetime` object to a string in ISO 8601 format."""
+    return dt.isoformat(
+        timespec="milliseconds" if dt.microsecond else "seconds"
+    ).replace("+00:00", "Z")
 
 
 def is_optional(field_type: type) -> bool:
@@ -201,7 +220,7 @@ def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:  
                     result[field.name] = None
                 # Simple type - handle datetime specially
                 elif inner_type is datetime:
-                    result[field.name] = isoparse(child.text)
+                    result[field.name] = from_isoformat(child.text)
                 else:
                     result[field.name] = inner_type(child.text)
         else:
@@ -288,9 +307,7 @@ def build_to_xml(  # noqa: C901, PLR0912
                 # Simple type - handle datetime specially
                 child = etree.SubElement(element, field.name, nsmap=nsmap)
                 if isinstance(value, datetime):
-                    child.text = value.isoformat(
-                        timespec="milliseconds" if value.microsecond else "seconds"
-                    ).replace("+00:00", "Z")
+                    child.text = to_isoformat(value)
                 else:
                     child.text = str(value)
         else:
@@ -312,10 +329,7 @@ def has_geo_properties(obj: Any, exclude_fields: Iterable[str] | None = None) ->
         True if any optional fields (excluding specified ones) are set, False otherwise.
 
     """
-    if exclude_fields is None:
-        exclude_fields = set()
-    else:
-        exclude_fields = set(exclude_fields)
+    exclude_fields = set() if exclude_fields is None else set(exclude_fields)
 
     type_hints = get_type_hints(obj.__class__)
 
@@ -332,14 +346,13 @@ def has_geo_properties(obj: Any, exclude_fields: Iterable[str] | None = None) ->
         if is_list_type(field_type):
             if value:  # Non-empty list
                 return True
-        elif is_optional(field_type):
-            if value is not None:
-                return True
+        elif is_optional(field_type) and value is not None:
+            return True
 
     return False
 
 
-def build_geo_properties(  # noqa: C901
+def build_geo_properties(
     obj: Any,  # noqa: ANN401
     exclude_fields: Iterable[str] | None = None,
 ) -> dict[str, Any]:
@@ -357,10 +370,7 @@ def build_geo_properties(  # noqa: C901
         A dictionary mapping field names to JSON-serializable values.
 
     """
-    if exclude_fields is None:
-        exclude_fields = set()
-    else:
-        exclude_fields = set(exclude_fields)
+    exclude_fields = set() if exclude_fields is None else set(exclude_fields)
 
     type_hints = get_type_hints(obj.__class__)
     properties: dict[str, Any] = {}
@@ -415,10 +425,10 @@ def _convert_value_to_json(value: Any) -> Any:  # noqa: ANN401
 
     """
     if isinstance(value, datetime):
-        return value.isoformat()
-    if hasattr(value, "__float__"):  # Decimal and similar
+        return to_isoformat(value)
+    if isinstance(value, SupportsFloat):  # Decimal and similar
         return float(value)
-    if hasattr(value, "__int__") and not isinstance(value, bool):
+    if isinstance(value, SupportsInt) and not isinstance(value, bool):
         return int(value)
     return str(value)
 
