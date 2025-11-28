@@ -7,6 +7,13 @@
     :members:
 ```
 
+## `gpx.base` Module
+
+```{eval-rst}
+.. automodule:: gpx.base
+    :members:
+```
+
 ## `gpx.metadata` Module
 
 ```{eval-rst}
@@ -74,25 +81,6 @@
 
 ```{eval-rst}
 .. automodule:: gpx.bounds
-    :members:
-```
-
-## `gpx.element` Module
-
-```{eval-rst}
-.. automodule:: gpx.element
-    :members:
-    :private-members:
-```
-
-## `gpx.mixins` Module
-
-```{eval-rst}
-.. automodule:: gpx.mixins
-.. autoclass:: gpx.mixins.AttributesMutableMappingMixin
-.. autoclass:: gpx.mixins.PointsSequenceMixin
-.. autoclass:: gpx.mixins.PointsMutableSequenceMixin
-.. autoclass:: gpx.mixins.PointsStatisticsMixin
     :members:
 ```
 
