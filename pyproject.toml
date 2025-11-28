@@ -24,13 +24,7 @@ classifiers = [
 requires-python = ">=3.11, <4"
 dependencies = []
 
-[project.optional-dependencies]
-dev = [
-    "black",
-    "mypy",
-    "pre-commit",
-    "ruff",
-]
+[dependency-groups]
 docs = [
     "furo",
     "myst-parser",
@@ -41,6 +35,10 @@ docs = [
 ]
 tests = [
     "pytest"
+]
+dev = [
+    { include-group = "docs" },
+    { include-group = "tests" },
 ]
 
 [project.urls]
