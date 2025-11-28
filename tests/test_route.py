@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 from decimal import Decimal
+from typing import Any
 
 from gpx import GPX, Link, Route, Waypoint
 from gpx.types import Latitude, Longitude
@@ -210,3 +211,15 @@ class TestRouteCreation:
         element = sample_route.to_xml()
         links = element.findall("link")
         assert len(links) == 1
+
+
+class TestRouteGeoInterface:
+    """Tests for the `__geo_interface__` property."""
+
+    def test_route_geo_interface(
+        self, gpx_with_route_string: str, route_geo_interface: dict[str, Any]
+    ) -> None:
+        gpx = GPX.from_string(gpx_with_route_string)
+        rte = gpx.routes[0]
+
+        assert rte.__geo_interface__ == route_geo_interface

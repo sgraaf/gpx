@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime
 from decimal import Decimal
+from typing import Any
 
 import pytest
 
@@ -60,6 +61,29 @@ def gpx_with_waypoint_string() -> str:
 
 
 @pytest.fixture
+def waypoint_geo_interface() -> dict[str, Any]:
+    """A GeoJSON-like dict for a waypoint."""
+    return {
+        "type": "Feature",
+        "geometry": {"type": "Point", "coordinates": [13.405, 52.52, 34.5]},
+        "properties": {
+            "time": "2023-06-15T10:30:00Z",
+            "name": "Berlin",
+            "cmt": "A comment",
+            "desc": "Capital of Germany",
+            "src": "Manual",
+            "sym": "City",
+            "type": "City",
+            "fix": "3d",
+            "sat": 8.0,
+            "hdop": 1.2,
+            "vdop": 1.5,
+            "pdop": 1.8,
+        },
+    }
+
+
+@pytest.fixture
 def gpx_with_track_string() -> str:
     """A GPX string with a track containing multiple segments and points."""
     return """<?xml version="1.0" encoding="UTF-8"?>
@@ -104,6 +128,44 @@ def gpx_with_track_string() -> str:
 
 
 @pytest.fixture
+def track_geo_interface() -> dict[str, Any]:
+    """A GeoJSON-like dict for a track."""
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "MultiLineString",
+            "coordinates": [
+                [[13.405, 52.52, 34.5], [13.406, 52.521, 35.0], [13.407, 52.522, 36.5]],
+                [[13.408, 52.523, 35.5], [13.409, 52.524, 34.0]],
+            ],
+            "bbox": [13.405, 52.52, 34.0, 13.409, 52.524, 36.5],
+        },
+        "properties": {
+            "name": "Morning Run",
+            "cmt": "Good weather",
+            "desc": "A morning run through the park",
+            "src": "Garmin",
+            "number": 1.0,
+            "type": "Running",
+        },
+    }
+
+
+@pytest.fixture
+def track_segment_geo_interface() -> dict[str, Any]:
+    """A GeoJSON-like dict for a track segment."""
+    return {
+        "type": "LineString",
+        "coordinates": [
+            [13.405, 52.52, 34.5],
+            [13.406, 52.521, 35.0],
+            [13.407, 52.522, 36.5],
+        ],
+        "bbox": [13.405, 52.52, 34.5, 13.407, 52.522, 36.5],
+    }
+
+
+@pytest.fixture
 def gpx_with_route_string() -> str:
     """A GPX string with a route."""
     return """<?xml version="1.0" encoding="UTF-8"?>
@@ -136,6 +198,31 @@ def gpx_with_route_string() -> str:
     </rtept>
   </rte>
 </gpx>"""
+
+
+@pytest.fixture
+def route_geo_interface() -> dict[str, Any]:
+    """A GeoJSON-like dict for a route."""
+    return {
+        "type": "Feature",
+        "geometry": {
+            "type": "LineString",
+            "coordinates": [
+                [13.405, 52.52, 34.5],
+                [13.415, 52.53, 40.0],
+                [13.425, 52.54, 38.0],
+            ],
+            "bbox": [13.405, 52.52, 34.5, 13.425, 52.54, 40.0],
+        },
+        "properties": {
+            "name": "City Tour",
+            "cmt": "Best route",
+            "desc": "A tour of the city",
+            "src": "Planned",
+            "number": 1.0,
+            "type": "Tourism",
+        },
+    }
 
 
 @pytest.fixture
@@ -220,6 +307,44 @@ def full_gpx_string() -> str:
     </trkseg>
   </trk>
 </gpx>"""
+
+
+@pytest.fixture
+def full_gpx_geo_interface() -> dict[str, Any]:
+    """A GeoJSON-like dict for a gpx."""
+    return {
+        "type": "FeatureCollection",
+        "features": [
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [13.405, 52.52, 34.5]},
+                "properties": {"name": "Waypoint 1"},
+            },
+            {
+                "type": "Feature",
+                "geometry": {"type": "Point", "coordinates": [13.415, 52.53, 35.0]},
+                "properties": {"name": "Waypoint 2"},
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "LineString",
+                    "coordinates": [[13.405, 52.52, 34.5], [13.415, 52.53, 35.0]],
+                    "bbox": [13.405, 52.52, 34.5, 13.415, 52.53, 35.0],
+                },
+                "properties": {"name": "Test Route"},
+            },
+            {
+                "type": "Feature",
+                "geometry": {
+                    "type": "MultiLineString",
+                    "coordinates": [[[13.405, 52.52, 34.5], [13.406, 52.521, 35.0]]],
+                    "bbox": [13.405, 52.52, 34.5, 13.406, 52.521, 35.0],
+                },
+                "properties": {"name": "Test Track"},
+            },
+        ],
+    }
 
 
 @pytest.fixture

@@ -3,6 +3,7 @@
 import tempfile
 from datetime import UTC, datetime
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -356,3 +357,14 @@ class TestGPXEncodingHandling:
 </gpx>"""
         gpx = GPX.from_string(gpx_str)
         assert gpx.waypoints[0].name == "Cafe"
+
+
+class TestGPXGeoInterface:
+    """Tests for the `__geo_interface__` property."""
+
+    def test_gpx_geo_interface(
+        self, full_gpx_string: str, full_gpx_geo_interface: dict[str, Any]
+    ) -> None:
+        gpx = GPX.from_string(full_gpx_string)
+
+        assert gpx.__geo_interface__ == full_gpx_geo_interface
