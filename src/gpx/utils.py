@@ -15,10 +15,20 @@ from __future__ import annotations
 import re
 from dataclasses import fields
 from datetime import datetime
-from typing import Any, get_args, get_origin, get_type_hints
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    SupportsFloat,
+    SupportsInt,
+    get_args,
+    get_origin,
+    get_type_hints,
+)
 
-from dateutil.parser import isoparse
 from lxml import etree
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 def remove_encoding_from_string(s: str) -> str:
@@ -32,6 +42,18 @@ def remove_encoding_from_string(s: str) -> str:
 
     """
     return re.sub(r"(encoding=[\"\'].+[\"\'])", "", s)
+
+
+def from_isoformat(dt_str: str) -> datetime:
+    """Convert a string in ISO 8601 format to a `datetime` object."""
+    return datetime.fromisoformat(dt_str)
+
+
+def to_isoformat(dt: datetime) -> str:
+    """Convert a `datetime` object to a string in ISO 8601 format."""
+    return dt.isoformat(
+        timespec="milliseconds" if dt.microsecond else "seconds"
+    ).replace("+00:00", "Z")
 
 
 def is_optional(field_type: type) -> bool:
@@ -198,7 +220,7 @@ def parse_from_xml(cls: type[Any], element: etree._Element) -> dict[str, Any]:  
                     result[field.name] = None
                 # Simple type - handle datetime specially
                 elif inner_type is datetime:
-                    result[field.name] = isoparse(child.text)
+                    result[field.name] = from_isoformat(child.text)
                 else:
                     result[field.name] = inner_type(child.text)
         else:
@@ -285,11 +307,159 @@ def build_to_xml(  # noqa: C901, PLR0912
                 # Simple type - handle datetime specially
                 child = etree.SubElement(element, field.name, nsmap=nsmap)
                 if isinstance(value, datetime):
-                    child.text = value.isoformat(
-                        timespec="milliseconds" if value.microsecond else "seconds"
-                    ).replace("+00:00", "Z")
+                    child.text = to_isoformat(value)
                 else:
                     child.text = str(value)
         else:
             # Required field → serialize as XML attribute
             element.set(field.name, str(value))
+
+
+def has_geo_properties(obj: Any, exclude_fields: Iterable[str] | None = None) -> bool:  # noqa: ANN401
+    """Check if a dataclass instance has any optional fields set (for GeoJSON properties).
+
+    This is used to determine whether a GeoJSON representation should be a pure
+    geometry or a Feature with properties.
+
+    Args:
+        obj: The dataclass instance to check.
+        exclude_fields: Field names to exclude from the check (e.g., coordinate fields).
+
+    Returns:
+        True if any optional fields (excluding specified ones) are set, False otherwise.
+
+    """
+    exclude_fields = set() if exclude_fields is None else set(exclude_fields)
+
+    type_hints = get_type_hints(obj.__class__)
+
+    for field in fields(obj):
+        # Skip KW_ONLY marker and excluded fields
+        if field.name == "_" or field.name in exclude_fields:
+            continue
+
+        field_type = type_hints.get(field.name, field.type)
+        value = getattr(obj, field.name)
+
+        # Check if this is an optional field with a value
+        # Lists are considered optional and checked for non-empty
+        if is_list_type(field_type):
+            if value:  # Non-empty list
+                return True
+        elif is_optional(field_type) and value is not None:
+            return True
+
+    return False
+
+
+def build_geo_properties(
+    obj: Any,  # noqa: ANN401
+    exclude_fields: Iterable[str] | None = None,
+) -> dict[str, Any]:
+    """Build a GeoJSON properties dictionary from a dataclass instance.
+
+    Converts dataclass fields to JSON-serializable values for GeoJSON properties.
+    Excludes specified fields (typically coordinate fields) and only includes
+    optional fields that are set.
+
+    Args:
+        obj: The dataclass instance.
+        exclude_fields: Field names to exclude (e.g., coordinate fields).
+
+    Returns:
+        A dictionary mapping field names to JSON-serializable values.
+
+    """
+    exclude_fields = set() if exclude_fields is None else set(exclude_fields)
+
+    type_hints = get_type_hints(obj.__class__)
+    properties: dict[str, Any] = {}
+
+    for field in fields(obj):
+        # Skip KW_ONLY marker and excluded fields
+        if field.name == "_" or field.name in exclude_fields:
+            continue
+
+        field_type = type_hints.get(field.name, field.type)
+        value = getattr(obj, field.name)
+
+        # Skip None values
+        if value is None:
+            continue
+
+        # Handle lists
+        if is_list_type(field_type) and isinstance(value, list):
+            if not value:
+                continue  # Skip empty lists
+
+            # Check if list items have __geo_interface__ or to_dict-like behavior
+            if hasattr(value[0], "href"):  # Link objects
+                properties[field.name] = [
+                    {
+                        "href": item.href,
+                        "text": item.text if hasattr(item, "text") else None,
+                        "type": item.type if hasattr(item, "type") else None,
+                    }
+                    for item in value
+                ]
+            else:
+                # Simple list - convert items to appropriate types
+                properties[field.name] = [
+                    _convert_value_to_json(item) for item in value
+                ]
+        elif is_optional(field_type):
+            # Optional field with a value
+            properties[field.name] = _convert_value_to_json(value)
+
+    return properties
+
+
+def _convert_value_to_json(value: Any) -> Any:  # noqa: ANN401
+    """Convert a value to a JSON-serializable type.
+
+    Args:
+        value: The value to convert.
+
+    Returns:
+        The JSON-serializable value.
+
+    """
+    if isinstance(value, datetime):
+        return to_isoformat(value)
+    if isinstance(value, SupportsFloat):  # Decimal and similar
+        return float(value)
+    if isinstance(value, SupportsInt) and not isinstance(value, bool):
+        return int(value)
+    return str(value)
+
+
+def build_geo_feature(
+    geometry: dict[str, Any],
+    obj: Any,  # noqa: ANN401
+    exclude_fields: Iterable[str] | None = None,
+) -> dict[str, Any]:
+    """Build a GeoJSON Feature or pure geometry based on whether properties exist.
+
+    If the object has any optional fields set (excluding coordinate fields),
+    returns a Feature with geometry and properties. Otherwise, returns the
+    pure geometry.
+
+    Args:
+        geometry: The GeoJSON geometry dictionary.
+        obj: The dataclass instance.
+        exclude_fields: Field names to exclude from properties (e.g., coordinate fields).
+
+    Returns:
+        A GeoJSON Feature or pure geometry dictionary.
+
+    """
+    if not has_geo_properties(obj, exclude_fields):
+        return geometry
+
+    properties = build_geo_properties(obj, exclude_fields)
+
+    return {
+        "type": "Feature",
+        "geometry": geometry,
+        "properties": properties,
+    }

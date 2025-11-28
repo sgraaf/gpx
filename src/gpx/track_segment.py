@@ -9,9 +9,10 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from .base import GPXModel
+from .utils import build_geo_feature
 from .waypoint import Waypoint  # noqa: TC001
 
 if TYPE_CHECKING:
@@ -42,6 +43,40 @@ class TrackSegment(GPXModel):
     def points(self) -> list[Waypoint]:
         """Alias for trkpt."""
         return self.trkpt
+
+    @property
+    def __geo_interface__(self) -> dict[str, Any]:
+        """Return the track segment as a GeoJSON-like LineString geometry.
+
+        Returns:
+            A dictionary representing a GeoJSON LineString geometry.
+
+        """
+        geometry = {
+            "type": "LineString",
+            "coordinates": [
+                [float(coordinate) for coordinate in point._coordinates]
+                for point in self.trkpt
+            ],
+            "bbox": [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.min_elevation),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+                float(self.max_elevation),
+            ]
+            if self._eles
+            else [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+            ],
+        }
+
+        # TrackSegment only has trkpt, so exclude it from properties
+        return build_geo_feature(geometry, self, exclude_fields={"trkpt"})
 
     @overload
     def __getitem__(self, index: int) -> Waypoint: ...
@@ -87,6 +122,8 @@ class TrackSegment(GPXModel):
     @property
     def total_duration(self) -> timedelta:
         """The total duration."""
+        if len(self.trkpt) < 2:  # noqa: PLR2004
+            return timedelta()
         return self.trkpt[0].duration_to(self.trkpt[-1])
 
     @property
@@ -110,7 +147,11 @@ class TrackSegment(GPXModel):
     @property
     def avg_speed(self) -> float:
         """The average speed (in metres / second)."""
-        return self.total_distance / self.total_duration.total_seconds()
+        return (
+            self.total_distance / self.total_duration.total_seconds()
+            if self.total_duration
+            else 0.0
+        )
 
     @property
     def speed(self) -> float:
@@ -120,7 +161,11 @@ class TrackSegment(GPXModel):
     @property
     def avg_moving_speed(self) -> float:
         """The average moving speed (in metres / second)."""
-        return self.total_distance / self.moving_duration.total_seconds()
+        return (
+            self.total_distance / self.moving_duration.total_seconds()
+            if self.moving_duration
+            else 0.0
+        )
 
     @property
     def _speeds(self) -> list[float]:
@@ -193,12 +238,12 @@ class TrackSegment(GPXModel):
     @property
     def total_ascent(self) -> Decimal:
         """The total ascent (in metres)."""
-        return sum([gain for gain in self._gains if gain > 0], Decimal(0))
+        return sum((gain for gain in self._gains if gain > 0), Decimal(0))
 
     @property
     def total_descent(self) -> Decimal:
         """The total descent (in metres)."""
-        return abs(sum([gain for gain in self._gains if gain < 0], Decimal(0)))
+        return abs(sum((gain for gain in self._gains if gain < 0), Decimal(0)))
 
     @property
     def elevation_profile(self) -> list[tuple[float, Decimal]]:

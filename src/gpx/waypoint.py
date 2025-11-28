@@ -16,6 +16,7 @@ from gpx.types import Degrees, DGPSStation, Fix, Latitude, Longitude  # noqa: TC
 
 from .base import GPXModel
 from .link import Link  # noqa: TC001
+from .utils import build_geo_feature
 
 
 @dataclass(slots=True)
@@ -73,21 +74,33 @@ class Waypoint(GPXModel):
     dgpsid: DGPSStation | None = None
 
     @property
+    def _coordinates(
+        self,
+    ) -> tuple[Longitude, Latitude] | tuple[Longitude, Latitude, Decimal]:
+        return (
+            (self.lon, self.lat, self.ele)
+            if self.ele is not None
+            else (self.lon, self.lat)
+        )
+
+    @property
     def __geo_interface__(self) -> dict[str, Any]:
-        """Return the waypoint as a GeoJSON-like Point geometry.
+        """Return the waypoint as a GeoJSON-like Point geometry or Feature.
+
+        Returns a Feature if any optional fields (excluding ele) are set,
+        otherwise returns a pure Point geometry.
 
         Returns:
-            A dictionary representing a GeoJSON Point geometry.
+            A dictionary representing either a GeoJSON Point geometry or Feature.
 
         """
-        coordinates = [float(self.lon), float(self.lat)]
-        if self.ele is not None:
-            coordinates.append(float(self.ele))
-
-        return {
+        geometry = {
             "type": "Point",
-            "coordinates": coordinates,
+            "coordinates": [float(coordinate) for coordinate in self._coordinates],
         }
+
+        # Exclude coordinate fields from properties
+        return build_geo_feature(geometry, self, exclude_fields={"lat", "lon", "ele"})
 
     def distance_to(self, other: Waypoint, radius: int = 6_378_137) -> float:
         """Return the distance to another waypoint using the haversine formula.

@@ -2,6 +2,7 @@
 
 from datetime import timedelta
 from decimal import Decimal
+from typing import Any
 
 import pytest
 
@@ -306,3 +307,24 @@ class TestTrackCreation:
         assert trk.name == "Custom Track"
         assert len(trk.trkseg) == 1
         assert len(trk.trkseg[0].trkpt) == 4
+
+
+class TestTrackGeoInterface:
+    """Tests for the `__geo_interface__` property."""
+
+    def test_track_geo_interface(
+        self, gpx_with_track_string: str, track_geo_interface: dict[str, Any]
+    ) -> None:
+        gpx = GPX.from_string(gpx_with_track_string)
+        trk = gpx.tracks[0]
+
+        assert trk.__geo_interface__ == track_geo_interface
+
+    def test_track_segment_geo_interface(
+        self, gpx_with_track_string: str, track_segment_geo_interface: dict[str, Any]
+    ) -> None:
+        gpx = GPX.from_string(gpx_with_track_string)
+        trk = gpx.tracks[0]
+        trkseg = trk.segments[0]
+
+        assert trkseg.__geo_interface__ == track_segment_geo_interface

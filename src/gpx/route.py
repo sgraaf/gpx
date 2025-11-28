@@ -10,10 +10,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from decimal import Decimal
-from typing import TYPE_CHECKING, overload
+from typing import TYPE_CHECKING, Any, overload
 
 from .base import GPXModel
 from .link import Link  # noqa: TC001
+from .utils import build_geo_feature
 from .waypoint import Waypoint  # noqa: TC001
 
 if TYPE_CHECKING:
@@ -56,6 +57,44 @@ class Route(GPXModel):
     def points(self) -> list[Waypoint]:
         """Alias for rtept."""
         return self.rtept
+
+    @property
+    def __geo_interface__(self) -> dict[str, Any]:
+        """Return the route as a GeoJSON-like LineString geometry or Feature.
+
+        Returns a Feature if any optional fields are set, otherwise returns
+        a pure LineString geometry.
+
+        Returns:
+            A dictionary representing either a GeoJSON LineString geometry or Feature.
+
+        """
+        # Build LineString coordinates from all route points
+        geometry = {
+            "type": "LineString",
+            "coordinates": [
+                [float(coordinate) for coordinate in point._coordinates]
+                for point in self.rtept
+            ],
+            "bbox": [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.min_elevation),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+                float(self.max_elevation),
+            ]
+            if self._eles
+            else [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+            ],
+        }
+
+        # Exclude geometry fields from properties
+        return build_geo_feature(geometry, self, exclude_fields={"rtept"})
 
     @overload
     def __getitem__(self, index: int) -> Waypoint: ...
@@ -101,6 +140,8 @@ class Route(GPXModel):
     @property
     def total_duration(self) -> timedelta:
         """The total duration."""
+        if len(self.rtept) < 2:  # noqa: PLR2004
+            return timedelta()
         return self.rtept[0].duration_to(self.rtept[-1])
 
     @property
@@ -124,7 +165,11 @@ class Route(GPXModel):
     @property
     def avg_speed(self) -> float:
         """The average speed (in metres / second)."""
-        return self.total_distance / self.total_duration.total_seconds()
+        return (
+            self.total_distance / self.total_duration.total_seconds()
+            if self.total_duration
+            else 0.0
+        )
 
     @property
     def speed(self) -> float:
@@ -134,7 +179,11 @@ class Route(GPXModel):
     @property
     def avg_moving_speed(self) -> float:
         """The average moving speed (in metres / second)."""
-        return self.total_distance / self.moving_duration.total_seconds()
+        return (
+            self.total_distance / self.moving_duration.total_seconds()
+            if self.moving_duration
+            else 0.0
+        )
 
     @property
     def _speeds(self) -> list[float]:
@@ -207,12 +256,12 @@ class Route(GPXModel):
     @property
     def total_ascent(self) -> Decimal:
         """The total ascent (in metres)."""
-        return sum([gain for gain in self._gains if gain > 0], Decimal(0))
+        return sum((gain for gain in self._gains if gain > 0), Decimal(0))
 
     @property
     def total_descent(self) -> Decimal:
         """The total descent (in metres)."""
-        return abs(sum([gain for gain in self._gains if gain < 0], Decimal(0)))
+        return abs(sum((gain for gain in self._gains if gain < 0), Decimal(0)))
 
     @property
     def elevation_profile(self) -> list[tuple[float, Decimal]]:

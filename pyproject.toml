@@ -24,7 +24,6 @@ classifiers = [
 requires-python = ">=3.11, <4"
 dependencies = [
     "lxml",
-    "python-dateutil",
 ]
 
 [project.optional-dependencies]

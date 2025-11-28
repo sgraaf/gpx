@@ -2,6 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
+from typing import Any
 
 import pytest
 
@@ -347,3 +348,15 @@ class TestWaypointRepresentation:
         assert "Waypoint" in repr_str
         assert "lat=" in repr_str
         assert "lon=" in repr_str
+
+
+class TestWaypointGeoInterface:
+    """Tests for the `__geo_interface__` property."""
+
+    def test_waypoint_geo_interface(
+        self, gpx_with_waypoint_string: str, waypoint_geo_interface: dict[str, Any]
+    ) -> None:
+        gpx = GPX.from_string(gpx_with_waypoint_string)
+        wpt = gpx.waypoints[0]
+
+        assert wpt.__geo_interface__ == waypoint_geo_interface

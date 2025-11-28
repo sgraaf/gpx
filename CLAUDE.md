@@ -66,8 +66,6 @@ gpx/
 ## Key Dependencies
 
 -   **lxml**: XML parsing and building
--   **python-dateutil**: ISO 8601 datetime parsing
--   **typing-extensions**: Type hints backports (Python < 3.11 only)
 
 ## Development Setup
 
@@ -352,7 +350,7 @@ The project uses these pre-commit hooks:
 -   `check-github-workflows`, `check-readthedocs`
 -   `ruff-check` (with auto-fix, unsafe fixes, and show fixes)
 -   `ruff-format` (replaces black)
--   `mypy` (with `types-python-dateutil`)
+-   `mypy`
 -   `codespell`
 
 Run pre-commit manually:
