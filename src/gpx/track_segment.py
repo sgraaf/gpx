@@ -12,6 +12,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Any, overload
 
 from .base import GPXModel
+from .utils import build_geo_feature
 from .waypoint import Waypoint  # noqa: TC001
 
 if TYPE_CHECKING:
@@ -58,10 +59,13 @@ class TrackSegment(GPXModel):
                 coord.append(float(point.ele))
             coordinates.append(coord)
 
-        return {
+        geometry = {
             "type": "LineString",
             "coordinates": coordinates,
         }
+
+        # TrackSegment only has trkpt, so exclude it from properties
+        return build_geo_feature(geometry, self, exclude_fields={"trkpt"})
 
     @overload
     def __getitem__(self, index: int) -> Waypoint: ...

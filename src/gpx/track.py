@@ -14,6 +14,7 @@ from typing import TYPE_CHECKING, Any, overload
 from .base import GPXModel
 from .link import Link  # noqa: TC001
 from .track_segment import TrackSegment  # noqa: TC001
+from .utils import build_geo_feature
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
@@ -83,39 +84,8 @@ class Track(GPXModel):
             "coordinates": coordinates,
         }
 
-        # Check if any optional fields are set
-        has_properties = bool(
-            self.name or self.cmt or self.desc or self.src or self.link or self.number or self.type
-        )
-
-        if not has_properties:
-            return geometry
-
-        # Build properties dictionary with non-None values
-        properties: dict[str, Any] = {}
-        if self.name is not None:
-            properties["name"] = self.name
-        if self.cmt is not None:
-            properties["cmt"] = self.cmt
-        if self.desc is not None:
-            properties["desc"] = self.desc
-        if self.src is not None:
-            properties["src"] = self.src
-        if self.link:
-            properties["link"] = [
-                {"href": link.href, "text": link.text, "type": link.type}
-                for link in self.link
-            ]
-        if self.number is not None:
-            properties["number"] = self.number
-        if self.type is not None:
-            properties["type"] = self.type
-
-        return {
-            "type": "Feature",
-            "geometry": geometry,
-            "properties": properties,
-        }
+        # Exclude geometry fields from properties
+        return build_geo_feature(geometry, self, exclude_fields={"trkseg"})
 
     @overload
     def __getitem__(self, index: int) -> TrackSegment: ...
