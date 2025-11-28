@@ -70,16 +70,27 @@ class Route(GPXModel):
 
         """
         # Build LineString coordinates from all route points
-        coordinates = []
-        for point in self.rtept:
-            coord = [float(point.lon), float(point.lat)]
-            if point.ele is not None:
-                coord.append(float(point.ele))
-            coordinates.append(coord)
-
         geometry = {
             "type": "LineString",
-            "coordinates": coordinates,
+            "coordinates": [
+                [float(coordinate) for coordinate in point._coordinates]
+                for point in self.rtept
+            ],
+            "bbox": [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.min_elevation),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+                float(self.max_elevation),
+            ]
+            if self._eles
+            else [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+            ],
         }
 
         # Exclude geometry fields from properties

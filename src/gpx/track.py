@@ -70,20 +70,30 @@ class Track(GPXModel):
 
         """
         # Build MultiLineString coordinates from all segments
-        coordinates = []
-        for segment in self.trkseg:
-            segment_coords = []
-            for point in segment.trkpt:
-                coord = [float(point.lon), float(point.lat)]
-                if point.ele is not None:
-                    coord.append(float(point.ele))
-                segment_coords.append(coord)
-            if segment_coords:
-                coordinates.append(segment_coords)
-
         geometry = {
             "type": "MultiLineString",
-            "coordinates": coordinates,
+            "coordinates": [
+                [
+                    [float(coordinate) for coordinate in trkpt._coordinates]
+                    for trkpt in trkseg.trkpt
+                ]
+                for trkseg in self.trkseg
+            ],
+            "bbox": [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.min_elevation),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+                float(self.max_elevation),
+            ]
+            if self._eles
+            else [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+            ],
         }
 
         # Exclude geometry fields from properties

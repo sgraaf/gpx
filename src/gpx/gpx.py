@@ -180,11 +180,12 @@ class GPX(GPXModel):
             geo = waypoint.__geo_interface__
             # If waypoint returned a pure geometry, wrap it in a Feature
             if geo.get("type") == "Point":
-                features.append({
-                    "type": "Feature",
-                    "geometry": geo,
-                    "properties": {},
-                })
+                features.append(
+                    {
+                        "type": "Feature",
+                        "geometry": geo,
+                    }
+                )
             else:
                 # Already a Feature
                 features.append(geo)
@@ -194,11 +195,12 @@ class GPX(GPXModel):
             geo = route.__geo_interface__
             # If route returned a pure geometry, wrap it in a Feature
             if geo.get("type") == "LineString":
-                features.append({
-                    "type": "Feature",
-                    "geometry": geo,
-                    "properties": {},
-                })
+                features.append(
+                    {
+                        "type": "Feature",
+                        "geometry": geo,
+                    }
+                )
             else:
                 # Already a Feature
                 features.append(geo)
@@ -208,11 +210,12 @@ class GPX(GPXModel):
             geo = track.__geo_interface__
             # If track returned a pure geometry, wrap it in a Feature
             if geo.get("type") == "MultiLineString":
-                features.append({
-                    "type": "Feature",
-                    "geometry": geo,
-                    "properties": {},
-                })
+                features.append(
+                    {
+                        "type": "Feature",
+                        "geometry": geo,
+                    }
+                )
             else:
                 # Already a Feature
                 features.append(geo)

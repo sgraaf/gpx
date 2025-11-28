@@ -74,6 +74,16 @@ class Waypoint(GPXModel):
     dgpsid: DGPSStation | None = None
 
     @property
+    def _coordinates(
+        self,
+    ) -> tuple[Longitude, Latitude] | tuple[Longitude, Latitude, Decimal]:
+        return (
+            (self.lon, self.lat, self.ele)
+            if self.ele is not None
+            else (self.lon, self.lat)
+        )
+
+    @property
     def __geo_interface__(self) -> dict[str, Any]:
         """Return the waypoint as a GeoJSON-like Point geometry or Feature.
 
@@ -84,13 +94,9 @@ class Waypoint(GPXModel):
             A dictionary representing either a GeoJSON Point geometry or Feature.
 
         """
-        coordinates = [float(self.lon), float(self.lat)]
-        if self.ele is not None:
-            coordinates.append(float(self.ele))
-
         geometry = {
             "type": "Point",
-            "coordinates": coordinates,
+            "coordinates": [float(coordinate) for coordinate in self._coordinates],
         }
 
         # Exclude coordinate fields from properties

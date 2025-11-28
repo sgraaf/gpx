@@ -52,16 +52,27 @@ class TrackSegment(GPXModel):
             A dictionary representing a GeoJSON LineString geometry.
 
         """
-        coordinates = []
-        for point in self.trkpt:
-            coord = [float(point.lon), float(point.lat)]
-            if point.ele is not None:
-                coord.append(float(point.ele))
-            coordinates.append(coord)
-
         geometry = {
             "type": "LineString",
-            "coordinates": coordinates,
+            "coordinates": [
+                [float(coordinate) for coordinate in point._coordinates]
+                for point in self.trkpt
+            ],
+            "bbox": [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.min_elevation),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+                float(self.max_elevation),
+            ]
+            if self._eles
+            else [
+                float(self.bounds[1]),
+                float(self.bounds[0]),
+                float(self.bounds[3]),
+                float(self.bounds[2]),
+            ],
         }
 
         # TrackSegment only has trkpt, so exclude it from properties
