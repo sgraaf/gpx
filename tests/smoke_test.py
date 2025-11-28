@@ -9,6 +9,8 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
+
 from gpx import (
     GPX,
     Metadata,
@@ -272,10 +274,10 @@ class TestValidation:
     """Test GPX validation functionality."""
 
     def test_validation_passes_for_valid_gpx(self, minimal_gpx_string: str) -> None:
-        """Test that valid GPX passes validation."""
-        # Should not raise
-        gpx = GPX.from_string(minimal_gpx_string, validate=True)
-        assert gpx is not None
+        """Test that validation raises NotImplementedError without lxml."""
+        # Validation is not supported without lxml
+        with pytest.raises(NotImplementedError, match="Validation is not supported"):
+            GPX.from_string(minimal_gpx_string, validate=True)
 
     def test_validation_disabled_by_default(self, minimal_gpx_string: str) -> None:
         """Test that validation is disabled by default."""

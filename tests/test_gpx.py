@@ -85,13 +85,13 @@ class TestGPXValidation:
     """Tests for GPX validation."""
 
     def test_parse_valid_gpx_with_validation(self, minimal_gpx_string: str) -> None:
-        """Test parsing valid GPX with validation enabled."""
-        gpx = GPX.from_string(minimal_gpx_string, validate=True)
-        assert gpx is not None
+        """Test that validation raises NotImplementedError without lxml."""
+        with pytest.raises(NotImplementedError, match="Validation is not supported"):
+            GPX.from_string(minimal_gpx_string, validate=True)
 
     def test_parse_invalid_gpx_with_validation(self, invalid_gpx_string: str) -> None:
-        """Test that invalid GPX raises error when validation is enabled."""
-        with pytest.raises(InvalidGPXError, match="The GPX data is invalid"):
+        """Test that validation raises NotImplementedError without lxml."""
+        with pytest.raises(NotImplementedError, match="Validation is not supported"):
             GPX.from_string(invalid_gpx_string, validate=True)
 
     def test_parse_invalid_gpx_without_validation(

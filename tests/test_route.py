@@ -7,6 +7,9 @@ from typing import Any
 from gpx import GPX, Link, Route, Waypoint
 from gpx.types import Latitude, Longitude
 
+#: GPX 1.1 namespace
+GPX_NS = "http://www.topografix.com/GPX/1/1"
+
 
 class TestRouteParsing:
     """Tests for parsing routes from XML."""
@@ -70,27 +73,31 @@ class TestRouteParsing:
         assert rte.rtept[2].name == "End"
 
 
+
 class TestRouteBuilding:
     """Tests for building route XML."""
 
     def test_build_route(self, sample_route: Route) -> None:
         """Test building route XML."""
         element = sample_route.to_xml()
-        assert element.tag == "rte"
+        assert element.tag.endswith("}rte")
 
     def test_build_route_name(self, sample_route: Route) -> None:
         """Test building route with name."""
+
         element = sample_route.to_xml()
-        name = element.find("name")
+        name = element.find(f"{{{GPX_NS}}}name")
         assert name is not None
         assert name.text == "Test Route"
 
     def test_build_route_points_tag(self, sample_route: Route) -> None:
         """Test that route points use 'rtept' tag."""
+
         element = sample_route.to_xml()
-        rtepts = element.findall("rtept")
+        rtepts = element.findall(f"{{{GPX_NS}}}rtept")
         assert len(rtepts) == 4
-        assert all(pt.tag == "rtept" for pt in rtepts)
+        # Tags include namespace, so check that they end with }rtept
+        assert all(pt.tag.endswith("}rtept") for pt in rtepts)
 
     def test_build_route_roundtrip(self, gpx_with_route_string: str) -> None:
         """Test route parsing and building roundtrip."""
@@ -101,6 +108,7 @@ class TestRouteBuilding:
         assert gpx2.routes[0].name == gpx.routes[0].name
         assert len(gpx2.routes[0].rtept) == len(gpx.routes[0].rtept)
         assert gpx2.routes[0].rtept[0].name == gpx.routes[0].rtept[0].name
+
 
 
 class TestRouteStatistics:
@@ -145,6 +153,7 @@ class TestRouteStatistics:
         assert descent >= Decimal(0)
 
 
+
 class TestRouteSequence:
     """Tests for route sequence behavior (via PointsMutableSequenceMixin)."""
 
@@ -174,6 +183,7 @@ class TestRouteSequence:
         points = list(sample_route)
         assert len(points) == 4
         assert all(isinstance(p, Waypoint) for p in points)
+
 
 
 class TestRouteCreation:
@@ -207,10 +217,12 @@ class TestRouteCreation:
 
     def test_route_with_links(self, sample_route: Route, sample_link: Link) -> None:
         """Test route with links."""
+
         sample_route.link = [sample_link]
         element = sample_route.to_xml()
-        links = element.findall("link")
+        links = element.findall(f"{{{GPX_NS}}}link")
         assert len(links) == 1
+
 
 
 class TestRouteGeoInterface:

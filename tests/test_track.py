@@ -9,6 +9,9 @@ import pytest
 from gpx import GPX, Track, TrackSegment, Waypoint
 from gpx.types import Latitude, Longitude
 
+#: GPX 1.1 namespace
+GPX_NS = "http://www.topografix.com/GPX/1/1"
+
 
 class TestTrackSegmentParsing:
     """Tests for parsing track segments from XML."""
@@ -41,24 +44,29 @@ class TestTrackSegmentParsing:
         assert seg.trkpt[2].ele == Decimal("36.5")
 
 
+
 class TestTrackSegmentBuilding:
     """Tests for building track segment XML."""
 
     def test_build_track_segment(self, sample_track_segment: TrackSegment) -> None:
         """Test building track segment XML."""
+
         element = sample_track_segment.to_xml()
-        assert element.tag == "trkseg"
-        trkpts = element.findall("trkpt")
+        assert element.tag.endswith("}trkseg")
+        trkpts = element.findall(f"{{{GPX_NS}}}trkpt")
         assert len(trkpts) == 4
 
     def test_build_track_segment_point_tag(
         self, sample_track_segment: TrackSegment
     ) -> None:
         """Test that track points use 'trkpt' tag."""
+
         element = sample_track_segment.to_xml()
-        trkpts = element.findall("trkpt")
+        trkpts = element.findall(f"{{{GPX_NS}}}trkpt")
         assert len(trkpts) > 0
-        assert all(pt.tag == "trkpt" for pt in trkpts)
+        # Tags include namespace, so check that they end with }trkpt
+        assert all(pt.tag.endswith("}trkpt") for pt in trkpts)
+
 
 
 class TestTrackSegmentStatistics:
@@ -129,6 +137,7 @@ class TestTrackSegmentStatistics:
         assert descent == Decimal("1.0")
 
 
+
 class TestTrackSegmentSequence:
     """Tests for track segment sequence behavior."""
 
@@ -147,6 +156,7 @@ class TestTrackSegmentSequence:
         points = list(sample_track_segment)
         assert len(points) == 4
         assert all(isinstance(p, Waypoint) for p in points)
+
 
 
 class TestTrackParsing:
@@ -196,18 +206,20 @@ class TestTrackParsing:
         assert len(trk.segments) == 2  # alias
 
 
+
 class TestTrackBuilding:
     """Tests for building track XML."""
 
     def test_build_track(self, sample_track: Track) -> None:
         """Test building track XML."""
         element = sample_track.to_xml()
-        assert element.tag == "trk"
+        assert element.tag.endswith("}trk")
 
     def test_build_track_name(self, sample_track: Track) -> None:
         """Test building track with name."""
+
         element = sample_track.to_xml()
-        name = element.find("name")
+        name = element.find(f"{{{GPX_NS}}}name")
         assert name is not None
         assert name.text == "Test Track"
 
@@ -219,6 +231,7 @@ class TestTrackBuilding:
 
         assert gpx2.tracks[0].name == gpx.tracks[0].name
         assert len(gpx2.tracks[0].trkseg) == len(gpx.tracks[0].trkseg)
+
 
 
 class TestTrackStatistics:
@@ -259,6 +272,7 @@ class TestTrackStatistics:
         assert trk.max_elevation == Decimal("36.5")
 
 
+
 class TestTrackSequence:
     """Tests for track sequence behavior."""
 
@@ -284,6 +298,7 @@ class TestTrackSequence:
         assert all(isinstance(s, TrackSegment) for s in segments)
 
 
+
 class TestTrackCreation:
     """Tests for creating tracks programmatically."""
 
@@ -307,6 +322,7 @@ class TestTrackCreation:
         assert trk.name == "Custom Track"
         assert len(trk.trkseg) == 1
         assert len(trk.trkseg[0].trkpt) == 4
+
 
 
 class TestTrackGeoInterface:
