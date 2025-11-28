@@ -1,4 +1,4 @@
-"""PyGPX is a Python package that brings support for reading, writing and converting GPX files."""
+"""PyGPX is a pure Python package that brings support for reading, manipulating, writing and converting GPX files."""
 
 from .base import GPXModel
 from .bounds import Bounds

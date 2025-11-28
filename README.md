@@ -9,7 +9,7 @@
 [![Documentation Status](https://readthedocs.org/projects/gpx/badge/?version=latest)](https://gpx.readthedocs.io/en/latest/?badge=latest)
 [![PyPI - License](https://img.shields.io/pypi/l/gpx)](https://img.shields.io/pypi/l/gpx)
 
-PyGPX is a Python package that brings support for reading, writing and converting GPX files.
+PyGPX is a pure Python package that brings support for reading, manipulating, writing and converting GPX (GPS Exchange Format) files.
 
 <!-- end docs-include-index -->
 

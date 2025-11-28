@@ -4,7 +4,7 @@ This file provides guidance for AI assistants working with the PyGPX codebase.
 
 ## Project Overview
 
-PyGPX is a Python library for reading, writing, and converting GPX (GPS Exchange Format) files. It provides a fully-typed, dataclass-based interface for working with GPX 1.1 specification data.
+PyGPX is a pure Python library for reading, manipulating, writing, and converting GPX (GPS Exchange Format) files. It provides a fully-typed, dataclass-based interface for working with GPX 1.1 specification data.
 
 -   **Package name**: `gpx` (on PyPI)
 -   **Current version**: 2025.1.0
@@ -62,10 +62,6 @@ gpx/
 -   **.readthedocs.yaml**: ReadTheDocs build configuration
 -   **.editorconfig**: Editor settings (4 spaces, LF line endings, UTF-8)
 -   **.gitattributes**: Git attributes for line ending normalization
-
-## Key Dependencies
-
--   **lxml**: XML parsing and building
 
 ## Development Setup
 
@@ -471,7 +467,6 @@ Example dataclass model:
 from __future__ import annotations
 
 from dataclasses import KW_ONLY, dataclass
-from lxml import etree
 
 from .base import GPXModel
 
