@@ -8,156 +8,78 @@ The **first number** of the version is the year.
 The **second number** is incremented with each release, starting at 1 for each year.
 The **third number** is for emergencies when we need to start branches for older releases.
 
-## 2025.1.0 (2025-11-28)
+## [2025.1.0] - 2025-11-28
 
 This is a major release that represents a complete rewrite of the library architecture. The package has been modernized with dataclass-based models, pure Python implementation, and enhanced GeoJSON support.
 
-### ⚠️ Breaking Changes
-
-#### Package Renamed
-
--   **The package has been renamed from "PyGPX" to "gpx"**. Update all imports:
-    ```python
-    # Old
-    from pygpx import GPX
-
-    # New
-    from gpx import GPX
-    ```
-
-#### Complete Architecture Refactor
-
--   **Replaced Element-based classes with dataclass-based models**. All GPX elements (GPX, Waypoint, Track, Route, etc.) are now implemented as Python dataclasses with `slots=True` for memory efficiency.
--   **Removed the `Element` base class** and `mixins` module. All models now inherit from `GPXModel` which provides `from_xml()` and `to_xml()` methods.
--   **Models are now mutable** (changed from `frozen=True` to allow in-place modifications).
--   **Models with all-optional fields now use keyword-only arguments** for clarity. For example:
-    ```python
-    # Old (positional args allowed)
-    track = Track("My Track", [segment])
-
-    # New (keyword-only)
-    track = Track(name="My Track", trkseg=[segment])
-    ```
-
-#### Field Name Changes
-
-Several field names have been updated to exactly match GPX XML tag names (aliases still provided for convenience):
-
--   Waypoints list: prefer `wpt` (alias: `waypoints`)
--   Tracks list: prefer `trk` (alias: `tracks`)
--   Routes list: prefer `rte` (alias: `routes`)
--   Track segments: prefer `trkseg` (alias: `segments`)
--   Track points: prefer `trkpt` (alias: `points`)
--   Route points: prefer `rtept` (alias: `points`)
--   Links list: prefer `link` (alias: `links`)
-
-#### Removed lxml Dependency
-
--   **The `lxml` dependency has been removed**. The library now uses Python's built-in `xml.etree.ElementTree` module, making it a **pure Python package with zero dependencies**.
--   **XML validation support has been removed**. Calling `GPX.from_file()` or `GPX.from_string()` with `validate=True` will raise `NotImplementedError`. The `gpx.xsd` schema file has been removed.
-
-#### Removed errors Module
-
--   **The `gpx.errors` module has been removed** along with the `ParseError` exception. Standard Python exceptions (`ValueError`, `KeyError`, etc.) are now used for error handling.
-
-#### Python Version Requirement
-
--   **Minimum Python version increased from 3.10 to 3.11**. Python 3.11, 3.12, 3.13, and 3.14 are now supported.
-
-#### Build System and Dependencies
-
--   **Build backend changed from `flit` to `uv`**. The package is now built using `uv build` instead of `flit`.
--   **Changed from optional dependencies to dependency groups**. Install development dependencies with:
-    ```bash
-    # Old
-    pip install gpx[dev]
-
-    # New
-    uv sync --group dev
-    # or with pip
-    pip install -e ".[dev]"
-    ```
+**This release contains multiple breaking changes. Please review the Changed and Removed sections carefully and see the migration notes at the end of this entry.**
 
 ### Added
 
-#### GeoJSON Support
-
--   **Added `__geo_interface__` protocol support** to all geographic models for GeoJSON interoperability:
-    -   `Waypoint`: Returns GeoJSON Point geometry
-    -   `Route`: Returns GeoJSON LineString geometry
-    -   `Track`: Returns GeoJSON MultiLineString geometry
-    -   `TrackSegment`: Returns GeoJSON LineString geometry
-    -   `Bounds`: Returns GeoJSON Polygon geometry
-    -   `GPX`: Returns GeoJSON FeatureCollection with all features
-
-    Example usage:
-    ```python
-    waypoint = Waypoint(lat=Decimal("52.0"), lon=Decimal("4.0"))
-    geo_json = waypoint.__geo_interface__
-    # {"type": "Point", "coordinates": [4.0, 52.0]}
-    ```
-
-#### Enhanced Statistics and Calculations
-
--   **Added comprehensive statistics methods** to Track, TrackSegment, and Route:
-    -   `total_distance`: Total distance in meters (Haversine formula)
-    -   `total_duration`: Total time duration
-    -   `avg_speed`, `max_speed`, `min_speed`: Speed statistics in m/s
-    -   `avg_elevation`, `max_elevation`, `min_elevation`: Elevation statistics
-    -   `total_ascent`, `total_descent`: Cumulative elevation changes
-    -   `elevation_profile`: List of elevation values with distance
-    -   `speed_profile`: List of speed values with distance
-    -   `bounds`: Geographic bounding box
-
--   **Added waypoint-to-waypoint calculation methods**:
-    -   `distance_to(other)`: Distance in meters using Haversine formula
-    -   `duration_to(other)`: Time duration as `timedelta`
-    -   `speed_to(other)`: Speed in m/s
-    -   `gain_to(other)`: Elevation gain in meters
-    -   `slope_to(other)`: Slope as percentage
-
-#### Dataclass Improvements
-
--   **All dataclasses use `slots=True`** for memory-efficient attribute storage (approximately 40% memory reduction).
--   **Automatic XML parsing and serialization** based on type annotations via new utility functions in `utils.py`.
--   **Better type safety** with full type annotations and PEP 561 compliance (`py.typed` marker).
-
-#### Testing
-
--   **Added comprehensive test suite** with 258 tests covering all modules.
--   **Added smoke tests** that validate package installation, basic GPX reading/writing, and core functionality.
--   **All tests now run on Python 3.11-3.14** via GitHub Actions.
+-   `__geo_interface__` property to all geographic models for GeoJSON interoperability following the geo interface protocol.
+-   `__geo_interface__` for `Waypoint` returns GeoJSON Point geometry.
+-   `__geo_interface__` for `Route` returns GeoJSON LineString geometry.
+-   `__geo_interface__` for `Track` returns GeoJSON MultiLineString geometry.
+-   `__geo_interface__` for `TrackSegment` returns GeoJSON LineString geometry.
+-   `__geo_interface__` for `Bounds` returns GeoJSON Polygon geometry.
+-   `__geo_interface__` for `GPX` returns GeoJSON FeatureCollection with all features.
+-   Statistics properties to `Track`, `TrackSegment`, and `Route`: `total_distance`, `total_duration`, `avg_speed`, `max_speed`, `min_speed`, `avg_elevation`, `max_elevation`, `min_elevation`, `total_ascent`, `total_descent`, `elevation_profile`, `speed_profile`, and `bounds`.
+-   Calculation methods to `Waypoint`: `distance_to()`, `duration_to()`, `speed_to()`, `gain_to()`, and `slope_to()` for waypoint-to-waypoint calculations.
+-   Memory-efficient `slots=True` to all dataclass models (approximately 40% memory reduction).
+-   Automatic XML parsing and serialization based on type annotations via new utility functions in `utils.py`.
+-   Comprehensive test suite with 258 tests covering all modules.
+-   Smoke tests that validate package installation, basic GPX reading/writing, and core functionality.
+-   Python 3.14 support.
+-   Test workflow running on Python 3.11-3.14 via GitHub Actions.
 
 ### Changed
 
--   **Default `creator` attribute** for GPX objects is now `"gpx"` (previously `"PyGPX"`).
--   **Improved namespace handling** in XML parsing using XPath prefix approach for cleaner code.
--   **Documentation updated** to reflect the new dataclass-based API and pure Python implementation.
+-   **BREAKING:** Package name changed from `PyGPX` to `gpx`. All imports must be updated from `from pygpx import ...` to `from gpx import ...`.
+-   **BREAKING:** Replaced Element-based classes with dataclass-based models. All GPX elements (GPX, Waypoint, Track, Route, etc.) are now implemented as Python dataclasses.
+-   **BREAKING:** All models now inherit from `GPXModel` base class instead of `Element` class.
+-   **BREAKING:** Models are now mutable (changed from `frozen=True` to allow in-place modifications).
+-   **BREAKING:** Models with all-optional fields now use keyword-only arguments. For example, `Track(name="My Track", trkseg=[segment])` instead of `Track("My Track", [segment])`.
+-   **BREAKING:** Field names updated to exactly match GPX XML tag names. Prefer `wpt`, `trk`, `rte`, `trkseg`, `trkpt`, `rtept`, and `link` (aliases `waypoints`, `tracks`, `routes`, `segments`, `points`, and `links` still available for convenience).
+-   **BREAKING:** XML parsing now uses Python's built-in `xml.etree.ElementTree` module instead of `lxml`.
+-   **BREAKING:** `validate` parameter in `GPX.from_file()` and `GPX.from_string()` now raises `NotImplementedError` when set to `True`. XML validation is no longer supported.
+-   **BREAKING:** Minimum Python version increased from 3.10 to 3.11. Python 3.11, 3.12, 3.13, and 3.14 are now supported.
+-   **BREAKING:** Build backend changed from `flit` to `uv`. Package is now built using `uv build`.
+-   **BREAKING:** Optional dependencies changed to dependency groups. Install with `uv sync --group dev` or `pip install -e ".[dev]"` instead of `pip install gpx[dev]`.
+-   Default `creator` attribute for GPX objects is now `"gpx"` (previously `"PyGPX"`).
+-   Namespace handling in XML parsing now uses XPath prefix approach for cleaner code.
+-   Documentation updated to reflect the new dataclass-based API and pure Python implementation.
+
+### Removed
+
+-   **BREAKING:** `lxml` dependency. The library is now a pure Python package with zero runtime dependencies.
+-   **BREAKING:** `gpx.xsd` schema file and all XML validation functionality.
+-   **BREAKING:** `gpx.errors` module and `ParseError` exception. Standard Python exceptions (`ValueError`, `KeyError`, etc.) are now used for error handling.
+-   **BREAKING:** `Element` base class.
+-   **BREAKING:** `mixins` module (`AttributesMutableMappingMixin`, `PointsSequenceMixin`, `PointsMutableSequenceMixin`).
+-   Python 3.10 support.
 
 ### Fixed
 
--   **Fixed `GPX.to_string()` encoding issues** when serializing to string format.
--   **Fixed statistics calculations** for tracks, routes, and segments.
--   **Fixed datetime to string conversion** in XML serialization.
+-   `GPX.to_string()` encoding issues when serializing to string format.
+-   Statistics calculations for tracks, routes, and segments.
+-   Datetime to string conversion in XML serialization.
 
-### Migration Guide
+---
 
-For users upgrading from 0.2.x versions:
+**Migration notes for users upgrading from 0.2.x:**
 
-1. **Update package name**: `pip uninstall pygpx && pip install gpx`
-2. **Update imports**: Change `from pygpx import ...` to `from gpx import ...`
-3. **Update constructor calls**: Use keyword arguments for all optional parameters
-4. **Update field names**: Use the GPX-standard field names (e.g., `trkseg` instead of `trksegs`)
-5. **Remove validation calls**: Remove `validate=True` from `from_file()` and `from_string()` calls
-6. **Update error handling**: Catch standard Python exceptions instead of `gpx.errors.ParseError`
-7. **Check Python version**: Ensure you're using Python 3.11 or higher
+1. Update package name: `pip uninstall pygpx && pip install gpx`
+2. Update imports: `from pygpx import ...` → `from gpx import ...`
+3. Update constructor calls to use keyword arguments for optional parameters
+4. Update field names to use GPX-standard names (e.g., `trkseg` instead of `trksegs`)
+5. Remove `validate=True` from `from_file()` and `from_string()` calls
+6. Update error handling to catch standard Python exceptions instead of `gpx.errors.ParseError`
+7. Ensure Python 3.11 or higher is installed
 
-Example migration:
-
+Example:
 ```python
 # Before (0.2.x)
 from pygpx import GPX, Waypoint
-
 gpx = GPX.from_file("track.gpx", validate=True)
 waypoint = Waypoint()
 waypoint.lat = Decimal("52.0")
@@ -168,14 +90,9 @@ gpx.waypoints.append(waypoint)
 # After (2025.1.0)
 from gpx import GPX, Waypoint
 from decimal import Decimal
-
-gpx = GPX.from_file("track.gpx")  # No validation parameter
-waypoint = Waypoint(
-    lat=Decimal("52.0"),
-    lon=Decimal("4.0"),
-    name="Amsterdam"
-)
-gpx.wpt.append(waypoint)  # or gpx.waypoints.append(waypoint)
+gpx = GPX.from_file("track.gpx")
+waypoint = Waypoint(lat=Decimal("52.0"), lon=Decimal("4.0"), name="Amsterdam")
+gpx.wpt.append(waypoint)
 ```
 
 ## 0.2.1 (2023-04-09)
