@@ -129,6 +129,8 @@ class Route(GPXModel):
     @property
     def total_duration(self) -> timedelta:
         """The total duration."""
+        if len(self.rtept) < 2:  # noqa: PLR2004
+            return timedelta()
         return self.rtept[0].duration_to(self.rtept[-1])
 
     @property
@@ -152,7 +154,11 @@ class Route(GPXModel):
     @property
     def avg_speed(self) -> float:
         """The average speed (in metres / second)."""
-        return self.total_distance / self.total_duration.total_seconds()
+        return (
+            self.total_distance / self.total_duration.total_seconds()
+            if self.total_duration
+            else 0.0
+        )
 
     @property
     def speed(self) -> float:
@@ -162,7 +168,11 @@ class Route(GPXModel):
     @property
     def avg_moving_speed(self) -> float:
         """The average moving speed (in metres / second)."""
-        return self.total_distance / self.moving_duration.total_seconds()
+        return (
+            self.total_distance / self.moving_duration.total_seconds()
+            if self.moving_duration
+            else 0.0
+        )
 
     @property
     def _speeds(self) -> list[float]:
@@ -235,12 +245,12 @@ class Route(GPXModel):
     @property
     def total_ascent(self) -> Decimal:
         """The total ascent (in metres)."""
-        return sum([gain for gain in self._gains if gain > 0], Decimal(0))
+        return sum((gain for gain in self._gains if gain > 0), Decimal(0))
 
     @property
     def total_descent(self) -> Decimal:
         """The total descent (in metres)."""
-        return abs(sum([gain for gain in self._gains if gain < 0], Decimal(0)))
+        return abs(sum((gain for gain in self._gains if gain < 0), Decimal(0)))
 
     @property
     def elevation_profile(self) -> list[tuple[float, Decimal]]:
