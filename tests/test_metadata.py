@@ -6,7 +6,7 @@ from gpx import GPX, Bounds, Copyright, Email, Link, Metadata, Person
 from gpx.types import Latitude, Longitude
 
 #: GPX 1.1 namespace
-GPX_NS = "http://www.topografix.com/GPX/1/1"
+GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
 
 
 class TestMetadataParsing:
@@ -69,7 +69,6 @@ class TestMetadataParsing:
         assert gpx.metadata.bounds.minlat == Latitude("52.5")
 
 
-
 class TestMetadataBuilding:
     """Tests for building metadata XML."""
 
@@ -82,7 +81,7 @@ class TestMetadataBuilding:
         """Test building metadata with name."""
 
         element = sample_metadata.to_xml()
-        name = element.find(f"{{{GPX_NS}}}name")
+        name = element.find(f"{{{GPX_NAMESPACE}}}name")
         assert name is not None
         assert name.text == "Test GPX"
 
@@ -96,7 +95,6 @@ class TestMetadataBuilding:
         assert gpx2.metadata is not None
         assert gpx2.metadata.name == gpx.metadata.name
         assert gpx2.metadata.desc == gpx.metadata.desc
-
 
 
 class TestMetadataCreation:
@@ -124,7 +122,6 @@ class TestMetadataCreation:
         assert meta.keywords == "test, metadata"
 
 
-
 class TestBoundsParsing:
     """Tests for parsing bounds from XML."""
 
@@ -138,7 +135,6 @@ class TestBoundsParsing:
         assert bounds.minlon == Longitude("13.4")
         assert bounds.maxlat == Latitude("52.6")
         assert bounds.maxlon == Longitude("13.5")
-
 
 
 class TestBoundsBuilding:
@@ -167,7 +163,6 @@ class TestBoundsBuilding:
         assert gpx2.metadata.bounds.maxlat == gpx.metadata.bounds.maxlat
 
 
-
 class TestBoundsCreation:
     """Tests for creating bounds programmatically."""
 
@@ -182,7 +177,6 @@ class TestBoundsCreation:
 
         assert bounds.minlat == Latitude("52.5")
         assert bounds.maxlat == Latitude("52.6")
-
 
 
 class TestLinkParsing:
@@ -210,7 +204,6 @@ class TestLinkParsing:
         assert link.type == "text/html"
 
 
-
 class TestLinkBuilding:
     """Tests for building link XML."""
 
@@ -224,7 +217,7 @@ class TestLinkBuilding:
         """Test building link with text."""
 
         element = sample_link.to_xml()
-        text = element.find(f"{{{GPX_NS}}}text")
+        text = element.find(f"{{{GPX_NAMESPACE}}}text")
         assert text is not None
         assert text.text == "Example Link"
 
@@ -237,7 +230,6 @@ class TestLinkBuilding:
         assert gpx.metadata is not None
         assert gpx2.metadata is not None
         assert gpx2.metadata.link[0].href == gpx.metadata.link[0].href
-
 
 
 class TestLinkCreation:
@@ -254,7 +246,6 @@ class TestLinkCreation:
         assert link.href == "https://example.com"
         assert link.text == "Example"
         assert link.type == "text/html"
-
 
 
 class TestPersonParsing:
@@ -288,7 +279,6 @@ class TestPersonParsing:
         assert person.link.href == "https://example.com"
 
 
-
 class TestPersonBuilding:
     """Tests for building person XML."""
 
@@ -307,7 +297,7 @@ class TestPersonBuilding:
         """Test building person with name."""
 
         element = sample_person.to_xml()
-        name = element.find(f"{{{GPX_NS}}}name")
+        name = element.find(f"{{{GPX_NAMESPACE}}}name")
         assert name is not None
         assert name.text == "Test Author"
 
@@ -322,7 +312,6 @@ class TestPersonBuilding:
         assert gpx2.metadata is not None
         assert gpx2.metadata.author is not None
         assert gpx2.metadata.author.name == gpx.metadata.author.name
-
 
 
 class TestPersonCreation:
@@ -344,7 +333,6 @@ class TestPersonCreation:
         assert person.email.id == "john"
 
 
-
 class TestEmailParsing:
     """Tests for parsing email from XML."""
 
@@ -357,7 +345,6 @@ class TestEmailParsing:
         assert email is not None
         assert email.id == "test"
         assert email.domain == "example.com"
-
 
 
 class TestEmailBuilding:
@@ -373,7 +360,6 @@ class TestEmailBuilding:
         assert element.get("domain") == "example.com"
 
 
-
 class TestEmailCreation:
     """Tests for creating email programmatically."""
 
@@ -383,7 +369,6 @@ class TestEmailCreation:
 
         assert email.id == "john"
         assert email.domain == "example.com"
-
 
 
 class TestCopyrightParsing:
@@ -414,7 +399,6 @@ class TestCopyrightParsing:
         assert copyright_.license == "https://creativecommons.org/licenses/by/4.0/"
 
 
-
 class TestCopyrightBuilding:
     """Tests for building copyright XML."""
 
@@ -442,7 +426,6 @@ class TestCopyrightBuilding:
         assert gpx2.metadata.copyright is not None
         assert gpx2.metadata.copyright.author == gpx.metadata.copyright.author
         assert gpx2.metadata.copyright.year == gpx.metadata.copyright.year
-
 
 
 class TestCopyrightCreation:

@@ -22,7 +22,7 @@ from gpx.types import Latitude, Longitude
 from gpx.utils import from_isoformat
 
 #: GPX 1.1 namespace
-GPX_NS = "http://www.topografix.com/GPX/1/1"
+GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
 
 
 def find_gpx(element: ET.Element, tag: str) -> ET.Element | None:
@@ -36,7 +36,7 @@ def find_gpx(element: ET.Element, tag: str) -> ET.Element | None:
         The found element, or None if not found.
 
     """
-    return element.find(f"{{{GPX_NS}}}{tag}")
+    return element.find(f"{{{GPX_NAMESPACE}}}{tag}")
 
 
 def findall_gpx(element: ET.Element, tag: str) -> list[ET.Element]:
@@ -50,7 +50,7 @@ def findall_gpx(element: ET.Element, tag: str) -> list[ET.Element]:
         List of found elements.
 
     """
-    return element.findall(f"{{{GPX_NS}}}{tag}")
+    return element.findall(f"{{{GPX_NAMESPACE}}}{tag}")
 
 
 @pytest.fixture

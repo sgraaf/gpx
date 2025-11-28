@@ -10,7 +10,7 @@ from gpx import GPX, Waypoint
 from gpx.types import Degrees, DGPSStation, Fix, Latitude, Longitude
 
 #: GPX 1.1 namespace
-GPX_NS = "http://www.topografix.com/GPX/1/1"
+GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
 
 
 class TestWaypointParsing:
@@ -115,22 +115,23 @@ class TestWaypointBuilding:
     def test_build_waypoint_elevation(self, sample_waypoint: Waypoint) -> None:
         """Test building waypoint with elevation."""
         element = sample_waypoint.to_xml()
-        ele = element.find(f"{{{GPX_NS}}}ele")
+        ele = element.find(f"{{{GPX_NAMESPACE}}}ele")
         assert ele is not None
         assert ele.text == "34.5"
 
     def test_build_waypoint_name(self, sample_waypoint: Waypoint) -> None:
         """Test building waypoint with name."""
         element = sample_waypoint.to_xml()
-        name = element.find(f"{{{GPX_NS}}}name")
+        name = element.find(f"{{{GPX_NAMESPACE}}}name")
         assert name is not None
         assert name.text == "Berlin"
 
     def test_build_waypoint_time_format(self, sample_waypoint: Waypoint) -> None:
         """Test that time is formatted correctly in XML."""
         element = sample_waypoint.to_xml()
-        time = element.find(f"{{{GPX_NS}}}time")
+        time = element.find(f"{{{GPX_NAMESPACE}}}time")
         assert time is not None
+        assert time.text is not None
         assert "2023-06-15T10:30:00" in time.text
         assert time.text.endswith("Z")
 

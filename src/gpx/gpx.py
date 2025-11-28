@@ -10,7 +10,6 @@ import xml.etree.ElementTree as ET
 from dataclasses import KW_ONLY, dataclass, field
 from typing import TYPE_CHECKING, Any, Self
 
-from gpx.errors import InvalidGPXError
 from gpx.utils import remove_encoding_from_string
 
 from .base import GPXModel
@@ -266,20 +265,14 @@ class GPX(GPXModel):
         return element
 
     @classmethod
-    def from_string(cls, gpx_str: str, *, validate: bool = False) -> Self:
+    def from_string(cls, gpx_str: str) -> Self:
         """Create a GPX instance from a string.
 
         Args:
             gpx_str: The string containing the GPX data.
-            validate: Whether to validate the GPX data against the GPX 1.1 schema.
-                Defaults to False. Note: Validation is not currently supported without lxml.
 
         Returns:
             The GPX instance.
-
-        Raises:
-            InvalidGPXError: If validation is enabled and the GPX data is invalid.
-            NotImplementedError: If validation is requested (validate=True).
 
         Example:
             >>> from gpx import GPX
@@ -291,10 +284,6 @@ class GPX(GPXModel):
             MyApp
 
         """
-        if validate:
-            msg = "Validation is not supported without lxml. Install lxml or use validate=False."
-            raise NotImplementedError(msg)
-
         # ET.fromstring() does not support encoding declarations in the string
         gpx_str = remove_encoding_from_string(gpx_str)
         element = ET.fromstring(gpx_str)
@@ -302,20 +291,14 @@ class GPX(GPXModel):
         return cls.from_xml(element)
 
     @classmethod
-    def from_file(cls, gpx_file: str | Path, *, validate: bool = False) -> Self:
+    def from_file(cls, gpx_file: str | Path) -> Self:
         """Create a GPX instance from a file.
 
         Args:
             gpx_file: The file path containing the GPX data.
-            validate: Whether to validate the GPX data against the GPX 1.1 schema.
-                Defaults to False. Note: Validation is not currently supported without lxml.
 
         Returns:
             The GPX instance.
-
-        Raises:
-            InvalidGPXError: If validation is enabled and the GPX data is invalid.
-            NotImplementedError: If validation is requested (validate=True).
 
         Example:
             >>> from gpx import GPX
@@ -323,10 +306,6 @@ class GPX(GPXModel):
             >>> print(gpx.creator)
 
         """
-        if validate:
-            msg = "Validation is not supported without lxml. Install lxml or use validate=False."
-            raise NotImplementedError(msg)
-
         gpx_tree = ET.parse(str(gpx_file))
         element = gpx_tree.getroot()
 

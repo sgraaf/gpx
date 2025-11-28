@@ -5,10 +5,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-import pytest
-
 from gpx import GPX, Metadata, Route, Track, Waypoint
-from gpx.errors import InvalidGPXError
 from gpx.types import Latitude
 
 
@@ -79,29 +76,6 @@ class TestGPXParsing:
 
             # Cleanup
             Path(f.name).unlink()
-
-
-class TestGPXValidation:
-    """Tests for GPX validation."""
-
-    def test_parse_valid_gpx_with_validation(self, minimal_gpx_string: str) -> None:
-        """Test that validation raises NotImplementedError without lxml."""
-        with pytest.raises(NotImplementedError, match="Validation is not supported"):
-            GPX.from_string(minimal_gpx_string, validate=True)
-
-    def test_parse_invalid_gpx_with_validation(self, invalid_gpx_string: str) -> None:
-        """Test that validation raises NotImplementedError without lxml."""
-        with pytest.raises(NotImplementedError, match="Validation is not supported"):
-            GPX.from_string(invalid_gpx_string, validate=True)
-
-    def test_parse_invalid_gpx_without_validation(
-        self, invalid_gpx_string: str
-    ) -> None:
-        """Test that invalid GPX can be parsed when validation is disabled."""
-        # This may raise a different error due to missing lat/lon attributes
-        # In dataclass models, it raises ValueError instead of KeyError
-        with pytest.raises((KeyError, ValueError)):
-            GPX.from_string(invalid_gpx_string, validate=False)
 
 
 class TestGPXBuilding:

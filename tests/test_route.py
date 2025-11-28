@@ -8,7 +8,7 @@ from gpx import GPX, Link, Route, Waypoint
 from gpx.types import Latitude, Longitude
 
 #: GPX 1.1 namespace
-GPX_NS = "http://www.topografix.com/GPX/1/1"
+GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
 
 
 class TestRouteParsing:
@@ -73,7 +73,6 @@ class TestRouteParsing:
         assert rte.rtept[2].name == "End"
 
 
-
 class TestRouteBuilding:
     """Tests for building route XML."""
 
@@ -86,7 +85,7 @@ class TestRouteBuilding:
         """Test building route with name."""
 
         element = sample_route.to_xml()
-        name = element.find(f"{{{GPX_NS}}}name")
+        name = element.find(f"{{{GPX_NAMESPACE}}}name")
         assert name is not None
         assert name.text == "Test Route"
 
@@ -94,7 +93,7 @@ class TestRouteBuilding:
         """Test that route points use 'rtept' tag."""
 
         element = sample_route.to_xml()
-        rtepts = element.findall(f"{{{GPX_NS}}}rtept")
+        rtepts = element.findall(f"{{{GPX_NAMESPACE}}}rtept")
         assert len(rtepts) == 4
         # Tags include namespace, so check that they end with }rtept
         assert all(pt.tag.endswith("}rtept") for pt in rtepts)
@@ -108,7 +107,6 @@ class TestRouteBuilding:
         assert gpx2.routes[0].name == gpx.routes[0].name
         assert len(gpx2.routes[0].rtept) == len(gpx.routes[0].rtept)
         assert gpx2.routes[0].rtept[0].name == gpx.routes[0].rtept[0].name
-
 
 
 class TestRouteStatistics:
@@ -153,7 +151,6 @@ class TestRouteStatistics:
         assert descent >= Decimal(0)
 
 
-
 class TestRouteSequence:
     """Tests for route sequence behavior (via PointsMutableSequenceMixin)."""
 
@@ -183,7 +180,6 @@ class TestRouteSequence:
         points = list(sample_route)
         assert len(points) == 4
         assert all(isinstance(p, Waypoint) for p in points)
-
 
 
 class TestRouteCreation:
@@ -220,9 +216,8 @@ class TestRouteCreation:
 
         sample_route.link = [sample_link]
         element = sample_route.to_xml()
-        links = element.findall(f"{{{GPX_NS}}}link")
+        links = element.findall(f"{{{GPX_NAMESPACE}}}link")
         assert len(links) == 1
-
 
 
 class TestRouteGeoInterface:

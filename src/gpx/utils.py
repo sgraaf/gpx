@@ -241,7 +241,7 @@ def parse_from_xml(cls: type[Any], element: ET.Element) -> dict[str, Any]:  # no
                 result[field.name] = items
             else:
                 # Single optional element
-                child = element.find(_ns_tag(field.name, element))
+                child = element.find(_ns_tag(field.name, element))  # type: ignore[assignment]
                 if child is None:
                     result[field.name] = None
                 elif has_from_xml(inner_type):
