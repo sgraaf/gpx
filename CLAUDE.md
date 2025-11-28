@@ -31,7 +31,6 @@ gpx/
 │   ├── email.py          # Email dataclass model
 │   ├── copyright.py      # Copyright dataclass model
 │   ├── types.py          # Custom types: Latitude, Longitude, Degrees, Fix, DGPSStation
-│   ├── errors.py         # Custom exceptions: InvalidGPXError, ParseError
 │   ├── utils.py          # Utility functions for XML parsing and serialization
 │   └── py.typed          # PEP 561 marker for type hints
 ├── docs/                 # Sphinx documentation (MyST Markdown)

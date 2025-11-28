@@ -109,10 +109,3 @@
 .. automodule:: gpx.utils
     :members:
 ```
-
-## `gpx.errors` Module
-
-```{eval-rst}
-.. automodule:: gpx.errors
-    :members:
-```
