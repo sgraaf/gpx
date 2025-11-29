@@ -8,7 +8,10 @@ The **first number** of the version is the year.
 The **second number** is incremented with each release, starting at 1 for each year.
 The **third number** is for emergencies when we need to start branches for older releases.
 
-## 2025.1.0 - 2025-11-29
+## [Unreleased](https://github.com/sgraaf/gpx/compare/2025.1.0...HEAD)
+
+
+## [2025.1.0]((https://github.com/sgraaf/gpx/compare/0.2.1...2025.1.0)) - 2025-11-29
 
 This is a major release with a lot of breaking changes, primarily due to a complete rewrite of the architecture, and a general modernization of the package. Besides the change in architecture, this release adds comprehensive unit tests, enforces strict linting rules, and drops support folder older versions of Python. Finally, this release implements the `__geo_interface__` protocol for all GPX elements that contain geopgraphic information, thus adding support for converting to GeoJSON.
 
