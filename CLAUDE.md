@@ -182,9 +182,9 @@ gpx = GPX.from_string(gpx_string)
 # Access basic properties
 print(gpx.creator)
 print(gpx.version)  # Always "1.1"
-print(len(gpx.waypoints))  # or gpx.wpt
-print(len(gpx.tracks))      # or gpx.trk
-print(len(gpx.routes))      # or gpx.rte
+print(len(gpx.wpt))  # or gpx.wpt
+print(len(gpx.trk))      # or gpx.trk
+print(len(gpx.rte))      # or gpx.rte
 ```
 
 **Writing GPX files:**
@@ -245,7 +245,7 @@ gpx.to_file("output.gpx")
 
 ```python
 # Get statistics from tracks
-track = gpx.tracks[0]
+track = gpx.trk[0]
 print(f"Distance: {track.total_distance} meters")
 print(f"Duration: {track.total_duration}")
 print(f"Avg speed: {track.avg_speed} m/s")

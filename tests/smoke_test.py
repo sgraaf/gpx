@@ -104,9 +104,9 @@ class TestRoundTrip:
         assert gpx1.metadata is not None
         assert gpx2.metadata is not None
         assert gpx2.metadata.name == gpx1.metadata.name
-        assert len(gpx2.waypoints) == len(gpx1.waypoints)
-        assert len(gpx2.tracks) == len(gpx1.tracks)
-        assert len(gpx2.routes) == len(gpx1.routes)
+        assert len(gpx2.wpt) == len(gpx1.wpt)
+        assert len(gpx2.trk) == len(gpx1.trk)
+        assert len(gpx2.rte) == len(gpx1.rte)
 
     def test_roundtrip_file_io(self, full_gpx_string: str) -> None:
         """Test round-trip through file I/O."""
@@ -123,9 +123,9 @@ class TestRoundTrip:
             gpx2 = GPX.from_file(temp_path)
 
             # Verify data preserved
-            assert len(gpx2.waypoints) == len(gpx1.waypoints)
-            assert len(gpx2.tracks) == len(gpx1.tracks)
-            assert len(gpx2.routes) == len(gpx1.routes)
+            assert len(gpx2.wpt) == len(gpx1.wpt)
+            assert len(gpx2.trk) == len(gpx1.trk)
+            assert len(gpx2.rte) == len(gpx1.rte)
         finally:
             if temp_path.exists():
                 temp_path.unlink()
@@ -209,8 +209,8 @@ class TestProgrammaticCreation:
         assert gpx.creator == "SmokeTest"
         assert gpx.metadata is not None
         assert gpx.metadata.name == "My GPX File"
-        assert len(gpx.waypoints) == 1
-        assert len(gpx.tracks) == 1
+        assert len(gpx.wpt) == 1
+        assert len(gpx.trk) == 1
 
         # Verify it can be serialized
         output = gpx.to_string()
@@ -226,8 +226,8 @@ class TestKeyFeatures:
     def test_waypoints(self, gpx_with_waypoint_string: str) -> None:
         """Test waypoint parsing and access."""
         gpx = GPX.from_string(gpx_with_waypoint_string)
-        assert len(gpx.waypoints) == 1
-        wpt = gpx.waypoints[0]
+        assert len(gpx.wpt) == 1
+        wpt = gpx.wpt[0]
         assert wpt.name == "Berlin"
         assert wpt.lat == Latitude("52.5200")
         assert wpt.lon == Longitude("13.4050")
@@ -235,8 +235,8 @@ class TestKeyFeatures:
     def test_tracks(self, gpx_with_track_string: str) -> None:
         """Test track parsing and access."""
         gpx = GPX.from_string(gpx_with_track_string)
-        assert len(gpx.tracks) == 1
-        track = gpx.tracks[0]
+        assert len(gpx.trk) == 1
+        track = gpx.trk[0]
         assert track.name == "Morning Run"
         assert len(track.trkseg) == 2
         # First segment has 3 points
@@ -245,8 +245,8 @@ class TestKeyFeatures:
     def test_routes(self, gpx_with_route_string: str) -> None:
         """Test route parsing and access."""
         gpx = GPX.from_string(gpx_with_route_string)
-        assert len(gpx.routes) == 1
-        route = gpx.routes[0]
+        assert len(gpx.rte) == 1
+        route = gpx.rte[0]
         assert route.name == "City Tour"
         assert len(route.rtept) == 3
 
@@ -258,15 +258,6 @@ class TestKeyFeatures:
         assert gpx.metadata.author is not None
         assert gpx.metadata.author.name == "Test Author"
 
-    def test_metadata_proxies(self, gpx_with_metadata_string: str) -> None:
-        """Test convenient metadata access via GPX proxies."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
-        # Test proxies work
-        assert gpx.name == "Test GPX File"
-        assert gpx.desc == "A test GPX file for unit testing"
-        assert gpx.author is not None
-        assert gpx.author.name == "Test Author"
-
 
 class TestStatistics:
     """Test statistics functionality on tracks and routes."""
@@ -274,7 +265,7 @@ class TestStatistics:
     def test_track_statistics(self, gpx_with_track_string: str) -> None:
         """Test that track statistics are available."""
         gpx = GPX.from_string(gpx_with_track_string)
-        track = gpx.tracks[0]
+        track = gpx.trk[0]
 
         # Should have statistics methods/properties
         assert hasattr(track, "total_distance")
@@ -291,7 +282,7 @@ class TestStatistics:
     def test_route_statistics(self, gpx_with_route_string: str) -> None:
         """Test that route statistics are available."""
         gpx = GPX.from_string(gpx_with_route_string)
-        route = gpx.routes[0]
+        route = gpx.rte[0]
 
         # Should have statistics methods/properties
         assert hasattr(route, "total_distance")
@@ -347,12 +338,13 @@ class TestEndToEnd:
 
             # 4. Verify data integrity
             assert gpx2.creator == "E2E Test"
-            assert gpx2.name == "My Activity"
-            assert len(gpx2.waypoints) == 1
-            assert gpx2.waypoints[0].name == "Start Point"
-            assert len(gpx2.tracks) == 1
-            assert gpx2.tracks[0].name == "My Track"
-            assert len(gpx2.tracks[0].trkseg[0].trkpt) == 3
+            assert gpx2.metadata is not None
+            assert gpx2.metadata.name == "My Activity"
+            assert len(gpx2.wpt) == 1
+            assert gpx2.wpt[0].name == "Start Point"
+            assert len(gpx2.trk) == 1
+            assert gpx2.trk[0].name == "My Track"
+            assert len(gpx2.trk[0].trkseg[0].trkpt) == 3
 
             # 5. Modify and re-save
             # Note: GPX objects are immutable, so we need to create a new one
@@ -367,7 +359,8 @@ class TestEndToEnd:
 
             # 6. Load again and verify modification
             gpx3 = GPX.from_file(temp_path)
-            assert gpx3.name == "Modified Activity"
+            assert gpx3.metadata
+            assert gpx3.metadata.name == "Modified Activity"
 
         finally:
             if temp_path.exists():
@@ -380,15 +373,15 @@ class TestEndToEnd:
 
         # Verify all elements present
         assert gpx.metadata is not None
-        assert len(gpx.waypoints) > 0
-        assert len(gpx.routes) > 0
-        assert len(gpx.tracks) > 0
+        assert len(gpx.wpt) > 0
+        assert len(gpx.rte) > 0
+        assert len(gpx.trk) > 0
 
         # Modify each type
         gpx.metadata.name = "Modified"
-        gpx.waypoints[0].name = "Modified Waypoint"
-        gpx.routes[0].name = "Modified Route"
-        gpx.tracks[0].name = "Modified Track"
+        gpx.wpt[0].name = "Modified Waypoint"
+        gpx.rte[0].name = "Modified Route"
+        gpx.trk[0].name = "Modified Track"
 
         # Serialize and parse again
         output = gpx.to_string()
@@ -397,6 +390,6 @@ class TestEndToEnd:
         # Verify modifications preserved
         assert gpx2.metadata is not None
         assert gpx2.metadata.name == "Modified"
-        assert gpx2.waypoints[0].name == "Modified Waypoint"
-        assert gpx2.routes[0].name == "Modified Route"
-        assert gpx2.tracks[0].name == "Modified Track"
+        assert gpx2.wpt[0].name == "Modified Waypoint"
+        assert gpx2.rte[0].name == "Modified Route"
+        assert gpx2.trk[0].name == "Modified Track"

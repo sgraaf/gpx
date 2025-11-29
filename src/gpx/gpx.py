@@ -20,13 +20,8 @@ from .utils import build_to_xml
 from .waypoint import Waypoint  # noqa: TC001
 
 if TYPE_CHECKING:
-    from datetime import datetime
     from pathlib import Path
 
-    from .bounds import Bounds
-    from .copyright import Copyright
-    from .link import Link
-    from .person import Person
 
 #: GPX 1.1 namespace
 GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
@@ -63,103 +58,6 @@ class GPX(GPXModel):
     wpt: list[Waypoint] = field(default_factory=list)
     rte: list[Route] = field(default_factory=list)
     trk: list[Track] = field(default_factory=list)
-
-    @property
-    def waypoints(self) -> list[Waypoint]:
-        """Alias for wpt."""
-        return self.wpt
-
-    @property
-    def routes(self) -> list[Route]:
-        """Alias for rte."""
-        return self.rte
-
-    @property
-    def tracks(self) -> list[Track]:
-        """Alias for trk."""
-        return self.trk
-
-    @property
-    def name(self) -> str | None:
-        """The name of the GPX file.
-
-        Proxy of :attr:`gpx.models.metadata.Metadata.name`.
-        """
-        if self.metadata is not None:
-            return self.metadata.name
-        return None
-
-    @property
-    def desc(self) -> str | None:
-        """A description of the contents of the GPX file.
-
-        Proxy of :attr:`gpx.models.metadata.Metadata.desc`.
-        """
-        if self.metadata is not None:
-            return self.metadata.desc
-        return None
-
-    @property
-    def author(self) -> Person | None:
-        """The person or organization who created the GPX file.
-
-        Proxy of :attr:`gpx.models.metadata.Metadata.author`.
-        """
-        if self.metadata is not None:
-            return self.metadata.author
-        return None
-
-    @property
-    def copyright(self) -> Copyright | None:
-        """Copyright and license information governing use of the file.
-
-        Proxy of :attr:`gpx.models.metadata.Metadata.copyright`.
-        """
-        if self.metadata is not None:
-            return self.metadata.copyright
-        return None
-
-    @property
-    def links(self) -> list[Link] | None:
-        """URLs associated with the location described in the file.
-
-        Proxy of :attr:`gpx.models.metadata.Metadata.link`.
-        """
-        if self.metadata is not None:
-            return self.metadata.link
-        return None
-
-    @property
-    def time(self) -> datetime | None:
-        """The creation date of the file.
-
-        Proxy of :attr:`gpx.models.metadata.Metadata.time`.
-        """
-        if self.metadata is not None:
-            return self.metadata.time
-        return None
-
-    @property
-    def keywords(self) -> str | None:
-        """Keywords associated with the file.
-
-        Search engines or databases can use this information to classify the data.
-
-        Proxy of :attr:`gpx.models.metadata.Metadata.keywords`.
-        """
-        if self.metadata is not None:
-            return self.metadata.keywords
-        return None
-
-    @property
-    def bounds(self) -> Bounds | None:
-        """Minimum and maximum coordinates which describe the extent of the coordinates in the file.
-
-        Proxy of :attr:`gpx.models.metadata.Metadata.bounds`.
-        """
-        if self.metadata is not None:
-            return self.metadata.bounds
-        return None
 
     @property
     def __geo_interface__(self) -> dict[str, Any]:

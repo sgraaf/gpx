@@ -17,57 +17,56 @@ class TestRouteParsing:
     def test_parse_route_name(self, gpx_with_route_string: str) -> None:
         """Test parsing route name."""
         gpx = GPX.from_string(gpx_with_route_string)
-        rte = gpx.routes[0]
+        rte = gpx.rte[0]
         assert rte.name == "City Tour"
 
     def test_parse_route_description(self, gpx_with_route_string: str) -> None:
         """Test parsing route description."""
         gpx = GPX.from_string(gpx_with_route_string)
-        rte = gpx.routes[0]
+        rte = gpx.rte[0]
         assert rte.desc == "A tour of the city"
 
     def test_parse_route_comment(self, gpx_with_route_string: str) -> None:
         """Test parsing route comment."""
         gpx = GPX.from_string(gpx_with_route_string)
-        rte = gpx.routes[0]
+        rte = gpx.rte[0]
         assert rte.cmt == "Best route"
 
     def test_parse_route_source(self, gpx_with_route_string: str) -> None:
         """Test parsing route source."""
         gpx = GPX.from_string(gpx_with_route_string)
-        rte = gpx.routes[0]
+        rte = gpx.rte[0]
         assert rte.src == "Planned"
 
     def test_parse_route_number(self, gpx_with_route_string: str) -> None:
         """Test parsing route number."""
         gpx = GPX.from_string(gpx_with_route_string)
-        rte = gpx.routes[0]
+        rte = gpx.rte[0]
         assert rte.number == 1
 
     def test_parse_route_type(self, gpx_with_route_string: str) -> None:
         """Test parsing route type."""
         gpx = GPX.from_string(gpx_with_route_string)
-        rte = gpx.routes[0]
+        rte = gpx.rte[0]
         assert rte.type == "Tourism"
 
     def test_parse_route_points(self, gpx_with_route_string: str) -> None:
         """Test parsing route points."""
         gpx = GPX.from_string(gpx_with_route_string)
-        rte = gpx.routes[0]
+        rte = gpx.rte[0]
         assert len(rte.rtept) == 3
-        assert len(rte.points) == 3  # alias
 
     def test_parse_route_point_coordinates(self, gpx_with_route_string: str) -> None:
         """Test parsing route point coordinates."""
         gpx = GPX.from_string(gpx_with_route_string)
-        rte = gpx.routes[0]
+        rte = gpx.rte[0]
         assert rte.rtept[0].lat == Latitude("52.5200")
         assert rte.rtept[0].lon == Longitude("13.4050")
 
     def test_parse_route_point_names(self, gpx_with_route_string: str) -> None:
         """Test parsing route point names."""
         gpx = GPX.from_string(gpx_with_route_string)
-        rte = gpx.routes[0]
+        rte = gpx.rte[0]
         assert rte.rtept[0].name == "Start"
         assert rte.rtept[1].name == "Checkpoint"
         assert rte.rtept[2].name == "End"
@@ -104,9 +103,9 @@ class TestRouteBuilding:
         output = gpx.to_string()
         gpx2 = GPX.from_string(output)
 
-        assert gpx2.routes[0].name == gpx.routes[0].name
-        assert len(gpx2.routes[0].rtept) == len(gpx.routes[0].rtept)
-        assert gpx2.routes[0].rtept[0].name == gpx.routes[0].rtept[0].name
+        assert gpx2.rte[0].name == gpx.rte[0].name
+        assert len(gpx2.rte[0].rtept) == len(gpx.rte[0].rtept)
+        assert gpx2.rte[0].rtept[0].name == gpx.rte[0].rtept[0].name
 
 
 class TestRouteStatistics:
@@ -191,7 +190,6 @@ class TestRouteCreation:
         assert rte.name is None
         assert rte.desc is None
         assert rte.rtept == []
-        assert rte.points == []
         assert rte.link == []
 
     def test_create_route_with_points(
@@ -227,6 +225,6 @@ class TestRouteGeoInterface:
         self, gpx_with_route_string: str, route_geo_interface: dict[str, Any]
     ) -> None:
         gpx = GPX.from_string(gpx_with_route_string)
-        rte = gpx.routes[0]
+        rte = gpx.rte[0]
 
         assert rte.__geo_interface__ == route_geo_interface

@@ -54,11 +54,6 @@ class Route(GPXModel):
     rtept: list[Waypoint] = field(default_factory=list)
 
     @property
-    def points(self) -> list[Waypoint]:
-        """Alias for rtept."""
-        return self.rtept
-
-    @property
     def __geo_interface__(self) -> dict[str, Any]:
         """Return the route as a GeoJSON-like LineString geometry or Feature.
 
@@ -133,21 +128,11 @@ class Route(GPXModel):
         )
 
     @property
-    def distance(self) -> float:
-        """Alias of :attr:`total_distance`."""
-        return self.total_distance
-
-    @property
     def total_duration(self) -> timedelta:
         """The total duration."""
         if len(self.rtept) < 2:  # noqa: PLR2004
             return timedelta()
         return self.rtept[0].duration_to(self.rtept[-1])
-
-    @property
-    def duration(self) -> timedelta:
-        """Alias of :attr:`total_duration`."""
-        return self.total_duration
 
     @property
     def moving_duration(self) -> timedelta:
@@ -170,11 +155,6 @@ class Route(GPXModel):
             if self.total_duration
             else 0.0
         )
-
-    @property
-    def speed(self) -> float:
-        """Alias of :attr:`avg_speed`."""
-        return self.avg_speed
 
     @property
     def avg_moving_speed(self) -> float:
@@ -225,11 +205,6 @@ class Route(GPXModel):
     def avg_elevation(self) -> Decimal:
         """The average elevation (in metres)."""
         return sum(self._eles, Decimal(0)) / len(self._eles)
-
-    @property
-    def elevation(self) -> Decimal:
-        """Alias of :attr:`avg_elevation`."""
-        return self.avg_elevation
 
     @property
     def max_elevation(self) -> Decimal:

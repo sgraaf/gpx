@@ -1,12 +1,10 @@
 """Tests for gpx.gpx module - main GPX class and I/O operations."""
 
 import tempfile
-from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from gpx import GPX, Metadata, Route, Track, Waypoint
-from gpx.types import Latitude
 
 
 class TestGPXParsing:
@@ -16,27 +14,27 @@ class TestGPXParsing:
         """Test parsing minimal valid GPX string."""
         gpx = GPX.from_string(minimal_gpx_string)
         assert gpx.creator == "TestCreator"
-        assert gpx.waypoints == []
-        assert gpx.routes == []
-        assert gpx.tracks == []
+        assert gpx.wpt == []
+        assert gpx.rte == []
+        assert gpx.trk == []
 
     def test_parse_gpx_with_waypoints(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing GPX with waypoints."""
         gpx = GPX.from_string(gpx_with_waypoint_string)
-        assert len(gpx.waypoints) == 1
-        assert gpx.waypoints[0].name == "Berlin"
+        assert len(gpx.wpt) == 1
+        assert gpx.wpt[0].name == "Berlin"
 
     def test_parse_gpx_with_tracks(self, gpx_with_track_string: str) -> None:
         """Test parsing GPX with tracks."""
         gpx = GPX.from_string(gpx_with_track_string)
-        assert len(gpx.tracks) == 1
-        assert gpx.tracks[0].name == "Morning Run"
+        assert len(gpx.trk) == 1
+        assert gpx.trk[0].name == "Morning Run"
 
     def test_parse_gpx_with_routes(self, gpx_with_route_string: str) -> None:
         """Test parsing GPX with routes."""
         gpx = GPX.from_string(gpx_with_route_string)
-        assert len(gpx.routes) == 1
-        assert gpx.routes[0].name == "City Tour"
+        assert len(gpx.rte) == 1
+        assert gpx.rte[0].name == "City Tour"
 
     def test_parse_gpx_with_metadata(self, gpx_with_metadata_string: str) -> None:
         """Test parsing GPX with metadata."""
@@ -48,9 +46,9 @@ class TestGPXParsing:
         """Test parsing GPX with all element types."""
         gpx = GPX.from_string(full_gpx_string)
         assert gpx.metadata is not None
-        assert len(gpx.waypoints) == 2
-        assert len(gpx.routes) == 1
-        assert len(gpx.tracks) == 1
+        assert len(gpx.wpt) == 2
+        assert len(gpx.rte) == 1
+        assert len(gpx.trk) == 1
 
     def test_parse_gpx_from_file(self, full_gpx_string: str) -> None:
         """Test parsing GPX from a file."""
@@ -60,7 +58,7 @@ class TestGPXParsing:
 
             gpx = GPX.from_file(f.name)
             assert gpx.metadata is not None
-            assert len(gpx.waypoints) == 2
+            assert len(gpx.wpt) == 2
 
             # Cleanup
             Path(f.name).unlink()
@@ -158,9 +156,9 @@ class TestGPXFileIO:
             assert gpx1.metadata is not None
             assert gpx2.metadata is not None
             assert gpx2.metadata.name == gpx1.metadata.name
-            assert len(gpx2.waypoints) == len(gpx1.waypoints)
-            assert len(gpx2.tracks) == len(gpx1.tracks)
-            assert len(gpx2.routes) == len(gpx1.routes)
+            assert len(gpx2.wpt) == len(gpx1.wpt)
+            assert len(gpx2.trk) == len(gpx1.trk)
+            assert len(gpx2.rte) == len(gpx1.rte)
 
             Path(f.name).unlink()
 
@@ -175,60 +173,6 @@ class TestGPXFileIO:
             Path(f.name).unlink()
 
 
-class TestGPXMetadataProxies:
-    """Tests for GPX metadata property proxies."""
-
-    def test_name_proxy_get(self, gpx_with_metadata_string: str) -> None:
-        """Test getting name via proxy."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
-        assert gpx.name == "Test GPX File"
-
-    def test_name_proxy_get_no_metadata(self, minimal_gpx_string: str) -> None:
-        """Test getting name when no metadata exists."""
-        gpx = GPX.from_string(minimal_gpx_string)
-        assert gpx.name is None
-
-    def test_desc_proxy(self, gpx_with_metadata_string: str) -> None:
-        """Test description proxy."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
-        assert gpx.desc == "A test GPX file for unit testing"
-
-    def test_author_proxy(self, gpx_with_metadata_string: str) -> None:
-        """Test author proxy."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
-        assert gpx.author is not None
-        assert gpx.author.name == "Test Author"
-
-    def test_time_proxy(self, gpx_with_metadata_string: str) -> None:
-        """Test time proxy."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
-        expected = datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC)
-        assert gpx.time == expected
-
-    def test_keywords_proxy(self, gpx_with_metadata_string: str) -> None:
-        """Test keywords proxy."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
-        assert gpx.keywords == "test, gpx, example"
-
-    def test_bounds_proxy(self, gpx_with_metadata_string: str) -> None:
-        """Test bounds proxy."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
-        assert gpx.bounds is not None
-        assert gpx.bounds.minlat == Latitude("52.5")
-
-    def test_links_proxy(self, gpx_with_metadata_string: str) -> None:
-        """Test links proxy."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
-        assert gpx.links is not None
-        assert len(gpx.links) == 1
-
-    def test_copyright_proxy(self, gpx_with_metadata_string: str) -> None:
-        """Test copyright proxy."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
-        assert gpx.copyright is not None
-        assert gpx.copyright.author == "Test Author"
-
-
 class TestGPXCreation:
     """Tests for creating GPX programmatically."""
 
@@ -237,9 +181,9 @@ class TestGPXCreation:
         gpx = GPX()
         assert gpx.creator == "https://github.com/sgraaf/gpx"
         assert gpx.metadata is None
-        assert gpx.waypoints == []
-        assert gpx.routes == []
-        assert gpx.tracks == []
+        assert gpx.wpt == []
+        assert gpx.rte == []
+        assert gpx.trk == []
 
     def test_create_gpx_with_all_elements(
         self,
@@ -286,8 +230,8 @@ class TestGPXCreation:
         assert gpx2.creator == "TestApp"
         assert gpx2.metadata is not None
         assert gpx2.metadata.name == sample_metadata.name
-        assert len(gpx2.waypoints) == 1
-        assert gpx2.waypoints[0].name == sample_waypoint.name
+        assert len(gpx2.wpt) == 1
+        assert gpx2.wpt[0].name == sample_waypoint.name
 
 
 class TestGPXEncodingHandling:
@@ -330,7 +274,7 @@ class TestGPXEncodingHandling:
   </wpt>
 </gpx>"""
         gpx = GPX.from_string(gpx_str)
-        assert gpx.waypoints[0].name == "Cafe"
+        assert gpx.wpt[0].name == "Cafe"
 
 
 class TestGPXGeoInterface:

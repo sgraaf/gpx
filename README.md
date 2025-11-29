@@ -44,9 +44,9 @@ gpx = GPX.from_file("path/to/file.gpx")
 # Access basic properties
 print(f"Creator: {gpx.creator}")
 print(f"Bounds: {gpx.bounds}")
-print(f"Number of waypoints: {len(gpx.waypoints)}")
-print(f"Number of tracks: {len(gpx.tracks)}")
-print(f"Number of routes: {len(gpx.routes)}")
+print(f"Number of waypoints: {len(gpx.wpt)}")
+print(f"Number of tracks: {len(gpx.trk)}")
+print(f"Number of routes: {len(gpx.rte)}")
 ```
 
 ### Working with waypoints
@@ -64,10 +64,10 @@ waypoint = Waypoint(
     ele=Decimal("2.0"),
 )
 
-gpx.waypoints.append(waypoint)
+gpx.wpt.append(waypoint)
 
 # Iterate over waypoints
-for wpt in gpx.waypoints:
+for wpt in gpx.wpt:
     print(f"{wpt.name}: ({wpt.lat}, {wpt.lon})")
 ```
 
@@ -75,7 +75,7 @@ for wpt in gpx.waypoints:
 
 ```python
 # Access track data
-for track in gpx.tracks:
+for track in gpx.trk:
     print(f"Track: {track.name}")
 
     # Get statistics from the track
@@ -163,7 +163,7 @@ point2 = Waypoint(
 
 # Create a route
 route = Route(name="City Tour", rtept=[point1, point2])
-gpx.routes.append(route)
+gpx.rte.append(route)
 
 # Access route statistics
 print(f"Route distance: {route.total_distance:.2f} meters")
