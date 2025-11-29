@@ -8,79 +8,25 @@ The **first number** of the version is the year.
 The **second number** is incremented with each release, starting at 1 for each year.
 The **third number** is for emergencies when we need to start branches for older releases.
 
-## [2025.1.0] - 2025-11-28
+## 2025.1.0 - 2025-11-29
 
-This is a major release that represents a complete rewrite of the library architecture. The package has been modernized with dataclass-based models, pure Python implementation, and enhanced GeoJSON support.
+This is a major release with a lot of breaking changes, primarily due to a complete rewrite of the architecture, and a general modernization of the package. Besides the change in architecture, this release adds comprehensive unit tests, enforces strict linting rules, and drops support folder older versions of Python. Finally, this release implements the `__geo_interface__` protocol for all GPX elements that contain geopgraphic information, thus adding support for converting to GeoJSON.
 
-**This release contains multiple breaking changes. Please review the Changed and Removed sections carefully and see the migration notes at the end of this entry.**
-
-### Added
-
--   `__geo_interface__` property to all geographic models for GeoJSON interoperability following the geo interface protocol.
--   `__geo_interface__` for `Waypoint` returns GeoJSON Point geometry.
--   `__geo_interface__` for `Route` returns GeoJSON LineString geometry.
--   `__geo_interface__` for `Track` returns GeoJSON MultiLineString geometry.
--   `__geo_interface__` for `TrackSegment` returns GeoJSON LineString geometry.
--   `__geo_interface__` for `Bounds` returns GeoJSON Polygon geometry.
--   `__geo_interface__` for `GPX` returns GeoJSON FeatureCollection with all features.
--   Statistics properties to `Track`, `TrackSegment`, and `Route`: `total_distance`, `total_duration`, `avg_speed`, `max_speed`, `min_speed`, `avg_elevation`, `max_elevation`, `min_elevation`, `total_ascent`, `total_descent`, `elevation_profile`, `speed_profile`, and `bounds`.
--   Calculation methods to `Waypoint`: `distance_to()`, `duration_to()`, `speed_to()`, `gain_to()`, and `slope_to()` for waypoint-to-waypoint calculations.
--   Memory-efficient `slots=True` to all dataclass models (approximately 40% memory reduction).
--   Automatic XML parsing and serialization based on type annotations via new utility functions in `utils.py`.
--   Comprehensive test suite with 258 tests covering all modules.
--   Smoke tests that validate package installation, basic GPX reading/writing, and core functionality.
--   Python 3.14 support.
--   Test workflow running on Python 3.11-3.14 via GitHub Actions.
-
-### Changed
-
--   **BREAKING:** Package name changed from `PyGPX` to `gpx`. All imports must be updated from `from pygpx import ...` to `from gpx import ...`.
--   **BREAKING:** Replaced Element-based classes with dataclass-based models. All GPX elements (GPX, Waypoint, Track, Route, etc.) are now implemented as Python dataclasses.
--   **BREAKING:** All models now inherit from `GPXModel` base class instead of `Element` class.
--   **BREAKING:** Models are now mutable (changed from `frozen=True` to allow in-place modifications).
--   **BREAKING:** Models with all-optional fields now use keyword-only arguments. For example, `Track(name="My Track", trkseg=[segment])` instead of `Track("My Track", [segment])`.
--   **BREAKING:** Field names updated to exactly match GPX XML tag names. Prefer `wpt`, `trk`, `rte`, `trkseg`, `trkpt`, `rtept`, and `link` (aliases `waypoints`, `tracks`, `routes`, `segments`, `points`, and `links` still available for convenience).
--   **BREAKING:** XML parsing now uses Python's built-in `xml.etree.ElementTree` module instead of `lxml`.
--   **BREAKING:** `validate` parameter in `GPX.from_file()` and `GPX.from_string()` now raises `NotImplementedError` when set to `True`. XML validation is no longer supported.
--   **BREAKING:** Minimum Python version increased from 3.10 to 3.11. Python 3.11, 3.12, 3.13, and 3.14 are now supported.
--   **BREAKING:** Build backend changed from `flit` to `uv`. Package is now built using `uv build`.
--   **BREAKING:** Optional dependencies changed to dependency groups. Install with `uv sync --group dev` or `pip install -e ".[dev]"` instead of `pip install gpx[dev]`.
--   Default `creator` attribute for GPX objects is now `"gpx"` (previously `"PyGPX"`).
--   Namespace handling in XML parsing now uses XPath prefix approach for cleaner code.
--   Documentation updated to reflect the new dataclass-based API and pure Python implementation.
-
-### Removed
-
--   **BREAKING:** `lxml` dependency. The library is now a pure Python package with zero runtime dependencies.
--   **BREAKING:** `gpx.xsd` schema file and all XML validation functionality.
--   **BREAKING:** `gpx.errors` module and `ParseError` exception. Standard Python exceptions (`ValueError`, `KeyError`, etc.) are now used for error handling.
--   **BREAKING:** `Element` base class.
--   **BREAKING:** `mixins` module (`AttributesMutableMappingMixin`, `PointsSequenceMixin`, `PointsMutableSequenceMixin`).
--   Python 3.10 support.
-
-### Fixed
-
--   `GPX.to_string()` encoding issues when serializing to string format.
--   Statistics calculations for tracks, routes, and segments.
--   Datetime to string conversion in XML serialization.
-
----
 
 **Migration notes for users upgrading from 0.2.x:**
 
-1. Update package name: `pip uninstall pygpx && pip install gpx`
-2. Update imports: `from pygpx import ...` → `from gpx import ...`
-3. Update constructor calls to use keyword arguments for optional parameters
-4. Update field names to use GPX-standard names (e.g., `trkseg` instead of `trksegs`)
-5. Remove `validate=True` from `from_file()` and `from_string()` calls
-6. Update error handling to catch standard Python exceptions instead of `gpx.errors.ParseError`
-7. Ensure Python 3.11 or higher is installed
+1. Ensure you are using Python 3.11 or higher
+2. Update constructor calls to use keyword arguments for optional parameters
+3. Update field names to use GPX-standard names (e.g., `trkseg` instead of `trksegs`)
+4. Remove `validate=True` from `from_file()` and `from_string()` calls
+5. Update error handling to catch standard Python exceptions instead of `gpx.errors.ParseError`
+
 
 Example:
 ```python
 # Before (0.2.x)
-from pygpx import GPX, Waypoint
-gpx = GPX.from_file("track.gpx", validate=True)
+from gpx import GPX, Waypoint
+gpx = GPX.from_file("path/to/track.gpx", validate=True)
 waypoint = Waypoint()
 waypoint.lat = Decimal("52.0")
 waypoint.lon = Decimal("4.0")
@@ -90,10 +36,41 @@ gpx.waypoints.append(waypoint)
 # After (2025.1.0)
 from gpx import GPX, Waypoint
 from decimal import Decimal
-gpx = GPX.from_file("track.gpx")
-waypoint = Waypoint(lat=Decimal("52.0"), lon=Decimal("4.0"), name="Amsterdam")
+gpx = GPX.from_file("path/to/track.gpx")
+waypoint = Waypoint(Decimal("52.0"), Decimal("4.0"), name="Amsterdam")
 gpx.wpt.append(waypoint)
 ```
+
+### Added
+
+- `CLAUDE.md` for easier interoperability with Claude Code.
+- Comprehensive unit tests.
+- Smoke test.
+- Testing workflow via GitHub Actions.
+- Support for Python 3.12, 3.13 and 3.14.
+- More usage examples in `README.md`.
+- `__geo_interface__` protocol for all GPX elements that contain geographic information.
+
+### Changed
+
+- Upgraded the `pre-commit` hooks.
+- Enabled ALL rules for the `ruff` linter by default.
+- Use the `uv` build backend instead of `flit`.
+- Updated the installation instructions to make use of `uv` instead of `pip`.
+- Switched the versioning scheme from semantic versioning to [Calendar Versioning](https://calver.org/).
+- Refactored the GPX element classes into `dataclass`-based models.
+- Replaced `lxml` with the built-in `ElementTree` module.
+- Optional dependencies to dependency groups.
+- Renamed `PyGPX` to `gpx` (purely aesthetically, no changes in installation or usage required).
+
+### Removed
+
+- Support for Python 3.7, 3.8, 3.9 and 3.10.
+- The errors module.
+
+### Fixed
+
+- Erroneous examples in the usage examples in `README.md`.
 
 ## 0.2.1 (2023-04-09)
 
