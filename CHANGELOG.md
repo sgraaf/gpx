@@ -8,6 +8,70 @@ The **first number** of the version is the year.
 The **second number** is incremented with each release, starting at 1 for each year.
 The **third number** is for emergencies when we need to start branches for older releases.
 
+## 2025.1.0 - 2025-11-29
+
+This is a major release with a lot of breaking changes, primarily due to a complete rewrite of the architecture, and a general modernization of the package. Besides the change in architecture, this release adds comprehensive unit tests, enforces strict linting rules, and drops support folder older versions of Python. Finally, this release implements the `__geo_interface__` protocol for all GPX elements that contain geopgraphic information, thus adding support for converting to GeoJSON.
+
+
+**Migration notes for users upgrading from 0.2.x:**
+
+1. Ensure you are using Python 3.11 or higher
+2. Update constructor calls to use keyword arguments for optional parameters
+3. Update field names to use GPX-standard names (e.g., `trkseg` instead of `trksegs`)
+4. Remove `validate=True` from `from_file()` and `from_string()` calls
+5. Update error handling to catch standard Python exceptions instead of `gpx.errors.ParseError`
+
+
+Example:
+```python
+# Before (0.2.x)
+from gpx import GPX, Waypoint
+gpx = GPX.from_file("path/to/track.gpx", validate=True)
+waypoint = Waypoint()
+waypoint.lat = Decimal("52.0")
+waypoint.lon = Decimal("4.0")
+waypoint.name = "Amsterdam"
+gpx.waypoints.append(waypoint)
+
+# After (2025.1.0)
+from gpx import GPX, Waypoint
+from decimal import Decimal
+gpx = GPX.from_file("path/to/track.gpx")
+waypoint = Waypoint(Decimal("52.0"), Decimal("4.0"), name="Amsterdam")
+gpx.wpt.append(waypoint)
+```
+
+### Added
+
+- `CLAUDE.md` for easier interoperability with Claude Code.
+- Comprehensive unit tests.
+- Smoke test.
+- Testing workflow via GitHub Actions.
+- Support for Python 3.12, 3.13 and 3.14.
+- More usage examples in `README.md`.
+- `__geo_interface__` protocol for all GPX elements that contain geographic information.
+
+### Changed
+
+- Upgraded the `pre-commit` hooks.
+- Enabled ALL rules for the `ruff` linter by default.
+- Use the `uv` build backend instead of `flit`.
+- Updated the installation instructions to make use of `uv` instead of `pip`.
+- Switched the versioning scheme from semantic versioning to [Calendar Versioning](https://calver.org/).
+- Refactored the GPX element classes into `dataclass`-based models.
+- Replaced `lxml` with the built-in `ElementTree` module.
+- Optional dependencies to dependency groups.
+- Renamed `PyGPX` to `gpx` (purely aesthetically, no changes in installation or usage required).
+
+### Removed
+
+- Support for Python 3.7, 3.8, 3.9 and 3.10.
+- The errors module.
+
+### Fixed
+
+- Erroneous examples in the usage examples in `README.md`.
+
 ## 0.2.1 (2023-04-09)
 
 ### Fixed
