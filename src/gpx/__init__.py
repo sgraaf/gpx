@@ -5,6 +5,18 @@ from .bounds import Bounds
 from .copyright import Copyright
 from .email import Email
 from .gpx import GPX
+from .io import (
+    from_file,
+    from_geojson,
+    from_geojson_dict,
+    from_kml,
+    from_string,
+    to_file,
+    to_geojson,
+    to_geojson_dict,
+    to_kml,
+    to_string,
+)
 from .link import Link
 from .metadata import Metadata
 from .person import Person
@@ -32,4 +44,14 @@ __all__ = [
     "Track",
     "TrackSegment",
     "Waypoint",
+    "from_file",
+    "from_geojson",
+    "from_geojson_dict",
+    "from_kml",
+    "from_string",
+    "to_file",
+    "to_geojson",
+    "to_geojson_dict",
+    "to_kml",
+    "to_string",
 ]
