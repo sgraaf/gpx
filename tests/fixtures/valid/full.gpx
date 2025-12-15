@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"
+     version="1.1"
+     creator="TestCreator">
+  <metadata>
+    <name>Full Test GPX</name>
+    <desc>A comprehensive test file</desc>
+    <time>2023-06-15T10:00:00Z</time>
+  </metadata>
+  <wpt lat="52.5200" lon="13.4050">
+    <ele>34.5</ele>
+    <name>Waypoint 1</name>
+  </wpt>
+  <wpt lat="52.5300" lon="13.4150">
+    <ele>35.0</ele>
+    <name>Waypoint 2</name>
+  </wpt>
+  <rte>
+    <name>Test Route</name>
+    <rtept lat="52.5200" lon="13.4050">
+      <ele>34.5</ele>
+      <time>2023-06-15T10:00:00Z</time>
+    </rtept>
+    <rtept lat="52.5300" lon="13.4150">
+      <ele>35.0</ele>
+      <time>2023-06-15T11:00:00Z</time>
+    </rtept>
+  </rte>
+  <trk>
+    <name>Test Track</name>
+    <trkseg>
+      <trkpt lat="52.5200" lon="13.4050">
+        <ele>34.5</ele>
+        <time>2023-06-15T06:00:00Z</time>
+      </trkpt>
+      <trkpt lat="52.5210" lon="13.4060">
+        <ele>35.0</ele>
+        <time>2023-06-15T06:01:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <rte>
+    <name>Route 1</name>
+    <rtept lat="52.5200" lon="13.4050"><name>R1-Start</name></rtept>
+    <rtept lat="52.5210" lon="13.4060"><name>R1-End</name></rtept>
+  </rte>
+  <rte>
+    <name>Route 2</name>
+    <rtept lat="52.5300" lon="13.4150"><name>R2-Start</name></rtept>
+    <rtept lat="52.5310" lon="13.4160"><name>R2-End</name></rtept>
+  </rte>
+  <rte>
+    <name>Route 3</name>
+    <rtept lat="52.5400" lon="13.4250"><name>R3-Start</name></rtept>
+    <rtept lat="52.5410" lon="13.4260"><name>R3-End</name></rtept>
+  </rte>
+</gpx>

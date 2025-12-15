@@ -3,6 +3,7 @@
 import xml.etree.ElementTree as ET
 from datetime import UTC, datetime
 from decimal import Decimal
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -23,6 +24,11 @@ from gpx.utils import from_isoformat
 
 #: GPX 1.1 namespace
 GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
+
+#: Path to test fixtures directory
+FIXTURES_DIR = Path(__file__).parent / "fixtures"
+VALID_FIXTURES_DIR = FIXTURES_DIR / "valid"
+INVALID_FIXTURES_DIR = FIXTURES_DIR / "invalid"
 
 
 def find_gpx(element: ET.Element, tag: str) -> ET.Element | None:
@@ -53,43 +59,69 @@ def findall_gpx(element: ET.Element, tag: str) -> list[ET.Element]:
     return element.findall(f"{{{GPX_NAMESPACE}}}{tag}")
 
 
+def load_fixture(fixture_path: Path) -> str:
+    """Load a GPX fixture file as a string.
+
+    Args:
+        fixture_path: Path to the fixture file.
+
+    Returns:
+        The contents of the fixture file.
+
+    """
+    return fixture_path.read_text(encoding="utf-8")
+
+
+# =============================================================================
+# GPX string fixtures (loaded from files)
+# =============================================================================
+
+
 @pytest.fixture
 def minimal_gpx_string() -> str:
     """A minimal valid GPX string."""
-    return """<?xml version="1.0" encoding="UTF-8"?>
-<gpx xmlns="http://www.topografix.com/GPX/1/1"
-     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"
-     version="1.1"
-     creator="TestCreator">
-</gpx>"""
+    return load_fixture(VALID_FIXTURES_DIR / "minimal.gpx")
 
 
 @pytest.fixture
 def gpx_with_waypoint_string() -> str:
     """A GPX string with a single waypoint."""
-    return """<?xml version="1.0" encoding="UTF-8"?>
-<gpx xmlns="http://www.topografix.com/GPX/1/1"
-     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"
-     version="1.1"
-     creator="TestCreator">
-  <wpt lat="52.5200" lon="13.4050">
-    <ele>34.5</ele>
-    <time>2023-06-15T10:30:00Z</time>
-    <name>Berlin</name>
-    <desc>Capital of Germany</desc>
-    <cmt>A comment</cmt>
-    <src>Manual</src>
-    <sym>City</sym>
-    <type>City</type>
-    <fix>3d</fix>
-    <sat>8</sat>
-    <hdop>1.2</hdop>
-    <vdop>1.5</vdop>
-    <pdop>1.8</pdop>
-  </wpt>
-</gpx>"""
+    return load_fixture(VALID_FIXTURES_DIR / "waypoint.gpx")
+
+
+@pytest.fixture
+def gpx_with_track_string() -> str:
+    """A GPX string with a track containing multiple segments and points."""
+    return load_fixture(VALID_FIXTURES_DIR / "track.gpx")
+
+
+@pytest.fixture
+def gpx_with_route_string() -> str:
+    """A GPX string with a route."""
+    return load_fixture(VALID_FIXTURES_DIR / "route.gpx")
+
+
+@pytest.fixture
+def gpx_with_metadata_string() -> str:
+    """A GPX string with full metadata."""
+    return load_fixture(VALID_FIXTURES_DIR / "metadata.gpx")
+
+
+@pytest.fixture
+def full_gpx_string() -> str:
+    """A comprehensive GPX string with all element types."""
+    return load_fixture(VALID_FIXTURES_DIR / "full.gpx")
+
+
+@pytest.fixture
+def invalid_gpx_string() -> str:
+    """An invalid GPX string (missing required attributes)."""
+    return load_fixture(INVALID_FIXTURES_DIR / "missing_lat_lon.gpx")
+
+
+# =============================================================================
+# GeoJSON interface fixtures
+# =============================================================================
 
 
 @pytest.fixture
@@ -113,50 +145,6 @@ def waypoint_geo_interface() -> dict[str, Any]:
             "pdop": 1.8,
         },
     }
-
-
-@pytest.fixture
-def gpx_with_track_string() -> str:
-    """A GPX string with a track containing multiple segments and points."""
-    return """<?xml version="1.0" encoding="UTF-8"?>
-<gpx xmlns="http://www.topografix.com/GPX/1/1"
-     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"
-     version="1.1"
-     creator="TestCreator">
-  <trk>
-    <name>Morning Run</name>
-    <desc>A morning run through the park</desc>
-    <cmt>Good weather</cmt>
-    <src>Garmin</src>
-    <number>1</number>
-    <type>Running</type>
-    <trkseg>
-      <trkpt lat="52.5200" lon="13.4050">
-        <ele>34.5</ele>
-        <time>2023-06-15T06:00:00Z</time>
-      </trkpt>
-      <trkpt lat="52.5210" lon="13.4060">
-        <ele>35.0</ele>
-        <time>2023-06-15T06:01:00Z</time>
-      </trkpt>
-      <trkpt lat="52.5220" lon="13.4070">
-        <ele>36.5</ele>
-        <time>2023-06-15T06:02:00Z</time>
-      </trkpt>
-    </trkseg>
-    <trkseg>
-      <trkpt lat="52.5230" lon="13.4080">
-        <ele>35.5</ele>
-        <time>2023-06-15T06:05:00Z</time>
-      </trkpt>
-      <trkpt lat="52.5240" lon="13.4090">
-        <ele>34.0</ele>
-        <time>2023-06-15T06:06:00Z</time>
-      </trkpt>
-    </trkseg>
-  </trk>
-</gpx>"""
 
 
 @pytest.fixture
@@ -198,41 +186,6 @@ def track_segment_geo_interface() -> dict[str, Any]:
 
 
 @pytest.fixture
-def gpx_with_route_string() -> str:
-    """A GPX string with a route."""
-    return """<?xml version="1.0" encoding="UTF-8"?>
-<gpx xmlns="http://www.topografix.com/GPX/1/1"
-     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"
-     version="1.1"
-     creator="TestCreator">
-  <rte>
-    <name>City Tour</name>
-    <desc>A tour of the city</desc>
-    <cmt>Best route</cmt>
-    <src>Planned</src>
-    <number>1</number>
-    <type>Tourism</type>
-    <rtept lat="52.5200" lon="13.4050">
-      <ele>34.5</ele>
-      <time>2023-06-15T10:00:00Z</time>
-      <name>Start</name>
-    </rtept>
-    <rtept lat="52.5300" lon="13.4150">
-      <ele>40.0</ele>
-      <time>2023-06-15T11:00:00Z</time>
-      <name>Checkpoint</name>
-    </rtept>
-    <rtept lat="52.5400" lon="13.4250">
-      <ele>38.0</ele>
-      <time>2023-06-15T12:00:00Z</time>
-      <name>End</name>
-    </rtept>
-  </rte>
-</gpx>"""
-
-
-@pytest.fixture
 def route_geo_interface() -> dict[str, Any]:
     """A GeoJSON-like dict for a route."""
     return {
@@ -255,90 +208,6 @@ def route_geo_interface() -> dict[str, Any]:
             "type": "Tourism",
         },
     }
-
-
-@pytest.fixture
-def gpx_with_metadata_string() -> str:
-    """A GPX string with full metadata."""
-    return """<?xml version="1.0" encoding="UTF-8"?>
-<gpx xmlns="http://www.topografix.com/GPX/1/1"
-     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"
-     version="1.1"
-     creator="TestCreator">
-  <metadata>
-    <name>Test GPX File</name>
-    <desc>A test GPX file for unit testing</desc>
-    <author>
-      <name>Test Author</name>
-      <email id="test" domain="example.com"/>
-      <link href="https://example.com">
-        <text>Author Website</text>
-        <type>text/html</type>
-      </link>
-    </author>
-    <copyright author="Test Author">
-      <year>2023</year>
-      <license>https://creativecommons.org/licenses/by/4.0/</license>
-    </copyright>
-    <link href="https://example.com/gpx">
-      <text>GPX File Link</text>
-      <type>text/html</type>
-    </link>
-    <time>2023-06-15T10:00:00Z</time>
-    <keywords>test, gpx, example</keywords>
-    <bounds minlat="52.5" minlon="13.4" maxlat="52.6" maxlon="13.5"/>
-  </metadata>
-</gpx>"""
-
-
-@pytest.fixture
-def full_gpx_string() -> str:
-    """A comprehensive GPX string with all element types."""
-    return """<?xml version="1.0" encoding="UTF-8"?>
-<gpx xmlns="http://www.topografix.com/GPX/1/1"
-     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"
-     version="1.1"
-     creator="TestCreator">
-  <metadata>
-    <name>Full Test GPX</name>
-    <desc>A comprehensive test file</desc>
-    <time>2023-06-15T10:00:00Z</time>
-  </metadata>
-  <wpt lat="52.5200" lon="13.4050">
-    <ele>34.5</ele>
-    <name>Waypoint 1</name>
-  </wpt>
-  <wpt lat="52.5300" lon="13.4150">
-    <ele>35.0</ele>
-    <name>Waypoint 2</name>
-  </wpt>
-  <rte>
-    <name>Test Route</name>
-    <rtept lat="52.5200" lon="13.4050">
-      <ele>34.5</ele>
-      <time>2023-06-15T10:00:00Z</time>
-    </rtept>
-    <rtept lat="52.5300" lon="13.4150">
-      <ele>35.0</ele>
-      <time>2023-06-15T11:00:00Z</time>
-    </rtept>
-  </rte>
-  <trk>
-    <name>Test Track</name>
-    <trkseg>
-      <trkpt lat="52.5200" lon="13.4050">
-        <ele>34.5</ele>
-        <time>2023-06-15T06:00:00Z</time>
-      </trkpt>
-      <trkpt lat="52.5210" lon="13.4060">
-        <ele>35.0</ele>
-        <time>2023-06-15T06:01:00Z</time>
-      </trkpt>
-    </trkseg>
-  </trk>
-</gpx>"""
 
 
 @pytest.fixture
@@ -379,15 +248,9 @@ def full_gpx_geo_interface() -> dict[str, Any]:
     }
 
 
-@pytest.fixture
-def invalid_gpx_string() -> str:
-    """An invalid GPX string (missing required attributes)."""
-    return """<?xml version="1.0" encoding="UTF-8"?>
-<gpx xmlns="http://www.topografix.com/GPX/1/1">
-  <wpt>
-    <name>Missing lat/lon</name>
-  </wpt>
-</gpx>"""
+# =============================================================================
+# Programmatically created fixtures
+# =============================================================================
 
 
 @pytest.fixture
@@ -488,3 +351,313 @@ def sample_bounds() -> Bounds:
         maxlat=Latitude("52.6"),
         maxlon=Longitude("13.5"),
     )
+
+
+# =============================================================================
+# Edge case fixtures (valid)
+# =============================================================================
+
+
+@pytest.fixture
+def waypoint_minimal_gpx_string() -> str:
+    """A GPX string with a minimal waypoint (only lat/lon)."""
+    return load_fixture(VALID_FIXTURES_DIR / "waypoint_minimal.gpx")
+
+
+@pytest.fixture
+def waypoint_all_fields_gpx_string() -> str:
+    """A GPX string with a waypoint containing all possible fields."""
+    return load_fixture(VALID_FIXTURES_DIR / "waypoint_all_fields.gpx")
+
+
+@pytest.fixture
+def multiple_waypoints_gpx_string() -> str:
+    """A GPX string with many waypoints."""
+    return load_fixture(VALID_FIXTURES_DIR / "multiple_waypoints.gpx")
+
+
+@pytest.fixture
+def multiple_tracks_gpx_string() -> str:
+    """A GPX string with multiple tracks."""
+    return load_fixture(VALID_FIXTURES_DIR / "multiple_tracks.gpx")
+
+
+@pytest.fixture
+def multiple_routes_gpx_string() -> str:
+    """A GPX string with multiple routes."""
+    return load_fixture(VALID_FIXTURES_DIR / "multiple_routes.gpx")
+
+
+@pytest.fixture
+def empty_track_segment_gpx_string() -> str:
+    """A GPX string with a track containing an empty segment."""
+    return load_fixture(VALID_FIXTURES_DIR / "empty_track_segment.gpx")
+
+
+@pytest.fixture
+def empty_track_gpx_string() -> str:
+    """A GPX string with an empty track (no segments)."""
+    return load_fixture(VALID_FIXTURES_DIR / "empty_track.gpx")
+
+
+@pytest.fixture
+def empty_route_gpx_string() -> str:
+    """A GPX string with an empty route (no points)."""
+    return load_fixture(VALID_FIXTURES_DIR / "empty_route.gpx")
+
+
+@pytest.fixture
+def boundary_coords_gpx_string() -> str:
+    """A GPX string with boundary coordinate values."""
+    return load_fixture(VALID_FIXTURES_DIR / "boundary_coords.gpx")
+
+
+@pytest.fixture
+def high_precision_coords_gpx_string() -> str:
+    """A GPX string with high precision coordinates."""
+    return load_fixture(VALID_FIXTURES_DIR / "high_precision_coords.gpx")
+
+
+@pytest.fixture
+def time_formats_gpx_string() -> str:
+    """A GPX string with various time formats."""
+    return load_fixture(VALID_FIXTURES_DIR / "time_formats.gpx")
+
+
+@pytest.fixture
+def unicode_content_gpx_string() -> str:
+    """A GPX string with Unicode content."""
+    return load_fixture(VALID_FIXTURES_DIR / "unicode_content.gpx")
+
+
+@pytest.fixture
+def extreme_elevations_gpx_string() -> str:
+    """A GPX string with extreme elevation values."""
+    return load_fixture(VALID_FIXTURES_DIR / "extreme_elevations.gpx")
+
+
+@pytest.fixture
+def waypoint_with_links_gpx_string() -> str:
+    """A GPX string with a waypoint containing multiple links."""
+    return load_fixture(VALID_FIXTURES_DIR / "waypoint_with_links.gpx")
+
+
+@pytest.fixture
+def track_single_point_gpx_string() -> str:
+    """A GPX string with a track containing a single point."""
+    return load_fixture(VALID_FIXTURES_DIR / "track_single_point.gpx")
+
+
+@pytest.fixture
+def metadata_minimal_gpx_string() -> str:
+    """A GPX string with minimal metadata."""
+    return load_fixture(VALID_FIXTURES_DIR / "metadata_minimal.gpx")
+
+
+@pytest.fixture
+def all_fix_types_gpx_string() -> str:
+    """A GPX string with all valid fix types."""
+    return load_fixture(VALID_FIXTURES_DIR / "all_fix_types.gpx")
+
+
+@pytest.fixture
+def dgps_station_values_gpx_string() -> str:
+    """A GPX string with boundary DGPS station values."""
+    return load_fixture(VALID_FIXTURES_DIR / "dgps_station_values.gpx")
+
+
+@pytest.fixture
+def degrees_values_gpx_string() -> str:
+    """A GPX string with boundary degrees values."""
+    return load_fixture(VALID_FIXTURES_DIR / "degrees_values.gpx")
+
+
+@pytest.fixture
+def whitespace_content_gpx_string() -> str:
+    """A GPX string with various whitespace in content."""
+    return load_fixture(VALID_FIXTURES_DIR / "whitespace_content.gpx")
+
+
+@pytest.fixture
+def special_characters_gpx_string() -> str:
+    """A GPX string with special XML characters."""
+    return load_fixture(VALID_FIXTURES_DIR / "special_characters.gpx")
+
+
+@pytest.fixture
+def track_with_links_gpx_string() -> str:
+    """A GPX string with a track containing links."""
+    return load_fixture(VALID_FIXTURES_DIR / "track_with_links.gpx")
+
+
+@pytest.fixture
+def route_with_links_gpx_string() -> str:
+    """A GPX string with a route containing links."""
+    return load_fixture(VALID_FIXTURES_DIR / "route_with_links.gpx")
+
+
+@pytest.fixture
+def no_xml_declaration_gpx_string() -> str:
+    """A GPX string without an XML declaration."""
+    return load_fixture(VALID_FIXTURES_DIR / "no_xml_declaration.gpx")
+
+
+@pytest.fixture
+def large_gpx_string() -> str:
+    """A GPX string with many elements."""
+    return load_fixture(VALID_FIXTURES_DIR / "large_gpx.gpx")
+
+
+# =============================================================================
+# Edge case fixtures (invalid)
+# =============================================================================
+
+
+@pytest.fixture
+def missing_lat_gpx_string() -> str:
+    """A GPX string with a waypoint missing latitude."""
+    return load_fixture(INVALID_FIXTURES_DIR / "missing_lat.gpx")
+
+
+@pytest.fixture
+def missing_lon_gpx_string() -> str:
+    """A GPX string with a waypoint missing longitude."""
+    return load_fixture(INVALID_FIXTURES_DIR / "missing_lon.gpx")
+
+
+@pytest.fixture
+def lat_too_high_gpx_string() -> str:
+    """A GPX string with latitude > 90."""
+    return load_fixture(INVALID_FIXTURES_DIR / "lat_too_high.gpx")
+
+
+@pytest.fixture
+def lat_too_low_gpx_string() -> str:
+    """A GPX string with latitude < -90."""
+    return load_fixture(INVALID_FIXTURES_DIR / "lat_too_low.gpx")
+
+
+@pytest.fixture
+def lon_too_high_gpx_string() -> str:
+    """A GPX string with longitude > 180."""
+    return load_fixture(INVALID_FIXTURES_DIR / "lon_too_high.gpx")
+
+
+@pytest.fixture
+def lon_too_low_gpx_string() -> str:
+    """A GPX string with longitude < -180."""
+    return load_fixture(INVALID_FIXTURES_DIR / "lon_too_low.gpx")
+
+
+@pytest.fixture
+def invalid_fix_value_gpx_string() -> str:
+    """A GPX string with an invalid fix value."""
+    return load_fixture(INVALID_FIXTURES_DIR / "invalid_fix_value.gpx")
+
+
+@pytest.fixture
+def invalid_fix_uppercase_gpx_string() -> str:
+    """A GPX string with an uppercase fix value."""
+    return load_fixture(INVALID_FIXTURES_DIR / "invalid_fix_uppercase.gpx")
+
+
+@pytest.fixture
+def dgps_station_too_high_gpx_string() -> str:
+    """A GPX string with DGPS station ID > 1023."""
+    return load_fixture(INVALID_FIXTURES_DIR / "dgps_station_too_high.gpx")
+
+
+@pytest.fixture
+def dgps_station_negative_gpx_string() -> str:
+    """A GPX string with negative DGPS station ID."""
+    return load_fixture(INVALID_FIXTURES_DIR / "dgps_station_negative.gpx")
+
+
+@pytest.fixture
+def degrees_too_high_gpx_string() -> str:
+    """A GPX string with degrees >= 360."""
+    return load_fixture(INVALID_FIXTURES_DIR / "degrees_too_high.gpx")
+
+
+@pytest.fixture
+def degrees_negative_gpx_string() -> str:
+    """A GPX string with negative degrees."""
+    return load_fixture(INVALID_FIXTURES_DIR / "degrees_negative.gpx")
+
+
+@pytest.fixture
+def malformed_xml_gpx_string() -> str:
+    """A GPX string with malformed XML."""
+    return load_fixture(INVALID_FIXTURES_DIR / "malformed_xml.gpx")
+
+
+@pytest.fixture
+def missing_bounds_minlat_gpx_string() -> str:
+    """A GPX string with bounds missing minlat."""
+    return load_fixture(INVALID_FIXTURES_DIR / "missing_bounds_minlat.gpx")
+
+
+@pytest.fixture
+def missing_email_id_gpx_string() -> str:
+    """A GPX string with email missing id."""
+    return load_fixture(INVALID_FIXTURES_DIR / "missing_email_id.gpx")
+
+
+@pytest.fixture
+def missing_email_domain_gpx_string() -> str:
+    """A GPX string with email missing domain."""
+    return load_fixture(INVALID_FIXTURES_DIR / "missing_email_domain.gpx")
+
+
+@pytest.fixture
+def missing_link_href_gpx_string() -> str:
+    """A GPX string with link missing href."""
+    return load_fixture(INVALID_FIXTURES_DIR / "missing_link_href.gpx")
+
+
+@pytest.fixture
+def missing_copyright_author_gpx_string() -> str:
+    """A GPX string with copyright missing author."""
+    return load_fixture(INVALID_FIXTURES_DIR / "missing_copyright_author.gpx")
+
+
+@pytest.fixture
+def non_numeric_lat_gpx_string() -> str:
+    """A GPX string with non-numeric latitude."""
+    return load_fixture(INVALID_FIXTURES_DIR / "non_numeric_lat.gpx")
+
+
+@pytest.fixture
+def non_numeric_lon_gpx_string() -> str:
+    """A GPX string with non-numeric longitude."""
+    return load_fixture(INVALID_FIXTURES_DIR / "non_numeric_lon.gpx")
+
+
+@pytest.fixture
+def non_numeric_elevation_gpx_string() -> str:
+    """A GPX string with non-numeric elevation."""
+    return load_fixture(INVALID_FIXTURES_DIR / "non_numeric_elevation.gpx")
+
+
+@pytest.fixture
+def empty_file_gpx_string() -> str:
+    """An empty GPX file."""
+    return load_fixture(INVALID_FIXTURES_DIR / "empty_file.gpx")
+
+
+@pytest.fixture
+def not_gpx_root_gpx_string() -> str:
+    """A GPX string with wrong root element."""
+    return load_fixture(INVALID_FIXTURES_DIR / "not_gpx_root.gpx")
+
+
+@pytest.fixture
+def missing_trkpt_lat_gpx_string() -> str:
+    """A GPX string with track point missing latitude."""
+    return load_fixture(INVALID_FIXTURES_DIR / "missing_trkpt_lat.gpx")
+
+
+@pytest.fixture
+def missing_rtept_lat_gpx_string() -> str:
+    """A GPX string with route point missing latitude."""
+    return load_fixture(INVALID_FIXTURES_DIR / "missing_rtept_lat.gpx")

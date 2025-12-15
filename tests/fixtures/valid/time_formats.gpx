@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <wpt lat="52.5200" lon="13.4050">
+    <time>2023-06-15T10:30:00Z</time>
+    <name>UTC time with Z</name>
+  </wpt>
+  <wpt lat="52.5210" lon="13.4060">
+    <time>2023-06-15T10:30:00+00:00</time>
+    <name>UTC time with offset</name>
+  </wpt>
+  <wpt lat="52.5220" lon="13.4070">
+    <time>2023-06-15T12:30:00+02:00</time>
+    <name>Time with positive offset</name>
+  </wpt>
+  <wpt lat="52.5230" lon="13.4080">
+    <time>2023-06-15T05:30:00-05:00</time>
+    <name>Time with negative offset</name>
+  </wpt>
+  <wpt lat="52.5240" lon="13.4090">
+    <time>2023-06-15T10:30:00.123Z</time>
+    <name>Time with milliseconds</name>
+  </wpt>
+  <wpt lat="52.5250" lon="13.4100">
+    <time>2023-06-15T10:30:00.123456Z</time>
+    <name>Time with microseconds</name>
+  </wpt>
+</gpx>

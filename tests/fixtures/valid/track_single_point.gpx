@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <trk>
+    <name>Single point track</name>
+    <trkseg>
+      <trkpt lat="52.5200" lon="13.4050">
+        <ele>34.5</ele>
+        <time>2023-06-15T10:00:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

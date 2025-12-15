@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <wpt lat="90" lon="180"><name>North Pole, Antimeridian</name></wpt>
+  <wpt lat="-90" lon="-180"><name>South Pole, Antimeridian</name></wpt>
+  <wpt lat="0" lon="0"><name>Equator, Prime Meridian</name></wpt>
+  <wpt lat="90" lon="0"><name>North Pole</name></wpt>
+  <wpt lat="-90" lon="0"><name>South Pole</name></wpt>
+  <wpt lat="0" lon="180"><name>Equator, Antimeridian East</name></wpt>
+  <wpt lat="0" lon="-180"><name>Equator, Antimeridian West</name></wpt>
+</gpx>

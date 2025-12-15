@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"
+     version="1.1"
+     creator="TestCreator">
+  <rte>
+    <name>City Tour</name>
+    <desc>A tour of the city</desc>
+    <cmt>Best route</cmt>
+    <src>Planned</src>
+    <number>1</number>
+    <type>Tourism</type>
+    <rtept lat="52.5200" lon="13.4050">
+      <ele>34.5</ele>
+      <time>2023-06-15T10:00:00Z</time>
+      <name>Start</name>
+    </rtept>
+    <rtept lat="52.5300" lon="13.4150">
+      <ele>40.0</ele>
+      <time>2023-06-15T11:00:00Z</time>
+      <name>Checkpoint</name>
+    </rtept>
+    <rtept lat="52.5400" lon="13.4250">
+      <ele>38.0</ele>
+      <time>2023-06-15T12:00:00Z</time>
+      <name>End</name>
+    </rtept>
+  </rte>
+</gpx>

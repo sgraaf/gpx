@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <wpt lat="52.5200" lon="13.4050">
+    <magvar>0</magvar>
+    <name>Zero degrees magnetic variation</name>
+  </wpt>
+  <wpt lat="52.5210" lon="13.4060">
+    <magvar>180</magvar>
+    <name>180 degrees magnetic variation</name>
+  </wpt>
+  <wpt lat="52.5220" lon="13.4070">
+    <magvar>359.999</magvar>
+    <name>Maximum degrees magnetic variation</name>
+  </wpt>
+  <wpt lat="52.5230" lon="13.4080">
+    <magvar>0.001</magvar>
+    <name>Minimum positive degrees</name>
+  </wpt>
+</gpx>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <trk>
+    <name>Track with missing trkpt lat</name>
+    <trkseg>
+      <trkpt lon="13.4050">
+        <ele>34.5</ele>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

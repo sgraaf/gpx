@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <metadata>
+    <name>  Name with leading and trailing spaces  </name>
+    <desc>
+      Multi-line
+      description
+      with various
+      whitespace
+    </desc>
+  </metadata>
+  <wpt lat="52.5200" lon="13.4050">
+    <name>	Tab-prefixed name</name>
+    <cmt>Comment with   multiple   spaces</cmt>
+  </wpt>
+</gpx>
