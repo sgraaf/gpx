@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <wpt lat="52.5200" lon="13.4050">
+    <ele>34.5</ele>
+    <time>2023-06-15T10:30:00Z</time>
+    <magvar>15.5</magvar>
+    <geoidheight>47.2</geoidheight>
+    <name>Complete Waypoint</name>
+    <cmt>This is a comment</cmt>
+    <desc>This is a description with all fields populated</desc>
+    <src>GPS Device</src>
+    <link href="https://example.com/waypoint1">
+      <text>More info</text>
+      <type>text/html</type>
+    </link>
+    <link href="https://example.com/waypoint2">
+      <text>Additional link</text>
+      <type>application/json</type>
+    </link>
+    <sym>Flag</sym>
+    <type>Point of Interest</type>
+    <fix>dgps</fix>
+    <sat>12</sat>
+    <hdop>0.8</hdop>
+    <vdop>1.2</vdop>
+    <pdop>1.4</pdop>
+    <ageofdgpsdata>5.0</ageofdgpsdata>
+    <dgpsid>100</dgpsid>
+  </wpt>
+</gpx>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <rte>
+    <name>Route with statistics data</name>
+    <rtept lat="52.5200" lon="13.4050">
+      <ele>34.0</ele>
+      <time>2024-01-01T10:00:00Z</time>
+      <name>Start</name>
+    </rtept>
+    <rtept lat="52.5210" lon="13.4060">
+      <ele>36.0</ele>
+      <time>2024-01-01T10:05:00Z</time>
+      <name>Point 2</name>
+    </rtept>
+    <rtept lat="52.5220" lon="13.4070">
+      <ele>38.0</ele>
+      <time>2024-01-01T10:10:00Z</time>
+      <name>Point 3</name>
+    </rtept>
+    <rtept lat="52.5230" lon="13.4080">
+      <ele>35.0</ele>
+      <time>2024-01-01T10:15:00Z</time>
+      <name>End</name>
+    </rtept>
+  </rte>
+</gpx>

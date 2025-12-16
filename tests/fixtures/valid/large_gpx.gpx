@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <metadata>
+    <name>Large GPX file</name>
+    <desc>A GPX file with many elements to test parsing performance</desc>
+  </metadata>
+  <trk>
+    <name>Long Track</name>
+    <trkseg>
+      <trkpt lat="52.5200" lon="13.4050"><ele>34.5</ele><time>2023-06-15T06:00:00Z</time></trkpt>
+      <trkpt lat="52.5201" lon="13.4051"><ele>34.6</ele><time>2023-06-15T06:00:01Z</time></trkpt>
+      <trkpt lat="52.5202" lon="13.4052"><ele>34.7</ele><time>2023-06-15T06:00:02Z</time></trkpt>
+      <trkpt lat="52.5203" lon="13.4053"><ele>34.8</ele><time>2023-06-15T06:00:03Z</time></trkpt>
+      <trkpt lat="52.5204" lon="13.4054"><ele>34.9</ele><time>2023-06-15T06:00:04Z</time></trkpt>
+      <trkpt lat="52.5205" lon="13.4055"><ele>35.0</ele><time>2023-06-15T06:00:05Z</time></trkpt>
+      <trkpt lat="52.5206" lon="13.4056"><ele>35.1</ele><time>2023-06-15T06:00:06Z</time></trkpt>
+      <trkpt lat="52.5207" lon="13.4057"><ele>35.2</ele><time>2023-06-15T06:00:07Z</time></trkpt>
+      <trkpt lat="52.5208" lon="13.4058"><ele>35.3</ele><time>2023-06-15T06:00:08Z</time></trkpt>
+      <trkpt lat="52.5209" lon="13.4059"><ele>35.4</ele><time>2023-06-15T06:00:09Z</time></trkpt>
+      <trkpt lat="52.5210" lon="13.4060"><ele>35.5</ele><time>2023-06-15T06:00:10Z</time></trkpt>
+      <trkpt lat="52.5211" lon="13.4061"><ele>35.6</ele><time>2023-06-15T06:00:11Z</time></trkpt>
+      <trkpt lat="52.5212" lon="13.4062"><ele>35.7</ele><time>2023-06-15T06:00:12Z</time></trkpt>
+      <trkpt lat="52.5213" lon="13.4063"><ele>35.8</ele><time>2023-06-15T06:00:13Z</time></trkpt>
+      <trkpt lat="52.5214" lon="13.4064"><ele>35.9</ele><time>2023-06-15T06:00:14Z</time></trkpt>
+      <trkpt lat="52.5215" lon="13.4065"><ele>36.0</ele><time>2023-06-15T06:00:15Z</time></trkpt>
+      <trkpt lat="52.5216" lon="13.4066"><ele>36.1</ele><time>2023-06-15T06:00:16Z</time></trkpt>
+      <trkpt lat="52.5217" lon="13.4067"><ele>36.2</ele><time>2023-06-15T06:00:17Z</time></trkpt>
+      <trkpt lat="52.5218" lon="13.4068"><ele>36.3</ele><time>2023-06-15T06:00:18Z</time></trkpt>
+      <trkpt lat="52.5219" lon="13.4069"><ele>36.4</ele><time>2023-06-15T06:00:19Z</time></trkpt>
+      <trkpt lat="52.5220" lon="13.4070"><ele>36.5</ele><time>2023-06-15T06:00:20Z</time></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

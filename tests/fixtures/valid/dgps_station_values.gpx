@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <wpt lat="52.5200" lon="13.4050">
+    <dgpsid>0</dgpsid>
+    <name>Minimum DGPS station ID</name>
+  </wpt>
+  <wpt lat="52.5210" lon="13.4060">
+    <dgpsid>512</dgpsid>
+    <name>Middle DGPS station ID</name>
+  </wpt>
+  <wpt lat="52.5220" lon="13.4070">
+    <dgpsid>1023</dgpsid>
+    <name>Maximum DGPS station ID</name>
+  </wpt>
+</gpx>

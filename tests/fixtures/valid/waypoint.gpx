@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"
+     version="1.1"
+     creator="TestCreator">
+  <wpt lat="52.5200" lon="13.4050">
+    <ele>34.5</ele>
+    <time>2023-06-15T10:30:00Z</time>
+    <name>Berlin</name>
+    <desc>Capital of Germany</desc>
+    <cmt>A comment</cmt>
+    <src>Manual</src>
+    <sym>City</sym>
+    <type>City</type>
+    <fix>3d</fix>
+    <sat>8</sat>
+    <hdop>1.2</hdop>
+    <vdop>1.5</vdop>
+    <pdop>1.8</pdop>
+  </wpt>
+</gpx>

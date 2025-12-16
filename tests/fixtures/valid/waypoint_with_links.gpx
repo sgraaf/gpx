@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <wpt lat="52.5200" lon="13.4050">
+    <name>Waypoint with multiple links</name>
+    <link href="https://example.com/page1">
+      <text>Main Website</text>
+      <type>text/html</type>
+    </link>
+    <link href="https://example.com/data.json">
+      <text>JSON Data</text>
+      <type>application/json</type>
+    </link>
+    <link href="https://example.com/image.jpg">
+      <text>Photo</text>
+      <type>image/jpeg</type>
+    </link>
+    <link href="https://example.com/video.mp4">
+      <text>Video</text>
+      <type>video/mp4</type>
+    </link>
+  </wpt>
+</gpx>

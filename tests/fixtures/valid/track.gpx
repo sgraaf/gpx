@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"
+     version="1.1"
+     creator="TestCreator">
+  <trk>
+    <name>Morning Run</name>
+    <desc>A morning run through the park</desc>
+    <cmt>Good weather</cmt>
+    <src>Garmin</src>
+    <number>1</number>
+    <type>Running</type>
+    <trkseg>
+      <trkpt lat="52.5200" lon="13.4050">
+        <ele>34.5</ele>
+        <time>2023-06-15T06:00:00Z</time>
+      </trkpt>
+      <trkpt lat="52.5210" lon="13.4060">
+        <ele>35.0</ele>
+        <time>2023-06-15T06:01:00Z</time>
+      </trkpt>
+      <trkpt lat="52.5220" lon="13.4070">
+        <ele>36.5</ele>
+        <time>2023-06-15T06:02:00Z</time>
+      </trkpt>
+    </trkseg>
+    <trkseg>
+      <trkpt lat="52.5230" lon="13.4080">
+        <ele>35.5</ele>
+        <time>2023-06-15T06:05:00Z</time>
+      </trkpt>
+      <trkpt lat="52.5240" lon="13.4090">
+        <ele>34.0</ele>
+        <time>2023-06-15T06:06:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

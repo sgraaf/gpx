@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <rte>
+    <name>Route with missing rtept lat</name>
+    <rtept lon="13.4050">
+      <name>Missing latitude</name>
+    </rtept>
+  </rte>
+</gpx>

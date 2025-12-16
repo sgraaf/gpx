@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <wpt lat="52.520008123456789" lon="13.404953987654321">
+    <ele>34.123456789</ele>
+    <name>High precision waypoint</name>
+  </wpt>
+</gpx>

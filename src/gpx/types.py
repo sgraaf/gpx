@@ -140,11 +140,18 @@ class DGPSStation(int):
 
     """
 
-    def __new__(cls, value: int) -> Self:
-        if not 0 <= value <= 1023:  # noqa: PLR2004
+    def __new__(cls, value: int | str) -> Self:
+        # Convert string to int if necessary (from XML parsing)
+        try:
+            int_value = int(value)
+        except (ValueError, TypeError) as e:
+            msg = f"Invalid DGPS station value: '{value}'."
+            raise ValueError(msg) from e
+
+        if not 0 <= int_value <= 1023:  # noqa: PLR2004
             msg = f"Invalid DGPS station value: '{value}'. Must be between [0, 1023]."
             raise ValueError(
                 msg,
             )
 
-        return super().__new__(cls, value)
+        return super().__new__(cls, int_value)

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <trk>
+    <name>Track with empty segment</name>
+    <trkseg>
+      <trkpt lat="52.5200" lon="13.4050"><ele>34.5</ele></trkpt>
+    </trkseg>
+    <trkseg/>
+    <trkseg>
+      <trkpt lat="52.5210" lon="13.4060"><ele>35.0</ele></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

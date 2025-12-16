@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <rte>
+    <name>Route with links</name>
+    <desc>A route that includes links</desc>
+    <link href="https://example.com/route">
+      <text>Route Details</text>
+      <type>text/html</type>
+    </link>
+    <rtept lat="52.5200" lon="13.4050">
+      <name>Start</name>
+      <link href="https://example.com/start">
+        <text>Start point info</text>
+      </link>
+    </rtept>
+    <rtept lat="52.5210" lon="13.4060">
+      <name>End</name>
+    </rtept>
+  </rte>
+</gpx>

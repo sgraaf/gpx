@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <wpt lat="52.5200" lon="13.4050">
+    <fix>none</fix>
+    <name>No GPS fix</name>
+  </wpt>
+  <wpt lat="52.5210" lon="13.4060">
+    <fix>2d</fix>
+    <name>2D GPS fix</name>
+  </wpt>
+  <wpt lat="52.5220" lon="13.4070">
+    <fix>3d</fix>
+    <name>3D GPS fix</name>
+  </wpt>
+  <wpt lat="52.5230" lon="13.4080">
+    <fix>dgps</fix>
+    <name>DGPS fix</name>
+  </wpt>
+  <wpt lat="52.5240" lon="13.4090">
+    <fix>pps</fix>
+    <name>PPS fix</name>
+  </wpt>
+</gpx>

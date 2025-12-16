@@ -38,13 +38,18 @@ gpx/
 │   ├── __init__.py       # Package marker
 │   ├── conftest.py       # Pytest configuration and fixtures
 │   ├── smoke_test.py     # Comprehensive smoke tests
+│   ├── test_edge_cases.py # Edge case tests for valid/invalid GPX
 │   ├── test_gpx.py       # GPX model tests
 │   ├── test_metadata.py  # Metadata model tests
 │   ├── test_route.py     # Route model tests
+│   ├── test_statistics.py # Statistics and calculation tests
 │   ├── test_track.py     # Track model tests
 │   ├── test_types.py     # Custom types tests
 │   ├── test_utils.py     # Utilities tests
-│   └── test_waypoint.py  # Waypoint model tests
+│   ├── test_waypoint.py  # Waypoint model tests
+│   └── fixtures/         # GPX fixture files for testing
+│       ├── valid/        # Valid GPX files for parsing tests
+│       └── invalid/      # Invalid GPX files for error handling tests
 ├── pyproject.toml        # Project configuration and dependencies
 ├── uv.lock               # Dependency lock file (managed by uv)
 ├── CHANGELOG.md          # Project changelog (needs updating)

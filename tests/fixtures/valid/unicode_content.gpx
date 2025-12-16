@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <metadata>
+    <name>Internationaler Test / Test internacional</name>
+    <desc>Testing Unicode: Umlauts: aou, Emojis: Arrows: Chinese: Hanzi Japanese: Kana Arabic: Alif</desc>
+  </metadata>
+  <wpt lat="35.6762" lon="139.6503">
+    <name>Tokyo</name>
+    <desc>Capital of Japan, known for Shibuya Crossing</desc>
+  </wpt>
+  <wpt lat="48.8566" lon="2.3522">
+    <name>Paris - Eiffel Tower</name>
+    <desc>La Tour Eiffel - the iconic landmark</desc>
+  </wpt>
+  <wpt lat="55.7558" lon="37.6173">
+    <name>Moscow</name>
+    <desc>Moskva - Russian capital</desc>
+  </wpt>
+  <wpt lat="52.5200" lon="13.4050">
+    <name>Berlin</name>
+    <desc>Hauptstadt von Deutschland</desc>
+  </wpt>
+</gpx>

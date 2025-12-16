@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <wpt lat="52.5200" lon="13.4050"><name>Waypoint 1</name></wpt>
+  <wpt lat="52.5210" lon="13.4060"><name>Waypoint 2</name></wpt>
+  <wpt lat="52.5220" lon="13.4070"><name>Waypoint 3</name></wpt>
+  <wpt lat="52.5230" lon="13.4080"><name>Waypoint 4</name></wpt>
+  <wpt lat="52.5240" lon="13.4090"><name>Waypoint 5</name></wpt>
+  <wpt lat="52.5250" lon="13.4100"><name>Waypoint 6</name></wpt>
+  <wpt lat="52.5260" lon="13.4110"><name>Waypoint 7</name></wpt>
+  <wpt lat="52.5270" lon="13.4120"><name>Waypoint 8</name></wpt>
+  <wpt lat="52.5280" lon="13.4130"><name>Waypoint 9</name></wpt>
+  <wpt lat="52.5290" lon="13.4140"><name>Waypoint 10</name></wpt>
+</gpx>

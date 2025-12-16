@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+     xsi:schemaLocation="http://www.topografix.com/GPX/1/1 http://www.topografix.com/GPX/1/1/gpx.xsd"
+     version="1.1"
+     creator="TestCreator">
+  <metadata>
+    <name>Test GPX File</name>
+    <desc>A test GPX file for unit testing</desc>
+    <author>
+      <name>Test Author</name>
+      <email id="test" domain="example.com"/>
+      <link href="https://example.com">
+        <text>Author Website</text>
+        <type>text/html</type>
+      </link>
+    </author>
+    <copyright author="Test Author">
+      <year>2023</year>
+      <license>https://creativecommons.org/licenses/by/4.0/</license>
+    </copyright>
+    <link href="https://example.com/gpx">
+      <text>GPX File Link</text>
+      <type>text/html</type>
+    </link>
+    <time>2023-06-15T10:00:00Z</time>
+    <keywords>test, gpx, example</keywords>
+    <bounds minlat="52.5" minlon="13.4" maxlat="52.6" maxlon="13.5"/>
+  </metadata>
+</gpx>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <trk>
+    <name>Track with multiple segments</name>
+    <trkseg>
+      <trkpt lat="52.5200" lon="13.4050">
+        <ele>34.0</ele>
+        <time>2024-01-01T10:00:00Z</time>
+      </trkpt>
+      <trkpt lat="52.5210" lon="13.4060">
+        <ele>40.0</ele>
+        <time>2024-01-01T10:05:00Z</time>
+      </trkpt>
+    </trkseg>
+    <trkseg>
+      <trkpt lat="52.5300" lon="13.4100">
+        <ele>45.0</ele>
+        <time>2024-01-01T11:00:00Z</time>
+      </trkpt>
+      <trkpt lat="52.5310" lon="13.4110">
+        <ele>50.0</ele>
+        <time>2024-01-01T11:05:00Z</time>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

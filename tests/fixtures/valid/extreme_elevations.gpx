@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <wpt lat="27.9881" lon="86.9250">
+    <ele>8848.86</ele>
+    <name>Mount Everest Summit</name>
+    <desc>Highest point on Earth</desc>
+  </wpt>
+  <wpt lat="31.5000" lon="35.5000">
+    <ele>-430.5</ele>
+    <name>Dead Sea Shore</name>
+    <desc>Lowest point on Earth's land surface</desc>
+  </wpt>
+  <wpt lat="0" lon="0">
+    <ele>0</ele>
+    <name>Sea Level</name>
+    <desc>Reference elevation</desc>
+  </wpt>
+  <wpt lat="11.3493" lon="142.1996">
+    <ele>-10994</ele>
+    <name>Challenger Deep</name>
+    <desc>Deepest point in the ocean</desc>
+  </wpt>
+  <wpt lat="52.5200" lon="13.4050">
+    <ele>0.001</ele>
+    <name>Near sea level</name>
+    <desc>Very small positive elevation</desc>
+  </wpt>
+</gpx>

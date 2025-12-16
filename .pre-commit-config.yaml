@@ -13,6 +13,7 @@ repos:
       - id: check-json
       - id: check-toml
       - id: check-xml
+        exclude: ^tests/fixtures/invalid/
       - id: check-yaml
       - id: end-of-file-fixer
       - id: trailing-whitespace
