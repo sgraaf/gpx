@@ -107,20 +107,20 @@ class TestTrackStatistics:
         """Test track maximum elevation calculation."""
         track = track_gpx.trk[0]
         max_ele = track.max_elevation
-        assert max_ele == Decimal("38")
+        assert max_ele == Decimal(38)
 
     def test_track_min_elevation(self, track_gpx: GPX) -> None:
         """Test track minimum elevation calculation."""
         track = track_gpx.trk[0]
         min_ele = track.min_elevation
-        assert min_ele == Decimal("34")
+        assert min_ele == Decimal(34)
 
     def test_track_diff_elevation(self, track_gpx: GPX) -> None:
         """Test track elevation difference calculation."""
         track = track_gpx.trk[0]
         diff_ele = track.diff_elevation
         # max (38) - min (34) = 4
-        assert diff_ele == Decimal("4")
+        assert diff_ele == Decimal(4)
 
     def test_track_total_ascent(self, track_gpx: GPX) -> None:
         """Test track total ascent calculation."""
@@ -128,7 +128,7 @@ class TestTrackStatistics:
         ascent = track.total_ascent
         assert isinstance(ascent, Decimal)
         # 34->36 (+2), 36->38 (+2), 38->35 (-3) = total ascent 4
-        assert ascent == Decimal("4")
+        assert ascent == Decimal(4)
 
     def test_track_total_descent(self, track_gpx: GPX) -> None:
         """Test track total descent calculation."""
@@ -136,7 +136,7 @@ class TestTrackStatistics:
         descent = track.total_descent
         assert isinstance(descent, Decimal)
         # 34->36 (+2), 36->38 (+2), 38->35 (-3) = total descent 3
-        assert descent == Decimal("3")
+        assert descent == Decimal(3)
 
     def test_track_elevation_profile(self, track_gpx: GPX) -> None:
         """Test track elevation profile generation."""
@@ -146,7 +146,7 @@ class TestTrackStatistics:
         assert len(profile) == 4  # 4 points with elevation
         # First point at distance 0
         assert profile[0][0] == 0.0
-        assert profile[0][1] == Decimal("34")
+        assert profile[0][1] == Decimal(34)
         # Subsequent points have increasing distance
         for i in range(1, len(profile)):
             assert profile[i][0] > profile[i - 1][0]
@@ -188,8 +188,8 @@ class TestTrackStatistics:
         assert len(profile) == 2  # 2 points per segment, 1 speed each
 
         # Elevation stats across segments
-        assert track.max_elevation == Decimal("50")
-        assert track.min_elevation == Decimal("34")
+        assert track.max_elevation == Decimal(50)
+        assert track.min_elevation == Decimal(34)
 
 
 class TestTrackSegmentStatistics:
@@ -256,23 +256,23 @@ class TestTrackSegmentStatistics:
 
     def test_segment_max_elevation(self, segment) -> None:
         """Test segment maximum elevation calculation."""
-        assert segment.max_elevation == Decimal("38")
+        assert segment.max_elevation == Decimal(38)
 
     def test_segment_min_elevation(self, segment) -> None:
         """Test segment minimum elevation calculation."""
-        assert segment.min_elevation == Decimal("34")
+        assert segment.min_elevation == Decimal(34)
 
     def test_segment_diff_elevation(self, segment) -> None:
         """Test segment elevation difference calculation."""
-        assert segment.diff_elevation == Decimal("4")
+        assert segment.diff_elevation == Decimal(4)
 
     def test_segment_total_ascent(self, segment) -> None:
         """Test segment total ascent calculation."""
-        assert segment.total_ascent == Decimal("4")
+        assert segment.total_ascent == Decimal(4)
 
     def test_segment_total_descent(self, segment) -> None:
         """Test segment total descent calculation."""
-        assert segment.total_descent == Decimal("3")
+        assert segment.total_descent == Decimal(3)
 
     def test_segment_elevation_profile(self, segment) -> None:
         """Test segment elevation profile generation."""
@@ -280,7 +280,7 @@ class TestTrackSegmentStatistics:
         assert isinstance(profile, list)
         assert len(profile) == 4
         assert profile[0][0] == 0.0
-        assert profile[0][1] == Decimal("34")
+        assert profile[0][1] == Decimal(34)
 
     def test_segment_bounds(self, segment) -> None:
         """Test segment bounds calculation."""
@@ -384,27 +384,27 @@ class TestRouteStatistics:
     def test_route_max_elevation(self, route_gpx: GPX) -> None:
         """Test route maximum elevation calculation."""
         route = route_gpx.rte[0]
-        assert route.max_elevation == Decimal("38")
+        assert route.max_elevation == Decimal(38)
 
     def test_route_min_elevation(self, route_gpx: GPX) -> None:
         """Test route minimum elevation calculation."""
         route = route_gpx.rte[0]
-        assert route.min_elevation == Decimal("34")
+        assert route.min_elevation == Decimal(34)
 
     def test_route_diff_elevation(self, route_gpx: GPX) -> None:
         """Test route elevation difference calculation."""
         route = route_gpx.rte[0]
-        assert route.diff_elevation == Decimal("4")
+        assert route.diff_elevation == Decimal(4)
 
     def test_route_total_ascent(self, route_gpx: GPX) -> None:
         """Test route total ascent calculation."""
         route = route_gpx.rte[0]
-        assert route.total_ascent == Decimal("4")
+        assert route.total_ascent == Decimal(4)
 
     def test_route_total_descent(self, route_gpx: GPX) -> None:
         """Test route total descent calculation."""
         route = route_gpx.rte[0]
-        assert route.total_descent == Decimal("3")
+        assert route.total_descent == Decimal(3)
 
     def test_route_elevation_profile(self, route_gpx: GPX) -> None:
         """Test route elevation profile generation."""
@@ -413,7 +413,7 @@ class TestRouteStatistics:
         assert isinstance(profile, list)
         assert len(profile) == 4
         assert profile[0][0] == 0.0
-        assert profile[0][1] == Decimal("34")
+        assert profile[0][1] == Decimal(34)
 
     def test_route_bounds(self, route_gpx: GPX) -> None:
         """Test route bounds calculation."""
