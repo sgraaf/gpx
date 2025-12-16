@@ -119,6 +119,7 @@ class TestValidEdgeCases:
         # The exact precision depends on Decimal implementation
         assert float(wpt.lat) == pytest.approx(52.520008123456789, rel=1e-15)
         assert float(wpt.lon) == pytest.approx(13.404953987654321, rel=1e-15)
+        assert wpt.ele is not None
         assert float(wpt.ele) == pytest.approx(34.123456789, rel=1e-9)
 
     def test_time_formats(self, time_formats_gpx_string: str) -> None:
@@ -132,6 +133,7 @@ class TestValidEdgeCases:
         """Test parsing Unicode content in names and descriptions."""
         gpx = GPX.from_string(unicode_content_gpx_string)
         assert gpx.metadata is not None
+        assert gpx.metadata.name is not None
         assert "internacional" in gpx.metadata.name
 
         # Check various scripts
@@ -213,12 +215,15 @@ class TestValidEdgeCases:
         gpx = GPX.from_string(whitespace_content_gpx_string)
         # Should parse without error
         assert gpx.metadata is not None
+        assert gpx.metadata.name is not None
         assert "spaces" in gpx.metadata.name
 
     def test_special_characters(self, special_characters_gpx_string: str) -> None:
         """Test parsing content with XML special characters."""
         gpx = GPX.from_string(special_characters_gpx_string)
         wpt = gpx.wpt[0]
+        assert wpt.name is not None
+        assert wpt.desc is not None
         assert "&" in wpt.name
         assert "<" in wpt.name
         assert ">" in wpt.name
