@@ -5,10 +5,14 @@ from __future__ import annotations
 from datetime import timedelta
 from decimal import Decimal
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 import pytest
 
 from gpx import GPX
+
+if TYPE_CHECKING:
+    from gpx.track_segment import TrackSegment
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 VALID_FIXTURES_DIR = FIXTURES_DIR / "valid"
@@ -196,85 +200,85 @@ class TestTrackSegmentStatistics:
     """Tests for TrackSegment statistics properties."""
 
     @pytest.fixture
-    def segment(self) -> GPX:
+    def segment(self) -> TrackSegment:
         """Load track with statistics data and return first segment."""
         gpx_string = load_fixture(VALID_FIXTURES_DIR / "track_with_stats.gpx")
         gpx = GPX.from_string(gpx_string)
         return gpx.trk[0].trkseg[0]
 
-    def test_segment_total_distance(self, segment) -> None:
+    def test_segment_total_distance(self, segment: TrackSegment) -> None:
         """Test segment total distance calculation."""
         distance = segment.total_distance
         assert distance > 0
         assert isinstance(distance, float)
 
-    def test_segment_total_duration(self, segment) -> None:
+    def test_segment_total_duration(self, segment: TrackSegment) -> None:
         """Test segment total duration calculation."""
         duration = segment.total_duration
         assert duration == timedelta(minutes=15)
 
-    def test_segment_moving_duration(self, segment) -> None:
+    def test_segment_moving_duration(self, segment: TrackSegment) -> None:
         """Test segment moving duration calculation."""
         duration = segment.moving_duration
         assert isinstance(duration, timedelta)
         assert duration > timedelta()
 
-    def test_segment_avg_speed(self, segment) -> None:
+    def test_segment_avg_speed(self, segment: TrackSegment) -> None:
         """Test segment average speed calculation."""
         avg_speed = segment.avg_speed
         assert avg_speed > 0
         assert isinstance(avg_speed, float)
 
-    def test_segment_avg_moving_speed(self, segment) -> None:
+    def test_segment_avg_moving_speed(self, segment: TrackSegment) -> None:
         """Test segment average moving speed calculation."""
         avg_moving_speed = segment.avg_moving_speed
         assert avg_moving_speed > 0
         assert isinstance(avg_moving_speed, float)
 
-    def test_segment_max_speed(self, segment) -> None:
+    def test_segment_max_speed(self, segment: TrackSegment) -> None:
         """Test segment maximum speed calculation."""
         max_speed = segment.max_speed
         assert max_speed >= 0
         assert isinstance(max_speed, float)
 
-    def test_segment_min_speed(self, segment) -> None:
+    def test_segment_min_speed(self, segment: TrackSegment) -> None:
         """Test segment minimum speed calculation."""
         min_speed = segment.min_speed
         assert min_speed >= 0
         assert isinstance(min_speed, float)
 
-    def test_segment_speed_profile(self, segment) -> None:
+    def test_segment_speed_profile(self, segment: TrackSegment) -> None:
         """Test segment speed profile generation."""
         profile = segment.speed_profile
         assert isinstance(profile, list)
         assert len(profile) == 3  # 4 points -> 3 speeds
 
-    def test_segment_avg_elevation(self, segment) -> None:
+    def test_segment_avg_elevation(self, segment: TrackSegment) -> None:
         """Test segment average elevation calculation."""
         avg_ele = segment.avg_elevation
         assert avg_ele == Decimal("35.75")
 
-    def test_segment_max_elevation(self, segment) -> None:
+    def test_segment_max_elevation(self, segment: TrackSegment) -> None:
         """Test segment maximum elevation calculation."""
         assert segment.max_elevation == Decimal(38)
 
-    def test_segment_min_elevation(self, segment) -> None:
+    def test_segment_min_elevation(self, segment: TrackSegment) -> None:
         """Test segment minimum elevation calculation."""
         assert segment.min_elevation == Decimal(34)
 
-    def test_segment_diff_elevation(self, segment) -> None:
+    def test_segment_diff_elevation(self, segment: TrackSegment) -> None:
         """Test segment elevation difference calculation."""
         assert segment.diff_elevation == Decimal(4)
 
-    def test_segment_total_ascent(self, segment) -> None:
+    def test_segment_total_ascent(self, segment: TrackSegment) -> None:
         """Test segment total ascent calculation."""
         assert segment.total_ascent == Decimal(4)
 
-    def test_segment_total_descent(self, segment) -> None:
+    def test_segment_total_descent(self, segment: TrackSegment) -> None:
         """Test segment total descent calculation."""
         assert segment.total_descent == Decimal(3)
 
-    def test_segment_elevation_profile(self, segment) -> None:
+    def test_segment_elevation_profile(self, segment: TrackSegment) -> None:
         """Test segment elevation profile generation."""
         profile = segment.elevation_profile
         assert isinstance(profile, list)
@@ -282,12 +286,12 @@ class TestTrackSegmentStatistics:
         assert profile[0][0] == 0.0
         assert profile[0][1] == Decimal(34)
 
-    def test_segment_bounds(self, segment) -> None:
+    def test_segment_bounds(self, segment: TrackSegment) -> None:
         """Test segment bounds calculation."""
         bounds = segment.bounds
         assert len(bounds) == 4
 
-    def test_segment_geo_interface(self, segment) -> None:
+    def test_segment_geo_interface(self, segment: TrackSegment) -> None:
         """Test segment GeoJSON interface."""
         geo = segment.__geo_interface__
         # TrackSegment only has trkpt field which is excluded,
@@ -441,6 +445,8 @@ class TestBoundsProperties:
 
     def test_bounds_geo_interface(self, bounds_gpx: GPX) -> None:
         """Test bounds GeoJSON interface returns Polygon."""
+        assert bounds_gpx.metadata is not None
+        assert bounds_gpx.metadata.bounds is not None
         bounds = bounds_gpx.metadata.bounds
         geo = bounds.__geo_interface__
         assert geo["type"] == "Polygon"
@@ -455,6 +461,8 @@ class TestBoundsProperties:
 
     def test_bounds_as_tuple(self, bounds_gpx: GPX) -> None:
         """Test bounds as_tuple method."""
+        assert bounds_gpx.metadata is not None
+        assert bounds_gpx.metadata.bounds is not None
         bounds = bounds_gpx.metadata.bounds
         t = bounds.as_tuple()
         assert len(t) == 4
@@ -462,6 +470,8 @@ class TestBoundsProperties:
 
     def test_bounds_getitem(self, bounds_gpx: GPX) -> None:
         """Test bounds index access."""
+        assert bounds_gpx.metadata is not None
+        assert bounds_gpx.metadata.bounds is not None
         bounds = bounds_gpx.metadata.bounds
         assert bounds[0] == bounds.minlat
         assert bounds[1] == bounds.minlon
@@ -470,12 +480,16 @@ class TestBoundsProperties:
 
     def test_bounds_iter(self, bounds_gpx: GPX) -> None:
         """Test bounds iteration."""
+        assert bounds_gpx.metadata is not None
+        assert bounds_gpx.metadata.bounds is not None
         bounds = bounds_gpx.metadata.bounds
         values = list(bounds)
         assert values == [bounds.minlat, bounds.minlon, bounds.maxlat, bounds.maxlon]
 
     def test_bounds_len(self, bounds_gpx: GPX) -> None:
         """Test bounds length."""
+        assert bounds_gpx.metadata is not None
+        assert bounds_gpx.metadata.bounds is not None
         bounds = bounds_gpx.metadata.bounds
         assert len(bounds) == 4
 
