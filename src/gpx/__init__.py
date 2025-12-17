@@ -2,9 +2,11 @@
 
 from .base import GPXModel
 from .bounds import Bounds
+from .convert import from_geo_interface, from_geojson, from_kml, from_wkb, from_wkt
 from .copyright import Copyright
 from .email import Email
 from .gpx import GPX
+from .io import read_geojson, read_gpx, read_kml, read_wkb, read_wkt
 from .link import Link
 from .metadata import Metadata
 from .person import Person
@@ -32,4 +34,14 @@ __all__ = [
     "Track",
     "TrackSegment",
     "Waypoint",
+    "from_geo_interface",
+    "from_geojson",
+    "from_kml",
+    "from_wkb",
+    "from_wkt",
+    "read_geojson",
+    "read_gpx",
+    "read_kml",
+    "read_wkb",
+    "read_wkt",
 ]

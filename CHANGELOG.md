@@ -10,6 +10,26 @@ The **third number** is for emergencies when we need to start branches for older
 
 ## [Unreleased](https://github.com/sgraaf/gpx/compare/2025.1.0...HEAD)
 
+### Added
+
+- New `io` module with `read_*()` functions for reading various file formats:
+  - `read_gpx()`: Read GPX files (alias for `GPX.from_file()`)
+  - `read_geojson()`: Read GeoJSON files
+  - `read_kml()`: Read KML files
+  - `read_wkb()`: Read Well-Known Binary files
+  - `read_wkt()`: Read Well-Known Text files
+- New `convert` module with `from_*()` functions for converting from various formats:
+  - `from_geo_interface()`: Convert from objects with `__geo_interface__`
+  - `from_geojson()`: Convert from GeoJSON strings or dicts
+  - `from_kml()`: Convert from KML strings or XML elements
+  - `from_wkb()`: Convert from Well-Known Binary bytes
+  - `from_wkt()`: Convert from Well-Known Text strings
+- New `to_*()` and `write_*()` methods on the `GPX` class:
+  - `to_geojson()` / `write_geojson()`: Convert to GeoJSON
+  - `to_kml()` / `write_kml()`: Convert to KML (Google Earth format)
+  - `to_wkb()` / `write_wkb()`: Convert to Well-Known Binary (OGC standard)
+  - `to_wkt()` / `write_wkt()`: Convert to Well-Known Text (OGC standard)
+
 ### Removed
 
 - All aliases and proxies.

@@ -169,4 +169,61 @@ gpx.rte.append(route)
 print(f"Route distance: {route.total_distance:.2f} meters")
 ```
 
+### Converting to other formats
+
+*gpx* supports converting GPX data to various formats:
+
+```python
+from gpx import GPX
+
+gpx = GPX.from_file("path/to/file.gpx")
+
+# Convert to GeoJSON
+geojson_string = gpx.to_geojson(indent=2)
+gpx.write_geojson("output.geojson")
+
+# Convert to KML (Google Earth)
+kml_string = gpx.to_kml()
+gpx.write_kml("output.kml")
+
+# Convert to WKT (Well-Known Text)
+wkt_string = gpx.to_wkt()
+gpx.write_wkt("output.wkt")
+
+# Convert to WKB (Well-Known Binary)
+wkb_bytes = gpx.to_wkb()
+gpx.write_wkb("output.wkb")
+```
+
+### Reading from other formats
+
+*gpx* can read data from various formats and convert them to GPX:
+
+```python
+from gpx import (
+    read_gpx,
+    read_geojson,
+    read_kml,
+    read_wkb,
+    read_wkt,
+    from_geojson,
+    from_kml,
+    from_wkb,
+    from_wkt,
+)
+
+# Read from files
+gpx = read_gpx("path/to/file.gpx")
+gpx = read_geojson("path/to/file.geojson")
+gpx = read_kml("path/to/file.kml")
+gpx = read_wkb("path/to/file.wkb")
+gpx = read_wkt("path/to/file.wkt")
+
+# Convert from strings/objects
+gpx = from_geojson('{"type": "Point", "coordinates": [4.9041, 52.3676]}')
+gpx = from_kml("<kml>...</kml>")
+gpx = from_wkt("POINT (4.9041 52.3676)")
+gpx = from_wkb(b"...")  # WKB bytes
+```
+
 <!-- end docs-include-usage -->
