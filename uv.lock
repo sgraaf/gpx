@@ -191,6 +191,9 @@ wheels = [
 name = "gpx"
 version = "2025.1.0"
 source = { editable = "." }
+dependencies = [
+    { name = "click" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -215,6 +218,7 @@ tests = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "click", specifier = ">=8.0" }]
 
 [package.metadata.requires-dev]
 dev = [

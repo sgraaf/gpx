@@ -22,7 +22,12 @@ classifiers = [
     "Typing :: Typed",
 ]
 requires-python = ">=3.11, <4"
-dependencies = []
+dependencies = [
+    "click>=8.0",
+]
+
+[project.scripts]
+gpx = "gpx.cli:main"
 
 [dependency-groups]
 docs = [
@@ -79,6 +84,12 @@ pydocstyle.convention = "google"
 ]
 "tests/smoke_test.py" = [
     "PLR2004",   # magic-value-comparison (Pylint)
+]
+"src/gpx/cli.py" = [
+    "C901",  # complex-structure (mccabe)
+    "PLR0912",  # too-many-branches (Pylint)
+    "PLR0913",  # too-many-arguments (Pylint)
+    "PLR0915",  # too-many-statements (Pylint)
 ]
 
 [tool.mypy]

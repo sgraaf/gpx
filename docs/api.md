@@ -1,5 +1,12 @@
 # API Reference
 
+## `gpx.cli` Module
+
+```{eval-rst}
+.. automodule:: gpx.cli
+    :members:
+```
+
 ## `gpx.gpx` Module
 
 ```{eval-rst}

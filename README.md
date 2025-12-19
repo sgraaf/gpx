@@ -234,4 +234,41 @@ geojson = {"type": "Point", "coordinates": [4.9041, 52.3676]}
 gpx = from_geo_interface(geojson)
 ```
 
+### Command-line interface
+
+*gpx* includes a command-line interface for common GPX operations:
+
+```sh
+# Validate a GPX file
+gpx validate path/to/file.gpx
+
+# Show information and statistics
+gpx info path/to/file.gpx
+gpx info -v path/to/file.gpx  # verbose
+
+# Convert between formats
+gpx convert input.gpx output.geojson
+gpx convert input.kml output.gpx
+
+# Crop to a geographic bounding box
+gpx crop input.gpx output.gpx --min-lat 52.0 --min-lon 4.0 --max-lat 53.0 --max-lon 5.0
+
+# Trim to a date/time range
+gpx trim input.gpx output.gpx --start 2024-01-15T08:00:00 --end 2024-01-15T18:00:00
+
+# Merge multiple files
+gpx merge file1.gpx file2.gpx file3.gpx merged.gpx
+
+# Reverse direction of routes and tracks
+gpx reverse input.gpx output.gpx
+
+# Strip metadata (name, description, author, copyright)
+gpx strip-metadata input.gpx output.gpx
+
+# Reduce coordinate precision for privacy
+gpx reduce-precision input.gpx output.gpx --precision 3  # ~111m accuracy
+```
+
+Use `gpx --help` for a full list of commands and options.
+
 <!-- end docs-include-usage -->
