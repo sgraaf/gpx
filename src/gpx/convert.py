@@ -15,7 +15,7 @@ from .gpx import GPX
 from .route import Route
 from .track import Track
 from .track_segment import TrackSegment
-from .types import Latitude, Longitude
+from .types import Latitude, Longitude, SupportsGeoInterface
 from .waypoint import Waypoint
 
 #: WKB geometry type codes
@@ -33,14 +33,16 @@ WKB_Z_FLAG = 1000
 EWKB_Z_FLAG = 0x80000000
 
 
-def from_geo_interface(geo: dict[str, Any], *, creator: str | None = None) -> GPX:
-    """Convert a GeoJSON-like object (with __geo_interface__) to GPX.
+def from_geo_interface(
+    geo: dict[str, Any] | SupportsGeoInterface, *, creator: str | None = None
+) -> GPX:
+    """Convert a GeoJSON-like object (with __geo_interface__ property) to GPX.
 
     This function supports Python objects that implement the __geo_interface__
     protocol (e.g., Shapely geometries) as well as raw GeoJSON dictionaries.
 
     Args:
-        geo: A dictionary with GeoJSON structure or an object with __geo_interface__.
+        geo: A dictionary with GeoJSON structure or an object with __geo_interface__ property.
         creator: The creator string for the GPX. Defaults to None (uses default).
 
     Returns:
@@ -56,8 +58,8 @@ def from_geo_interface(geo: dict[str, Any], *, creator: str | None = None) -> GP
         >>> gpx = from_geo_interface(point)
 
     """
-    # Support objects with __geo_interface__
-    if hasattr(geo, "__geo_interface__"):
+    # Support objects with __geo_interface__ property
+    if isinstance(geo, SupportsGeoInterface):
         geo = geo.__geo_interface__
 
     gpx_kwargs: dict[str, Any] = {}

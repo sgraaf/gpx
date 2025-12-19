@@ -3,7 +3,12 @@
 from __future__ import annotations
 
 from decimal import Decimal, InvalidOperation
-from typing import Self
+from typing import Any, Protocol, Self, runtime_checkable
+
+
+@runtime_checkable
+class SupportsGeoInterface(Protocol):  # noqa: D101
+    __geo_interface__: dict[str, Any]
 
 
 class Latitude(Decimal):

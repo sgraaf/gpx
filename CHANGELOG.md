@@ -17,7 +17,7 @@ The **third number** is for emergencies when we need to start branches for older
   - `read_geojson()`: Read GeoJSON files
   - `read_kml()`: Read KML files
 - New `convert` module with `from_*()` functions for converting from data formats:
-  - `from_geo_interface()`: Convert from objects with `__geo_interface__` (e.g., Shapely)
+  - `from_geo_interface()`: Convert from objects that implement the `__geo_interface__` protocol (e.g., Shapely)
   - `from_wkb()`: Convert from Well-Known Binary bytes
   - `from_wkt()`: Convert from Well-Known Text strings
 - New `write_*()` methods on the `GPX` class for writing to file formats:

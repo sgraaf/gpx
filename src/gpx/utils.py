@@ -423,7 +423,7 @@ def build_geo_properties(
             if not value:
                 continue  # Skip empty lists
 
-            # Check if list items have __geo_interface__ or to_dict-like behavior
+            # Check if list items have __geo_interface__ property or to_dict-like behavior
             if hasattr(value[0], "href"):  # Link objects
                 properties[field.name] = [
                     {

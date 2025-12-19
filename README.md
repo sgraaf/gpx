@@ -187,7 +187,7 @@ gpx.write_kml("output.kml")           # KML file (Google Earth)
 wkt_string = gpx.to_wkt()   # Well-Known Text
 wkb_bytes = gpx.to_wkb()    # Well-Known Binary
 
-# Access GeoJSON-compatible data via __geo_interface__
+# Access GeoJSON-compatible data via the __geo_interface__ property
 geojson_dict = gpx.__geo_interface__
 ```
 
@@ -218,7 +218,7 @@ gpx = from_wkt("LINESTRING (4.9 52.3, 4.91 52.31, 4.92 52.32)")
 # Convert from WKB (Well-Known Binary)
 gpx = from_wkb(wkb_bytes)
 
-# Convert from any object with __geo_interface__ (e.g., Shapely)
+# Convert from any object that implements the __geo_interface__ protocol (e.g., Shapely)
 from shapely.geometry import Point, LineString
 
 point = Point(4.9041, 52.3676)

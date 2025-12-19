@@ -167,7 +167,7 @@ GPXModel (base.py)
     - `DGPSStation`: DGPS station ID (0-1023)
 
 5. **GeoJSON Support**:
-    - All geographic models (GPX, Waypoint, Track, Route) implement `__geo_interface__`
+    - All geographic models (GPX, Waypoint, Track, Route) implement the `__geo_interface__` protocol
     - Provides GeoJSON-compatible geometry representation
     - GPX returns FeatureCollection, waypoints return Point, tracks return MultiLineString, routes return LineString
 
