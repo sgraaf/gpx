@@ -241,9 +241,7 @@ class GPX(GPXModel):
     # GPX file methods
     # =========================================================================
 
-    def write_gpx(
-        self, file_path: str | Path, *, pretty_print: bool = True
-    ) -> None:
+    def write_gpx(self, file_path: str | Path, *, pretty_print: bool = True) -> None:
         """Write the GPX to a file.
 
         Args:
@@ -267,9 +265,7 @@ class GPX(GPXModel):
     # GeoJSON file methods
     # =========================================================================
 
-    def write_geojson(
-        self, file_path: str | Path, *, indent: int | None = 2
-    ) -> None:
+    def write_geojson(self, file_path: str | Path, *, indent: int | None = 2) -> None:
         """Write the GPX to a GeoJSON file.
 
         Args:
@@ -536,13 +532,11 @@ class GPX(GPXModel):
                 f"{endian}ddd",
                 float(waypoint.lon),
                 float(waypoint.lat),
-                float(waypoint.ele),
+                float(waypoint.ele),  # type: ignore[arg-type]
             )
         else:
             wkb += struct.pack(f"{endian}I", 1)  # Point
-            wkb += struct.pack(
-                f"{endian}dd", float(waypoint.lon), float(waypoint.lat)
-            )
+            wkb += struct.pack(f"{endian}dd", float(waypoint.lon), float(waypoint.lat))
 
         return wkb
 
@@ -565,9 +559,7 @@ class GPX(GPXModel):
             wkb += struct.pack(f"{endian}I", 2)  # LineString
             wkb += struct.pack(f"{endian}I", len(route.rtept))
             for rtept in route.rtept:
-                wkb += struct.pack(
-                    f"{endian}dd", float(rtept.lon), float(rtept.lat)
-                )
+                wkb += struct.pack(f"{endian}dd", float(rtept.lon), float(rtept.lat))
 
         return wkb
 
@@ -576,9 +568,7 @@ class GPX(GPXModel):
     ) -> bytes:
         """Convert a track to WKB MULTILINESTRING."""
         has_z = any(
-            trkpt.ele is not None
-            for trkseg in track.trkseg
-            for trkpt in trkseg.trkpt
+            trkpt.ele is not None for trkseg in track.trkseg for trkpt in trkseg.trkpt
         )
         wkb = byte_order_marker
 

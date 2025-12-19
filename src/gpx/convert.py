@@ -140,9 +140,7 @@ def from_wkt(wkt: str, *, creator: str | None = None) -> GPX:
 # =============================================================================
 
 
-def _feature_collection_to_gpx(
-    fc: dict[str, Any], gpx_kwargs: dict[str, Any]
-) -> GPX:
+def _feature_collection_to_gpx(fc: dict[str, Any], gpx_kwargs: dict[str, Any]) -> GPX:
     """Convert a GeoJSON FeatureCollection to GPX."""
     waypoints: list[Waypoint] = []
     routes: list[Route] = []
@@ -176,9 +174,7 @@ def _geometry_to_gpx(geometry: dict[str, Any], gpx_kwargs: dict[str, Any]) -> GP
     return GPX(wpt=waypoints, rte=routes, trk=tracks, **gpx_kwargs)
 
 
-def _geometry_collection_to_gpx(
-    gc: dict[str, Any], gpx_kwargs: dict[str, Any]
-) -> GPX:
+def _geometry_collection_to_gpx(gc: dict[str, Any], gpx_kwargs: dict[str, Any]) -> GPX:
     """Convert a GeoJSON GeometryCollection to GPX."""
     waypoints: list[Waypoint] = []
     routes: list[Route] = []
@@ -311,9 +307,7 @@ def _coords_to_track(
 # =============================================================================
 
 
-def _parse_wkb_geometry(
-    wkb: bytes, offset: int
-) -> tuple[dict[str, Any], int]:
+def _parse_wkb_geometry(wkb: bytes, offset: int) -> tuple[dict[str, Any], int]:
     """Parse a WKB geometry and return geometry dict and new offset."""
     if offset >= len(wkb):
         msg = "Invalid WKB: unexpected end of data"
@@ -357,7 +351,11 @@ def _parse_wkb_geometry(
 
 
 def _parse_wkb_by_type(  # noqa: PLR0911
-    wkb: bytes, offset: int, endian: str, base_type: int, has_z: bool  # noqa: FBT001
+    wkb: bytes,
+    offset: int,
+    endian: str,
+    base_type: int,
+    has_z: bool,  # noqa: FBT001
 ) -> tuple[dict[str, Any], int]:
     """Parse WKB geometry by type."""
     if base_type == WKB_POINT:
@@ -381,7 +379,10 @@ def _parse_wkb_by_type(  # noqa: PLR0911
 
 
 def _parse_wkb_point(
-    wkb: bytes, offset: int, endian: str, has_z: bool  # noqa: FBT001
+    wkb: bytes,
+    offset: int,
+    endian: str,
+    has_z: bool,  # noqa: FBT001
 ) -> tuple[dict[str, Any], int]:
     """Parse WKB Point geometry."""
     coord_size = 24 if has_z else 16
@@ -399,7 +400,10 @@ def _parse_wkb_point(
 
 
 def _parse_wkb_linestring(
-    wkb: bytes, offset: int, endian: str, has_z: bool  # noqa: FBT001
+    wkb: bytes,
+    offset: int,
+    endian: str,
+    has_z: bool,  # noqa: FBT001
 ) -> tuple[dict[str, Any], int]:
     """Parse WKB LineString geometry."""
     (num_points,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
@@ -422,7 +426,10 @@ def _parse_wkb_linestring(
 
 
 def _parse_wkb_polygon(
-    wkb: bytes, offset: int, endian: str, has_z: bool  # noqa: FBT001
+    wkb: bytes,
+    offset: int,
+    endian: str,
+    has_z: bool,  # noqa: FBT001
 ) -> tuple[dict[str, Any], int]:
     """Parse WKB Polygon geometry (skipped for GPX conversion)."""
     (num_rings,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
@@ -438,7 +445,9 @@ def _parse_wkb_polygon(
 
         ring_coords = []
         for _ in range(num_points):
-            point_coords = struct.unpack(coord_format, wkb[offset : offset + coord_size])
+            point_coords = struct.unpack(
+                coord_format, wkb[offset : offset + coord_size]
+            )
             ring_coords.append(list(point_coords))
             offset += coord_size
         rings.append(ring_coords)
@@ -451,7 +460,10 @@ def _parse_wkb_polygon(
 
 
 def _parse_wkb_multipoint(
-    wkb: bytes, offset: int, endian: str, has_z: bool  # noqa: ARG001, FBT001
+    wkb: bytes,
+    offset: int,
+    endian: str,
+    has_z: bool,  # noqa: ARG001, FBT001
 ) -> tuple[dict[str, Any], int]:
     """Parse WKB MultiPoint geometry."""
     (num_points,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
@@ -470,7 +482,10 @@ def _parse_wkb_multipoint(
 
 
 def _parse_wkb_multilinestring(
-    wkb: bytes, offset: int, endian: str, has_z: bool  # noqa: ARG001, FBT001
+    wkb: bytes,
+    offset: int,
+    endian: str,
+    has_z: bool,  # noqa: ARG001, FBT001
 ) -> tuple[dict[str, Any], int]:
     """Parse WKB MultiLineString geometry."""
     (num_lines,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
@@ -489,7 +504,10 @@ def _parse_wkb_multilinestring(
 
 
 def _parse_wkb_multipolygon(
-    wkb: bytes, offset: int, endian: str, has_z: bool  # noqa: ARG001, FBT001
+    wkb: bytes,
+    offset: int,
+    endian: str,
+    has_z: bool,  # noqa: ARG001, FBT001
 ) -> tuple[dict[str, Any], int]:
     """Parse WKB MultiPolygon geometry (skipped for GPX conversion)."""
     (num_polys,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
@@ -526,9 +544,7 @@ def _parse_wkb_geometrycollection(
     return geometry, offset
 
 
-def _wkb_geometry_to_gpx(
-    geometry: dict[str, Any], gpx_kwargs: dict[str, Any]
-) -> GPX:
+def _wkb_geometry_to_gpx(geometry: dict[str, Any], gpx_kwargs: dict[str, Any]) -> GPX:
     """Convert parsed WKB geometry to GPX."""
     return _geometry_to_gpx(geometry, gpx_kwargs)
 
@@ -755,8 +771,6 @@ def _extract_nested_coords(coords_part: str) -> list[str]:
     return groups
 
 
-def _wkt_geometry_to_gpx(
-    geometry: dict[str, Any], gpx_kwargs: dict[str, Any]
-) -> GPX:
+def _wkt_geometry_to_gpx(geometry: dict[str, Any], gpx_kwargs: dict[str, Any]) -> GPX:
     """Convert parsed WKT geometry to GPX."""
     return _geometry_to_gpx(geometry, gpx_kwargs)

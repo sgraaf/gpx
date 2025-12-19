@@ -41,15 +41,25 @@ def sample_gpx() -> GPX:
     )
 
     route_points = [
-        Waypoint(lat=Latitude("52.5200"), lon=Longitude("13.4050"), ele=Decimal("34.5")),
-        Waypoint(lat=Latitude("52.5300"), lon=Longitude("13.4150"), ele=Decimal("40.0")),
+        Waypoint(
+            lat=Latitude("52.5200"), lon=Longitude("13.4050"), ele=Decimal("34.5")
+        ),
+        Waypoint(
+            lat=Latitude("52.5300"), lon=Longitude("13.4150"), ele=Decimal("40.0")
+        ),
     ]
     route = Route(name="City Tour", desc="A tour of the city", rtept=route_points)
 
     track_points = [
-        Waypoint(lat=Latitude("52.5200"), lon=Longitude("13.4050"), ele=Decimal("34.5")),
-        Waypoint(lat=Latitude("52.5210"), lon=Longitude("13.4060"), ele=Decimal("35.0")),
-        Waypoint(lat=Latitude("52.5220"), lon=Longitude("13.4070"), ele=Decimal("36.5")),
+        Waypoint(
+            lat=Latitude("52.5200"), lon=Longitude("13.4050"), ele=Decimal("34.5")
+        ),
+        Waypoint(
+            lat=Latitude("52.5210"), lon=Longitude("13.4060"), ele=Decimal("35.0")
+        ),
+        Waypoint(
+            lat=Latitude("52.5220"), lon=Longitude("13.4070"), ele=Decimal("36.5")
+        ),
     ]
     segment = TrackSegment(trkpt=track_points)
     track = Track(name="Morning Run", desc="A morning run", trkseg=[segment])
