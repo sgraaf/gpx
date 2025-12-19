@@ -32,6 +32,8 @@ gpx/
 │   ├── copyright.py      # Copyright dataclass model
 │   ├── types.py          # Custom types: Latitude, Longitude, Degrees, Fix, DGPSStation
 │   ├── utils.py          # Utility functions for XML parsing and serialization
+│   ├── convert.py        # Conversion functions: from_geo_interface, from_wkb, from_wkt
+│   ├── io.py             # I/O functions: read_gpx, read_geojson, read_kml
 │   └── py.typed          # PEP 561 marker for type hints
 ├── docs/                 # Sphinx documentation (MyST Markdown)
 ├── tests/                # Test suite
@@ -47,6 +49,7 @@ gpx/
 │   ├── test_types.py     # Custom types tests
 │   ├── test_utils.py     # Utilities tests
 │   ├── test_waypoint.py  # Waypoint model tests
+│   ├── test_io_convert.py # IO and conversion tests (read/write/convert)
 │   └── fixtures/         # GPX fixture files for testing
 │       ├── valid/        # Valid GPX files for parsing tests
 │       └── invalid/      # Invalid GPX files for error handling tests
@@ -176,10 +179,11 @@ GPXModel (base.py)
 **Reading GPX files:**
 
 ```python
-from gpx import GPX
+from gpx import GPX, read_gpx
 
-# Read from file
+# Read from file (two methods)
 gpx = GPX.from_file("path/to/file.gpx")
+gpx = read_gpx("path/to/file.gpx")
 
 # Read from string
 gpx = GPX.from_string(gpx_string)
@@ -192,17 +196,59 @@ print(len(gpx.trk))      # or gpx.trk
 print(len(gpx.rte))      # or gpx.rte
 ```
 
+**Reading from other file formats:**
+
+```python
+from gpx import read_geojson, read_kml
+
+# Read GeoJSON file
+gpx = read_geojson("path/to/file.geojson")
+
+# Read KML file (Google Earth format)
+gpx = read_kml("path/to/file.kml")
+```
+
+**Converting from data formats:**
+
+```python
+from gpx import from_geo_interface, from_wkb, from_wkt
+
+# Convert from WKT (Well-Known Text)
+gpx = from_wkt("POINT (4.0 52.0)")
+gpx = from_wkt("LINESTRING (4.0 52.0, 4.1 52.1)")
+
+# Convert from WKB (Well-Known Binary)
+gpx = from_wkb(wkb_bytes)
+
+# Convert from objects with __geo_interface__ (e.g., Shapely)
+from shapely.geometry import Point
+point = Point(4.0, 52.0)
+gpx = from_geo_interface(point)
+
+# Convert from GeoJSON dict
+geojson = {"type": "Point", "coordinates": [4.0, 52.0]}
+gpx = from_geo_interface(geojson)
+```
+
 **Writing GPX files:**
 
 ```python
-# Write to file
-gpx.to_file("output.gpx")
+# Write to GPX file
+gpx.write_gpx("output.gpx")
+
+# Write to other file formats
+gpx.write_geojson("output.geojson")
+gpx.write_kml("output.kml")
 
 # Convert to string
 gpx_string = gpx.to_string()
 
+# Convert to data formats
+wkt_string = gpx.to_wkt()  # Well-Known Text
+wkb_bytes = gpx.to_wkb()   # Well-Known Binary
+
 # Write with pretty printing (default)
-gpx.to_file("output.gpx", pretty_print=True)
+gpx.write_gpx("output.gpx", pretty_print=True)
 ```
 
 **Creating GPX data:**
@@ -463,7 +509,86 @@ The project uses pre-commit.ci for automated checks on pull requests. Configurat
 
 The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (e.g., `2025.1.0`).
 
-**Note**: The CHANGELOG.md file is currently outdated (last entry is 0.2.1 from 2023). When making significant changes, consider updating the changelog to reflect the current version.
+## Change Management Requirements
+
+**CRITICAL**: For every change to the codebase, the following conditions MUST be met before the change is considered complete:
+
+### 1. Tests
+
+-   **Add missing tests**: If your change introduces new functionality or modifies existing behavior, add corresponding tests to the test suite
+-   **All tests must pass**: Run the full test suite and ensure all tests pass:
+    ```bash
+    uv run pytest
+    ```
+-   Test files should be placed in `tests/` and follow the naming convention `test_*.py`
+-   Use fixtures from `tests/conftest.py` where appropriate
+-   Ensure tests cover edge cases, error handling, and the happy path
+
+### 2. Pre-commit Hooks
+
+-   **All pre-commit checks must pass**: Run pre-commit hooks and fix any issues:
+    ```bash
+    uv run pre-commit run --all-files
+    ```
+-   This includes:
+    -   Code formatting (Ruff)
+    -   Linting (Ruff)
+    -   Type checking (mypy)
+    -   YAML/TOML/JSON validation
+    -   Trailing whitespace and end-of-file fixes
+    -   Codespell checks
+-   Do not skip hooks or commit with `--no-verify` unless absolutely necessary and explicitly requested
+
+### 3. API Reference Documentation
+
+-   **Add new modules to API docs**: If you create a new module in `src/gpx/`, add it to the API reference in `docs/api.md`
+-   Follow the existing format:
+    ```markdown
+    ## `gpx.module_name` Module
+
+    ```{eval-rst}
+    .. automodule:: gpx.module_name
+        :members:
+    ```
+    ```
+-   Place new module documentation in alphabetical order or logical grouping with related modules
+
+### 4. Changelog
+
+-   **Add entry to CHANGELOG.md**: All changes must be documented in the changelog under the `[Unreleased]` section
+-   Follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format with these categories:
+    -   `Added`: New features
+    -   `Changed`: Changes in existing functionality
+    -   `Deprecated`: Soon-to-be removed features
+    -   `Removed`: Removed features
+    -   `Fixed`: Bug fixes
+    -   `Security`: Security fixes
+-   Write clear, user-focused descriptions of changes
+-   Include examples or migration notes for breaking changes
+
+### 5. README Updates
+
+-   **Update README.md for user-facing changes**: If your change affects how users interact with the package, update `README.md`
+-   This includes:
+    -   New public APIs or functions
+    -   Changes to existing APIs
+    -   New file format support
+    -   New conversion methods
+    -   Installation or setup changes
+-   Keep examples accurate and working
+-   Update code snippets to reflect current best practices
+
+### Summary Checklist
+
+Before considering your work complete, verify:
+
+- [ ] All tests pass (`uv run pytest`)
+- [ ] All pre-commit hooks pass (`uv run pre-commit run --all-files`)
+- [ ] New modules are documented in `docs/api.md`
+- [ ] Changes are documented in `CHANGELOG.md` under `[Unreleased]`
+- [ ] User-facing changes are reflected in `README.md`
+
+**If any of these conditions are not met, the change is NOT complete.**
 
 ## Common Tasks
 
@@ -480,7 +605,11 @@ The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (
 6. The `from_xml()` and `to_xml()` methods are inherited from `GPXModel`
 7. Add custom types to `types.py` if needed
 8. Export from `src/gpx/__init__.py`
-9. Add to documentation
+9. Follow the [Change Management Requirements](#change-management-requirements) checklist:
+   - Add tests for the new element
+   - Add to API documentation in `docs/api.md`
+   - Add entry to `CHANGELOG.md`
+   - Update `README.md` if user-facing
 
 Example dataclass model:
 
