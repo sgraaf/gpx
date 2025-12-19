@@ -7,6 +7,20 @@
     :members:
 ```
 
+## `gpx.convert` Module
+
+```{eval-rst}
+.. automodule:: gpx.convert
+    :members:
+```
+
+## `gpx.io` Module
+
+```{eval-rst}
+.. automodule:: gpx.io
+    :members:
+```
+
 ## `gpx.base` Module
 
 ```{eval-rst}
