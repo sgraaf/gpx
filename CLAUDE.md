@@ -179,14 +179,13 @@ GPXModel (base.py)
 **Reading GPX files:**
 
 ```python
-from gpx import GPX, read_gpx
+from gpx import from_string, read_gpx
 
-# Read from file (two methods)
-gpx = GPX.from_file("path/to/file.gpx")
+# Read from file
 gpx = read_gpx("path/to/file.gpx")
 
 # Read from string
-gpx = GPX.from_string(gpx_string)
+gpx = from_string(gpx_string)
 
 # Access basic properties
 print(gpx.creator)

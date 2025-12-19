@@ -4,7 +4,7 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
-from gpx import GPX, Metadata, Route, Track, Waypoint
+from gpx import GPX, Metadata, Route, Track, Waypoint, from_string, read_gpx
 
 
 class TestGPXParsing:
@@ -12,7 +12,7 @@ class TestGPXParsing:
 
     def test_parse_minimal_gpx(self, minimal_gpx_string: str) -> None:
         """Test parsing minimal valid GPX string."""
-        gpx = GPX.from_string(minimal_gpx_string)
+        gpx = from_string(minimal_gpx_string)
         assert gpx.creator == "TestCreator"
         assert gpx.wpt == []
         assert gpx.rte == []
@@ -20,31 +20,31 @@ class TestGPXParsing:
 
     def test_parse_gpx_with_waypoints(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing GPX with waypoints."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         assert len(gpx.wpt) == 1
         assert gpx.wpt[0].name == "Berlin"
 
     def test_parse_gpx_with_tracks(self, gpx_with_track_string: str) -> None:
         """Test parsing GPX with tracks."""
-        gpx = GPX.from_string(gpx_with_track_string)
+        gpx = from_string(gpx_with_track_string)
         assert len(gpx.trk) == 1
         assert gpx.trk[0].name == "Morning Run"
 
     def test_parse_gpx_with_routes(self, gpx_with_route_string: str) -> None:
         """Test parsing GPX with routes."""
-        gpx = GPX.from_string(gpx_with_route_string)
+        gpx = from_string(gpx_with_route_string)
         assert len(gpx.rte) == 1
         assert gpx.rte[0].name == "City Tour"
 
     def test_parse_gpx_with_metadata(self, gpx_with_metadata_string: str) -> None:
         """Test parsing GPX with metadata."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         assert gpx.metadata.name == "Test GPX File"
 
     def test_parse_full_gpx(self, full_gpx_string: str) -> None:
         """Test parsing GPX with all element types."""
-        gpx = GPX.from_string(full_gpx_string)
+        gpx = from_string(full_gpx_string)
         assert gpx.metadata is not None
         assert len(gpx.wpt) == 2
         assert len(gpx.rte) == 1
@@ -56,7 +56,7 @@ class TestGPXParsing:
             f.write(full_gpx_string)
             f.flush()
 
-            gpx = GPX.from_file(f.name)
+            gpx = read_gpx(f.name)
             assert gpx.metadata is not None
             assert len(gpx.wpt) == 2
 
@@ -69,7 +69,7 @@ class TestGPXParsing:
             f.write(full_gpx_string)
             f.flush()
 
-            gpx = GPX.from_file(Path(f.name))
+            gpx = read_gpx(Path(f.name))
             assert gpx.metadata is not None
 
             # Cleanup
@@ -129,7 +129,7 @@ class TestGPXFileIO:
 
     def test_to_file_creates_file(self, full_gpx_string: str) -> None:
         """Test that to_file creates a file."""
-        gpx = GPX.from_string(full_gpx_string)
+        gpx = from_string(full_gpx_string)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
             gpx.write_gpx(f.name)
@@ -138,7 +138,7 @@ class TestGPXFileIO:
 
     def test_to_file_with_path_object(self, full_gpx_string: str) -> None:
         """Test to_file with Path object."""
-        gpx = GPX.from_string(full_gpx_string)
+        gpx = from_string(full_gpx_string)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
             gpx.write_gpx(Path(f.name))
@@ -147,11 +147,11 @@ class TestGPXFileIO:
 
     def test_roundtrip_file_io(self, full_gpx_string: str) -> None:
         """Test complete roundtrip: string -> file -> string."""
-        gpx1 = GPX.from_string(full_gpx_string)
+        gpx1 = from_string(full_gpx_string)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
             gpx1.write_gpx(f.name)
-            gpx2 = GPX.from_file(f.name)
+            gpx2 = read_gpx(f.name)
 
             assert gpx1.metadata is not None
             assert gpx2.metadata is not None
@@ -164,7 +164,7 @@ class TestGPXFileIO:
 
     def test_file_has_xml_declaration(self, minimal_gpx_string: str) -> None:
         """Test that saved file has XML declaration."""
-        gpx = GPX.from_string(minimal_gpx_string)
+        gpx = from_string(minimal_gpx_string)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
             gpx.write_gpx(f.name)
@@ -225,7 +225,7 @@ class TestGPXCreation:
         )
 
         output = gpx1.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         assert gpx2.creator == "TestApp"
         assert gpx2.metadata is not None
@@ -246,7 +246,7 @@ class TestGPXEncodingHandling:
      version="1.1"
      creator="Test">
 </gpx>"""
-        gpx = GPX.from_string(gpx_str)
+        gpx = from_string(gpx_str)
         assert gpx.creator == "Test"
 
     def test_parse_string_without_encoding(self) -> None:
@@ -258,7 +258,7 @@ class TestGPXEncodingHandling:
      version="1.1"
      creator="Test">
 </gpx>"""
-        gpx = GPX.from_string(gpx_str)
+        gpx = from_string(gpx_str)
         assert gpx.creator == "Test"
 
     def test_unicode_content_preserved(self) -> None:
@@ -273,7 +273,7 @@ class TestGPXEncodingHandling:
     <name>Cafe</name>
   </wpt>
 </gpx>"""
-        gpx = GPX.from_string(gpx_str)
+        gpx = from_string(gpx_str)
         assert gpx.wpt[0].name == "Cafe"
 
 
@@ -283,6 +283,6 @@ class TestGPXGeoInterface:
     def test_gpx_geo_interface(
         self, full_gpx_string: str, full_gpx_geo_interface: dict[str, Any]
     ) -> None:
-        gpx = GPX.from_string(full_gpx_string)
+        gpx = from_string(full_gpx_string)
 
         assert gpx.__geo_interface__ == full_gpx_geo_interface

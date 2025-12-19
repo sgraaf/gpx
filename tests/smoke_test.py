@@ -16,6 +16,8 @@ from gpx import (
     Track,
     TrackSegment,
     Waypoint,
+    from_string,
+    read_gpx,
 )
 from gpx.types import Latitude, Longitude
 
@@ -43,7 +45,7 @@ class TestBasicReadWrite:
 
     def test_read_minimal_gpx(self, minimal_gpx_string: str) -> None:
         """Test reading a minimal GPX string."""
-        gpx = GPX.from_string(minimal_gpx_string)
+        gpx = from_string(minimal_gpx_string)
         assert gpx is not None
         assert gpx.creator == "TestCreator"
 
@@ -78,7 +80,7 @@ class TestBasicReadWrite:
             temp_path = Path(f.name)
 
         try:
-            gpx = GPX.from_file(temp_path)
+            gpx = read_gpx(temp_path)
             assert gpx.creator == "TestCreator"
         finally:
             if temp_path.exists():
@@ -91,13 +93,13 @@ class TestRoundTrip:
     def test_roundtrip_preserves_data(self, full_gpx_string: str) -> None:
         """Test that data is preserved through read-write-read cycle."""
         # Read original
-        gpx1 = GPX.from_string(full_gpx_string)
+        gpx1 = from_string(full_gpx_string)
 
         # Write to string
         output = gpx1.to_string()
 
         # Read again
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         # Verify data preserved
         assert gpx2.creator == gpx1.creator
@@ -110,7 +112,7 @@ class TestRoundTrip:
 
     def test_roundtrip_file_io(self, full_gpx_string: str) -> None:
         """Test round-trip through file I/O."""
-        gpx1 = GPX.from_string(full_gpx_string)
+        gpx1 = from_string(full_gpx_string)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
             temp_path = Path(f.name)
@@ -120,7 +122,7 @@ class TestRoundTrip:
             gpx1.write_gpx(temp_path)
 
             # Read from file
-            gpx2 = GPX.from_file(temp_path)
+            gpx2 = read_gpx(temp_path)
 
             # Verify data preserved
             assert len(gpx2.wpt) == len(gpx1.wpt)
@@ -225,7 +227,7 @@ class TestKeyFeatures:
 
     def test_waypoints(self, gpx_with_waypoint_string: str) -> None:
         """Test waypoint parsing and access."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         assert len(gpx.wpt) == 1
         wpt = gpx.wpt[0]
         assert wpt.name == "Berlin"
@@ -234,7 +236,7 @@ class TestKeyFeatures:
 
     def test_tracks(self, gpx_with_track_string: str) -> None:
         """Test track parsing and access."""
-        gpx = GPX.from_string(gpx_with_track_string)
+        gpx = from_string(gpx_with_track_string)
         assert len(gpx.trk) == 1
         track = gpx.trk[0]
         assert track.name == "Morning Run"
@@ -244,7 +246,7 @@ class TestKeyFeatures:
 
     def test_routes(self, gpx_with_route_string: str) -> None:
         """Test route parsing and access."""
-        gpx = GPX.from_string(gpx_with_route_string)
+        gpx = from_string(gpx_with_route_string)
         assert len(gpx.rte) == 1
         route = gpx.rte[0]
         assert route.name == "City Tour"
@@ -252,7 +254,7 @@ class TestKeyFeatures:
 
     def test_metadata(self, gpx_with_metadata_string: str) -> None:
         """Test metadata parsing and access."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         assert gpx.metadata.name == "Test GPX File"
         assert gpx.metadata.author is not None
@@ -264,7 +266,7 @@ class TestStatistics:
 
     def test_track_statistics(self, gpx_with_track_string: str) -> None:
         """Test that track statistics are available."""
-        gpx = GPX.from_string(gpx_with_track_string)
+        gpx = from_string(gpx_with_track_string)
         track = gpx.trk[0]
 
         # Should have statistics methods/properties
@@ -281,7 +283,7 @@ class TestStatistics:
 
     def test_route_statistics(self, gpx_with_route_string: str) -> None:
         """Test that route statistics are available."""
-        gpx = GPX.from_string(gpx_with_route_string)
+        gpx = from_string(gpx_with_route_string)
         route = gpx.rte[0]
 
         # Should have statistics methods/properties
@@ -334,7 +336,7 @@ class TestEndToEnd:
             gpx1.write_gpx(temp_path)
 
             # 3. Load from file
-            gpx2 = GPX.from_file(temp_path)
+            gpx2 = read_gpx(temp_path)
 
             # 4. Verify data integrity
             assert gpx2.creator == "E2E Test"
@@ -358,7 +360,7 @@ class TestEndToEnd:
             gpx_modified.write_gpx(temp_path)
 
             # 6. Load again and verify modification
-            gpx3 = GPX.from_file(temp_path)
+            gpx3 = read_gpx(temp_path)
             assert gpx3.metadata
             assert gpx3.metadata.name == "Modified Activity"
 
@@ -369,7 +371,7 @@ class TestEndToEnd:
     def test_mixed_content_file(self, full_gpx_string: str) -> None:
         """Test working with a GPX file containing all element types."""
         # Parse
-        gpx = GPX.from_string(full_gpx_string)
+        gpx = from_string(full_gpx_string)
 
         # Verify all elements present
         assert gpx.metadata is not None
@@ -385,7 +387,7 @@ class TestEndToEnd:
 
         # Serialize and parse again
         output = gpx.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         # Verify modifications preserved
         assert gpx2.metadata is not None
