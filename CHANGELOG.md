@@ -12,23 +12,25 @@ The **third number** is for emergencies when we need to start branches for older
 
 ### Added
 
-- New `io` module with `read_*()` functions for reading various file formats:
-  - `read_gpx()`: Read GPX files (alias for `GPX.from_file()`)
+- New `io` module with `read_*()` functions for reading file formats:
+  - `read_gpx()`: Read GPX files
   - `read_geojson()`: Read GeoJSON files
   - `read_kml()`: Read KML files
-  - `read_wkb()`: Read Well-Known Binary files
-  - `read_wkt()`: Read Well-Known Text files
-- New `convert` module with `from_*()` functions for converting from various formats:
-  - `from_geo_interface()`: Convert from objects with `__geo_interface__`
-  - `from_geojson()`: Convert from GeoJSON strings or dicts
-  - `from_kml()`: Convert from KML strings or XML elements
+- New `convert` module with `from_*()` functions for converting from data formats:
+  - `from_geo_interface()`: Convert from objects with `__geo_interface__` (e.g., Shapely)
   - `from_wkb()`: Convert from Well-Known Binary bytes
   - `from_wkt()`: Convert from Well-Known Text strings
-- New `to_*()` and `write_*()` methods on the `GPX` class:
-  - `to_geojson()` / `write_geojson()`: Convert to GeoJSON
-  - `to_kml()` / `write_kml()`: Convert to KML (Google Earth format)
-  - `to_wkb()` / `write_wkb()`: Convert to Well-Known Binary (OGC standard)
-  - `to_wkt()` / `write_wkt()`: Convert to Well-Known Text (OGC standard)
+- New `write_*()` methods on the `GPX` class for writing to file formats:
+  - `write_gpx()`: Write to GPX file (renamed from `to_file()`)
+  - `write_geojson()`: Write to GeoJSON file
+  - `write_kml()`: Write to KML file (Google Earth format)
+- New `to_*()` methods on the `GPX` class for converting to data formats:
+  - `to_wkt()`: Convert to Well-Known Text (OGC standard)
+  - `to_wkb()`: Convert to Well-Known Binary (OGC standard)
+
+### Changed
+
+- Renamed `GPX.to_file()` to `GPX.write_gpx()` for consistency with other write methods.
 
 ### Removed
 

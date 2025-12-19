@@ -10,9 +10,8 @@ import json
 import struct
 import xml.etree.ElementTree as ET
 from dataclasses import KW_ONLY, dataclass, field
-from typing import TYPE_CHECKING, Any, Self
-
-from gpx.utils import remove_encoding_from_string
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from .base import GPXModel
 from .metadata import Metadata  # noqa: TC001
@@ -22,7 +21,7 @@ from .utils import build_to_xml
 from .waypoint import Waypoint  # noqa: TC001
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from typing import Self
 
 
 #: GPX 1.1 namespace
@@ -184,6 +183,8 @@ class GPX(GPXModel):
             MyApp
 
         """
+        from .utils import remove_encoding_from_string  # noqa: PLC0415
+
         # ET.fromstring() does not support encoding declarations in the string
         gpx_str = remove_encoding_from_string(gpx_str)
         element = ET.fromstring(gpx_str)
@@ -236,47 +237,35 @@ class GPX(GPXModel):
         xml_bytes = ET.tostring(element, encoding="utf-8", xml_declaration=True)
         return xml_bytes.decode("utf-8")
 
-    def to_file(self, gpx_file: str | Path, *, pretty_print: bool = True) -> None:
-        """Serialize the GPX instance to a file.
+    # =========================================================================
+    # GPX file methods
+    # =========================================================================
+
+    def write_gpx(
+        self, file_path: str | Path, *, pretty_print: bool = True
+    ) -> None:
+        """Write the GPX to a file.
 
         Args:
-            gpx_file: The file path to write the GPX data to.
+            file_path: The file path to write the GPX data to.
             pretty_print: Whether to format the output with indentation.
                 Defaults to True.
 
         Example:
             >>> from gpx import GPX
             >>> gpx = GPX(creator="MyApp")
-            >>> gpx.to_file("output.gpx")
+            >>> gpx.write_gpx("output.gpx")
 
         """
         element = self.to_xml()
         if pretty_print:
             ET.indent(element, space="  ")
         tree = ET.ElementTree(element)
-        tree.write(str(gpx_file), xml_declaration=True, encoding="utf-8")
+        tree.write(str(file_path), xml_declaration=True, encoding="utf-8")
 
     # =========================================================================
-    # GeoJSON conversion methods
+    # GeoJSON file methods
     # =========================================================================
-
-    def to_geojson(self, *, indent: int | None = None) -> str:
-        """Convert the GPX to a GeoJSON string.
-
-        Args:
-            indent: Indentation level for pretty printing. Defaults to None.
-
-        Returns:
-            A GeoJSON string representation of the GPX data.
-
-        Example:
-            >>> from gpx import GPX, Waypoint
-            >>> from decimal import Decimal
-            >>> gpx = GPX(wpt=[Waypoint(Decimal("52.0"), Decimal("4.0"))])
-            >>> print(gpx.to_geojson(indent=2))
-
-        """
-        return json.dumps(self.__geo_interface__, indent=indent)
 
     def write_geojson(
         self, file_path: str | Path, *, indent: int | None = 2
@@ -293,30 +282,27 @@ class GPX(GPXModel):
             >>> gpx.write_geojson("output.geojson")
 
         """
-        from pathlib import Path as PathLib  # noqa: PLC0415
-
-        with PathLib(file_path).open("w", encoding="utf-8") as f:
+        with Path(file_path).open("w", encoding="utf-8") as f:
             json.dump(self.__geo_interface__, f, indent=indent)
 
     # =========================================================================
-    # KML conversion methods
+    # KML file methods
     # =========================================================================
 
-    def to_kml(self, *, pretty_print: bool = True) -> str:  # noqa: C901, PLR0912, PLR0915
-        """Convert the GPX to a KML string.
+    def write_kml(  # noqa: C901, PLR0912, PLR0915
+        self, file_path: str | Path, *, pretty_print: bool = True
+    ) -> None:
+        """Write the GPX to a KML file.
 
         Args:
+            file_path: The file path to write the KML data to.
             pretty_print: Whether to format the output with indentation.
                 Defaults to True.
 
-        Returns:
-            A KML string representation of the GPX data.
-
         Example:
-            >>> from gpx import GPX, Waypoint
-            >>> from decimal import Decimal
-            >>> gpx = GPX(wpt=[Waypoint(Decimal("52.0"), Decimal("4.0"))])
-            >>> print(gpx.to_kml())
+            >>> from gpx import GPX
+            >>> gpx = GPX()
+            >>> gpx.write_kml("output.kml")
 
         """
         kml_ns = "http://www.opengis.net/kml/2.2"
@@ -405,28 +391,9 @@ class GPX(GPXModel):
 
         if pretty_print:
             ET.indent(root, space="  ")
-        return ET.tostring(root, encoding="unicode", xml_declaration=True)
 
-    def write_kml(
-        self, file_path: str | Path, *, pretty_print: bool = True
-    ) -> None:
-        """Write the GPX to a KML file.
-
-        Args:
-            file_path: The file path to write the KML data to.
-            pretty_print: Whether to format the output with indentation.
-                Defaults to True.
-
-        Example:
-            >>> from gpx import GPX
-            >>> gpx = GPX()
-            >>> gpx.write_kml("output.kml")
-
-        """
-        from pathlib import Path as PathLib  # noqa: PLC0415
-
-        kml_str = self.to_kml(pretty_print=pretty_print)
-        with PathLib(file_path).open("w", encoding="utf-8") as f:
+        kml_str = ET.tostring(root, encoding="unicode", xml_declaration=True)
+        with Path(file_path).open("w", encoding="utf-8") as f:
             f.write(kml_str)
 
     # =========================================================================
@@ -500,24 +467,6 @@ class GPX(GPXModel):
         if len(geometries) == 1:
             return geometries[0]
         return f"GEOMETRYCOLLECTION ({', '.join(geometries)})"
-
-    def write_wkt(self, file_path: str | Path) -> None:
-        """Write the GPX to a WKT (Well-Known Text) file.
-
-        Args:
-            file_path: The file path to write the WKT data to.
-
-        Example:
-            >>> from gpx import GPX
-            >>> gpx = GPX()
-            >>> gpx.write_wkt("output.wkt")
-
-        """
-        from pathlib import Path as PathLib  # noqa: PLC0415
-
-        wkt_str = self.to_wkt()
-        with PathLib(file_path).open("w", encoding="utf-8") as f:
-            f.write(wkt_str)
 
     # =========================================================================
     # WKB conversion methods
@@ -660,25 +609,3 @@ class GPX(GPXModel):
                     )
 
         return wkb
-
-    def write_wkb(
-        self, file_path: str | Path, *, byte_order: str = "little"
-    ) -> None:
-        """Write the GPX to a WKB (Well-Known Binary) file.
-
-        Args:
-            file_path: The file path to write the WKB data to.
-            byte_order: Byte order for the binary data. Either "little" (NDR)
-                or "big" (XDR). Defaults to "little".
-
-        Example:
-            >>> from gpx import GPX
-            >>> gpx = GPX()
-            >>> gpx.write_wkb("output.wkb")
-
-        """
-        from pathlib import Path as PathLib  # noqa: PLC0415
-
-        wkb_data = self.to_wkb(byte_order=byte_order)
-        with PathLib(file_path).open("wb") as f:
-            f.write(wkb_data)

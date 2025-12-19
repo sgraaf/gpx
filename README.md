@@ -133,7 +133,7 @@ gpx = GPX(
 
 ```python
 # Write GPX data to file
-gpx.to_file("output.gpx")
+gpx.write_gpx("output.gpx")
 
 # Convert to string
 gpx_string = gpx.to_string()
@@ -174,56 +174,62 @@ print(f"Route distance: {route.total_distance:.2f} meters")
 *gpx* supports converting GPX data to various formats:
 
 ```python
-from gpx import GPX
+from gpx import GPX, read_gpx
 
-gpx = GPX.from_file("path/to/file.gpx")
+gpx = read_gpx("path/to/file.gpx")
 
-# Convert to GeoJSON
-geojson_string = gpx.to_geojson(indent=2)
-gpx.write_geojson("output.geojson")
+# Write to file formats
+gpx.write_gpx("output.gpx")           # GPX file
+gpx.write_geojson("output.geojson")   # GeoJSON file
+gpx.write_kml("output.kml")           # KML file (Google Earth)
 
-# Convert to KML (Google Earth)
-kml_string = gpx.to_kml()
-gpx.write_kml("output.kml")
+# Convert to data formats (strings/bytes)
+wkt_string = gpx.to_wkt()   # Well-Known Text
+wkb_bytes = gpx.to_wkb()    # Well-Known Binary
 
-# Convert to WKT (Well-Known Text)
-wkt_string = gpx.to_wkt()
-gpx.write_wkt("output.wkt")
-
-# Convert to WKB (Well-Known Binary)
-wkb_bytes = gpx.to_wkb()
-gpx.write_wkb("output.wkb")
+# Access GeoJSON-compatible data via __geo_interface__
+geojson_dict = gpx.__geo_interface__
 ```
 
 ### Reading from other formats
 
-*gpx* can read data from various formats and convert them to GPX:
+*gpx* can read data from various file formats:
 
 ```python
-from gpx import (
-    read_gpx,
-    read_geojson,
-    read_kml,
-    read_wkb,
-    read_wkt,
-    from_geojson,
-    from_kml,
-    from_wkb,
-    from_wkt,
-)
+from gpx import read_gpx, read_geojson, read_kml
 
 # Read from files
 gpx = read_gpx("path/to/file.gpx")
 gpx = read_geojson("path/to/file.geojson")
 gpx = read_kml("path/to/file.kml")
-gpx = read_wkb("path/to/file.wkb")
-gpx = read_wkt("path/to/file.wkt")
+```
 
-# Convert from strings/objects
-gpx = from_geojson('{"type": "Point", "coordinates": [4.9041, 52.3676]}')
-gpx = from_kml("<kml>...</kml>")
+### Converting from data formats
+
+*gpx* can convert from data formats (strings, bytes, objects):
+
+```python
+from gpx import from_geo_interface, from_wkt, from_wkb
+
+# Convert from WKT (Well-Known Text)
 gpx = from_wkt("POINT (4.9041 52.3676)")
-gpx = from_wkb(b"...")  # WKB bytes
+gpx = from_wkt("LINESTRING (4.9 52.3, 4.91 52.31, 4.92 52.32)")
+
+# Convert from WKB (Well-Known Binary)
+gpx = from_wkb(wkb_bytes)
+
+# Convert from any object with __geo_interface__ (e.g., Shapely)
+from shapely.geometry import Point, LineString
+
+point = Point(4.9041, 52.3676)
+gpx = from_geo_interface(point)
+
+line = LineString([(4.9, 52.3), (4.91, 52.31), (4.92, 52.32)])
+gpx = from_geo_interface(line)
+
+# Or convert from a GeoJSON dict directly
+geojson = {"type": "Point", "coordinates": [4.9041, 52.3676]}
+gpx = from_geo_interface(geojson)
 ```
 
 <!-- end docs-include-usage -->

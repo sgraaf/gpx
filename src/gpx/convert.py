@@ -1,28 +1,22 @@
-"""Conversion functions for converting various formats to GPX.
+"""Conversion functions for converting data formats to GPX.
 
-This module provides functions for converting from GeoJSON, KML, WKB, and WKT
-formats to GPX objects.
+This module provides functions for converting from GeoJSON-like objects, WKB,
+and WKT data formats to GPX objects.
 """
 
 from __future__ import annotations
 
-import json
 import re
 import struct
-import xml.etree.ElementTree as ET
 from decimal import Decimal
 from typing import Any
 
 from .gpx import GPX
-from .metadata import Metadata
 from .route import Route
 from .track import Track
 from .track_segment import TrackSegment
 from .types import Latitude, Longitude
 from .waypoint import Waypoint
-
-#: KML namespace
-KML_NAMESPACE = "http://www.opengis.net/kml/2.2"
 
 #: WKB geometry type codes
 WKB_POINT = 1
@@ -42,6 +36,9 @@ EWKB_Z_FLAG = 0x80000000
 def from_geo_interface(geo: dict[str, Any], *, creator: str | None = None) -> GPX:
     """Convert a GeoJSON-like object (with __geo_interface__) to GPX.
 
+    This function supports Python objects that implement the __geo_interface__
+    protocol (e.g., Shapely geometries) as well as raw GeoJSON dictionaries.
+
     Args:
         geo: A dictionary with GeoJSON structure or an object with __geo_interface__.
         creator: The creator string for the GPX. Defaults to None (uses default).
@@ -51,6 +48,12 @@ def from_geo_interface(geo: dict[str, Any], *, creator: str | None = None) -> GP
 
     Raises:
         ValueError: If the geometry type is not supported.
+
+    Example:
+        >>> from shapely.geometry import Point
+        >>> from gpx import from_geo_interface
+        >>> point = Point(4.0, 52.0)
+        >>> gpx = from_geo_interface(point)
 
     """
     # Support objects with __geo_interface__
@@ -76,81 +79,6 @@ def from_geo_interface(geo: dict[str, Any], *, creator: str | None = None) -> GP
     raise ValueError(msg)
 
 
-def from_geojson(
-    geojson: str | dict[str, Any], *, creator: str | None = None
-) -> GPX:
-    """Convert GeoJSON string or dict to GPX.
-
-    Args:
-        geojson: GeoJSON as a string or dictionary.
-        creator: The creator string for the GPX. Defaults to None (uses default).
-
-    Returns:
-        A GPX object.
-
-    """
-    if isinstance(geojson, str):
-        geojson = json.loads(geojson)
-    return from_geo_interface(geojson, creator=creator)
-
-
-def from_kml(kml: str | ET.Element, *, creator: str | None = None) -> GPX:  # noqa: C901
-    """Convert KML string or Element to GPX.
-
-    Args:
-        kml: KML as a string or XML Element.
-        creator: The creator string for the GPX. Defaults to None (uses default).
-
-    Returns:
-        A GPX object.
-
-    """
-    if isinstance(kml, str):
-        # Remove encoding declaration if present (ET.fromstring doesn't support it)
-        if kml.startswith("<?xml"):
-            end_decl = kml.find("?>")
-            if end_decl != -1:
-                # Check if there's encoding in declaration
-                decl = kml[: end_decl + 2]
-                if "encoding" in decl.lower():
-                    kml = kml[end_decl + 2 :].lstrip()
-        root = ET.fromstring(kml)
-    else:
-        root = kml
-
-    gpx_kwargs: dict[str, Any] = {}
-    if creator:
-        gpx_kwargs["creator"] = creator
-
-    waypoints: list[Waypoint] = []
-    routes: list[Route] = []
-    tracks: list[Track] = []
-    metadata_name: str | None = None
-    metadata_desc: str | None = None
-
-    # Get document name/description if present
-    # Try with full namespace tag first, then without
-    doc = _find_kml_element(root, "Document")
-    if doc is not None:
-        name_elem = _find_kml_element(doc, "name")
-        if name_elem is not None and name_elem.text:
-            metadata_name = name_elem.text
-        desc_elem = _find_kml_element(doc, "description")
-        if desc_elem is not None and desc_elem.text:
-            metadata_desc = desc_elem.text
-
-    # Find all placemarks
-    placemarks = _find_all_kml_elements(root, "Placemark")
-
-    for placemark in placemarks:
-        _process_kml_placemark(placemark, waypoints, routes, tracks)
-
-    if metadata_name or metadata_desc:
-        gpx_kwargs["metadata"] = Metadata(name=metadata_name, desc=metadata_desc)
-
-    return GPX(wpt=waypoints, rte=routes, trk=tracks, **gpx_kwargs)
-
-
 def from_wkb(wkb: bytes, *, creator: str | None = None) -> GPX:
     """Convert Well-Known Binary (WKB) to GPX.
 
@@ -165,6 +93,12 @@ def from_wkb(wkb: bytes, *, creator: str | None = None) -> GPX:
 
     Raises:
         ValueError: If the WKB format is invalid or geometry type is unsupported.
+
+    Example:
+        >>> from gpx import from_wkb
+        >>> # WKB for POINT(4.0 52.0)
+        >>> wkb = bytes.fromhex("0101000000000000000000104000000000004a4a40")
+        >>> gpx = from_wkb(wkb)
 
     """
     gpx_kwargs: dict[str, Any] = {}
@@ -187,6 +121,10 @@ def from_wkt(wkt: str, *, creator: str | None = None) -> GPX:
 
     Raises:
         ValueError: If the WKT format is invalid or geometry type is unsupported.
+
+    Example:
+        >>> from gpx import from_wkt
+        >>> gpx = from_wkt("POINT (4.0 52.0)")
 
     """
     gpx_kwargs: dict[str, Any] = {}
@@ -366,153 +304,6 @@ def _coords_to_track(
             kwargs["type"] = str(properties["type"])
 
     return Track(**kwargs)
-
-
-# =============================================================================
-# KML Helper Functions
-# =============================================================================
-
-
-def _find_kml_element(parent: ET.Element, tag: str) -> ET.Element | None:
-    """Find a KML element, handling namespace variations.
-
-    Tries to find the element with the KML namespace first, then without.
-    """
-    # Try with full namespace tag
-    elem = parent.find(f"{{{KML_NAMESPACE}}}{tag}")
-    if elem is not None:
-        return elem
-
-    # Try without namespace
-    elem = parent.find(tag)
-    if elem is not None:
-        return elem
-
-    return None
-
-
-def _find_all_kml_elements(parent: ET.Element, tag: str) -> list[ET.Element]:
-    """Find all KML elements with a given tag, handling namespace variations."""
-    elements = []
-
-    # Try with full namespace
-    elements.extend(parent.findall(f".//{{{KML_NAMESPACE}}}{tag}"))
-
-    # Try without namespace
-    elements.extend(parent.findall(f".//{tag}"))
-
-    return elements
-
-
-def _process_kml_placemark(  # noqa: C901
-    placemark: ET.Element,
-    waypoints: list[Waypoint],
-    routes: list[Route],
-    tracks: list[Track],
-) -> None:
-    """Process a KML Placemark and add to appropriate list."""
-    # Get name and description
-    name_elem = _find_kml_element(placemark, "name")
-    name = name_elem.text.strip() if name_elem is not None and name_elem.text else None
-    desc_elem = _find_kml_element(placemark, "description")
-    desc = desc_elem.text.strip() if desc_elem is not None and desc_elem.text else None
-
-    # Check for Point
-    point = _find_kml_element(placemark, "Point")
-    if point is not None:
-        coords_elem = _find_kml_element(point, "coordinates")
-        if coords_elem is not None and coords_elem.text:
-            coords = _parse_kml_coordinates(coords_elem.text)
-            if coords:
-                waypoint = _kml_coords_to_waypoint(coords[0], name, desc)
-                waypoints.append(waypoint)
-        return
-
-    # Check for LineString
-    linestring = _find_kml_element(placemark, "LineString")
-    if linestring is not None:
-        coords_elem = _find_kml_element(linestring, "coordinates")
-        if coords_elem is not None and coords_elem.text:
-            coords = _parse_kml_coordinates(coords_elem.text)
-            if coords:
-                route = _kml_coords_to_route(coords, name, desc)
-                routes.append(route)
-        return
-
-    # Check for MultiGeometry containing LineStrings (for tracks)
-    multigeom = _find_kml_element(placemark, "MultiGeometry")
-    if multigeom is not None:
-        linestrings = _find_all_kml_elements(multigeom, "LineString")
-        if linestrings:
-            segments = []
-            for ls in linestrings:
-                coords_elem = _find_kml_element(ls, "coordinates")
-                if coords_elem is not None and coords_elem.text:
-                    coords = _parse_kml_coordinates(coords_elem.text)
-                    if coords:
-                        points = [
-                            _kml_coords_to_waypoint(c, None, None) for c in coords
-                        ]
-                        segments.append(TrackSegment(trkpt=points))
-            if segments:
-                tracks.append(Track(name=name, desc=desc, trkseg=segments))
-
-
-def _parse_kml_coordinates(coords_text: str) -> list[tuple[float, float, float | None]]:
-    """Parse KML coordinates string.
-
-    KML coordinates are in the format: lon,lat[,alt] lon,lat[,alt] ...
-    """
-    coords = []
-    for coord_str in coords_text.strip().split():
-        if not coord_str:
-            continue
-        parts = coord_str.split(",")
-        if len(parts) >= 2:  # noqa: PLR2004
-            lon = float(parts[0])
-            lat = float(parts[1])
-            alt = float(parts[2]) if len(parts) > 2 else None  # noqa: PLR2004
-            coords.append((lon, lat, alt))
-    return coords
-
-
-def _kml_coords_to_waypoint(
-    coords: tuple[float, float, float | None],
-    name: str | None,
-    desc: str | None,
-) -> Waypoint:
-    """Convert KML coordinates to a Waypoint."""
-    lon, lat, alt = coords
-
-    kwargs: dict[str, Any] = {
-        "lat": Latitude(str(lat)),
-        "lon": Longitude(str(lon)),
-    }
-    if alt is not None:
-        kwargs["ele"] = Decimal(str(alt))
-    if name:
-        kwargs["name"] = name
-    if desc:
-        kwargs["desc"] = desc
-
-    return Waypoint(**kwargs)
-
-
-def _kml_coords_to_route(
-    coords: list[tuple[float, float, float | None]],
-    name: str | None,
-    desc: str | None,
-) -> Route:
-    """Convert KML LineString coordinates to a Route."""
-    route_points = [_kml_coords_to_waypoint(c, None, None) for c in coords]
-
-    kwargs: dict[str, Any] = {"rtept": route_points}
-    if name:
-        kwargs["name"] = name
-    if desc:
-        kwargs["desc"] = desc
-
-    return Route(**kwargs)
 
 
 # =============================================================================

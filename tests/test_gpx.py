@@ -132,7 +132,7 @@ class TestGPXFileIO:
         gpx = GPX.from_string(full_gpx_string)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            gpx.to_file(f.name)
+            gpx.write_gpx(f.name)
             assert Path(f.name).exists()
             Path(f.name).unlink()
 
@@ -141,7 +141,7 @@ class TestGPXFileIO:
         gpx = GPX.from_string(full_gpx_string)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            gpx.to_file(Path(f.name))
+            gpx.write_gpx(Path(f.name))
             assert Path(f.name).exists()
             Path(f.name).unlink()
 
@@ -150,7 +150,7 @@ class TestGPXFileIO:
         gpx1 = GPX.from_string(full_gpx_string)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            gpx1.to_file(f.name)
+            gpx1.write_gpx(f.name)
             gpx2 = GPX.from_file(f.name)
 
             assert gpx1.metadata is not None
@@ -167,7 +167,7 @@ class TestGPXFileIO:
         gpx = GPX.from_string(minimal_gpx_string)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            gpx.to_file(f.name)
+            gpx.write_gpx(f.name)
             content = Path(f.name).read_text()
             assert '<?xml version="1.0"' in content or "<?xml version='1.0'" in content
             Path(f.name).unlink()
