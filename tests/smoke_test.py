@@ -63,7 +63,7 @@ class TestBasicReadWrite:
             temp_path = Path(f.name)
 
         try:
-            gpx.to_file(temp_path)
+            gpx.write_gpx(temp_path)
             assert temp_path.exists()
             content = temp_path.read_text()
             assert 'creator="SmokeTest"' in content
@@ -117,7 +117,7 @@ class TestRoundTrip:
 
         try:
             # Write to file
-            gpx1.to_file(temp_path)
+            gpx1.write_gpx(temp_path)
 
             # Read from file
             gpx2 = GPX.from_file(temp_path)
@@ -331,7 +331,7 @@ class TestEndToEnd:
             temp_path = Path(f.name)
 
         try:
-            gpx1.to_file(temp_path)
+            gpx1.write_gpx(temp_path)
 
             # 3. Load from file
             gpx2 = GPX.from_file(temp_path)
@@ -355,7 +355,7 @@ class TestEndToEnd:
                 wpt=gpx2.wpt,
                 trk=gpx2.trk,
             )
-            gpx_modified.to_file(temp_path)
+            gpx_modified.write_gpx(temp_path)
 
             # 6. Load again and verify modification
             gpx3 = GPX.from_file(temp_path)

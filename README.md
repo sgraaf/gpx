@@ -133,7 +133,7 @@ gpx = GPX(
 
 ```python
 # Write GPX data to file
-gpx.to_file("output.gpx")
+gpx.write_gpx("output.gpx")
 
 # Convert to string
 gpx_string = gpx.to_string()
@@ -167,6 +167,69 @@ gpx.rte.append(route)
 
 # Access route statistics
 print(f"Route distance: {route.total_distance:.2f} meters")
+```
+
+### Converting to other formats
+
+*gpx* supports converting GPX data to various formats:
+
+```python
+from gpx import GPX, read_gpx
+
+gpx = read_gpx("path/to/file.gpx")
+
+# Write to file formats
+gpx.write_gpx("output.gpx")           # GPX file
+gpx.write_geojson("output.geojson")   # GeoJSON file
+gpx.write_kml("output.kml")           # KML file (Google Earth)
+
+# Convert to data formats (strings/bytes)
+wkt_string = gpx.to_wkt()   # Well-Known Text
+wkb_bytes = gpx.to_wkb()    # Well-Known Binary
+
+# Access GeoJSON-compatible data via __geo_interface__
+geojson_dict = gpx.__geo_interface__
+```
+
+### Reading from other formats
+
+*gpx* can read data from various file formats:
+
+```python
+from gpx import read_gpx, read_geojson, read_kml
+
+# Read from files
+gpx = read_gpx("path/to/file.gpx")
+gpx = read_geojson("path/to/file.geojson")
+gpx = read_kml("path/to/file.kml")
+```
+
+### Converting from data formats
+
+*gpx* can convert from data formats (strings, bytes, objects):
+
+```python
+from gpx import from_geo_interface, from_wkt, from_wkb
+
+# Convert from WKT (Well-Known Text)
+gpx = from_wkt("POINT (4.9041 52.3676)")
+gpx = from_wkt("LINESTRING (4.9 52.3, 4.91 52.31, 4.92 52.32)")
+
+# Convert from WKB (Well-Known Binary)
+gpx = from_wkb(wkb_bytes)
+
+# Convert from any object with __geo_interface__ (e.g., Shapely)
+from shapely.geometry import Point, LineString
+
+point = Point(4.9041, 52.3676)
+gpx = from_geo_interface(point)
+
+line = LineString([(4.9, 52.3), (4.91, 52.31), (4.92, 52.32)])
+gpx = from_geo_interface(line)
+
+# Or convert from a GeoJSON dict directly
+geojson = {"type": "Point", "coordinates": [4.9041, 52.3676]}
+gpx = from_geo_interface(geojson)
 ```
 
 <!-- end docs-include-usage -->
