@@ -9,7 +9,7 @@ from decimal import Decimal, InvalidOperation
 
 import pytest
 
-from gpx import GPX
+from gpx import from_string
 from gpx.types import Degrees, DGPSStation, Fix, Latitude, Longitude
 
 
@@ -18,7 +18,7 @@ class TestValidEdgeCases:
 
     def test_waypoint_minimal(self, waypoint_minimal_gpx_string: str) -> None:
         """Test parsing a waypoint with only required lat/lon attributes."""
-        gpx = GPX.from_string(waypoint_minimal_gpx_string)
+        gpx = from_string(waypoint_minimal_gpx_string)
         assert len(gpx.wpt) == 1
         assert gpx.wpt[0].lat == Latitude("0")
         assert gpx.wpt[0].lon == Longitude("0")
@@ -27,7 +27,7 @@ class TestValidEdgeCases:
 
     def test_waypoint_all_fields(self, waypoint_all_fields_gpx_string: str) -> None:
         """Test parsing a waypoint with all possible fields populated."""
-        gpx = GPX.from_string(waypoint_all_fields_gpx_string)
+        gpx = from_string(waypoint_all_fields_gpx_string)
         wpt = gpx.wpt[0]
         assert wpt.lat == Latitude("52.5200")
         assert wpt.lon == Longitude("13.4050")
@@ -51,28 +51,28 @@ class TestValidEdgeCases:
 
     def test_multiple_waypoints(self, multiple_waypoints_gpx_string: str) -> None:
         """Test parsing GPX with many waypoints."""
-        gpx = GPX.from_string(multiple_waypoints_gpx_string)
+        gpx = from_string(multiple_waypoints_gpx_string)
         assert len(gpx.wpt) == 10
         for i, wpt in enumerate(gpx.wpt, 1):
             assert wpt.name == f"Waypoint {i}"
 
     def test_multiple_tracks(self, multiple_tracks_gpx_string: str) -> None:
         """Test parsing GPX with multiple tracks."""
-        gpx = GPX.from_string(multiple_tracks_gpx_string)
+        gpx = from_string(multiple_tracks_gpx_string)
         assert len(gpx.trk) == 3
         for i, trk in enumerate(gpx.trk, 1):
             assert trk.name == f"Track {i}"
 
     def test_multiple_routes(self, multiple_routes_gpx_string: str) -> None:
         """Test parsing GPX with multiple routes."""
-        gpx = GPX.from_string(multiple_routes_gpx_string)
+        gpx = from_string(multiple_routes_gpx_string)
         assert len(gpx.rte) == 3
         for i, rte in enumerate(gpx.rte, 1):
             assert rte.name == f"Route {i}"
 
     def test_empty_track_segment(self, empty_track_segment_gpx_string: str) -> None:
         """Test parsing track with empty segment."""
-        gpx = GPX.from_string(empty_track_segment_gpx_string)
+        gpx = from_string(empty_track_segment_gpx_string)
         trk = gpx.trk[0]
         assert len(trk.trkseg) == 3
         assert len(trk.trkseg[0].trkpt) == 1
@@ -81,21 +81,21 @@ class TestValidEdgeCases:
 
     def test_empty_track(self, empty_track_gpx_string: str) -> None:
         """Test parsing track with no segments."""
-        gpx = GPX.from_string(empty_track_gpx_string)
+        gpx = from_string(empty_track_gpx_string)
         trk = gpx.trk[0]
         assert trk.name == "Empty track"
         assert len(trk.trkseg) == 0
 
     def test_empty_route(self, empty_route_gpx_string: str) -> None:
         """Test parsing route with no points."""
-        gpx = GPX.from_string(empty_route_gpx_string)
+        gpx = from_string(empty_route_gpx_string)
         rte = gpx.rte[0]
         assert rte.name == "Empty route"
         assert len(rte.rtept) == 0
 
     def test_boundary_coordinates(self, boundary_coords_gpx_string: str) -> None:
         """Test parsing waypoints at coordinate boundaries."""
-        gpx = GPX.from_string(boundary_coords_gpx_string)
+        gpx = from_string(boundary_coords_gpx_string)
         assert len(gpx.wpt) == 7
 
         # North Pole, Antimeridian
@@ -114,7 +114,7 @@ class TestValidEdgeCases:
         self, high_precision_coords_gpx_string: str
     ) -> None:
         """Test parsing coordinates with many decimal places."""
-        gpx = GPX.from_string(high_precision_coords_gpx_string)
+        gpx = from_string(high_precision_coords_gpx_string)
         wpt = gpx.wpt[0]
         # The exact precision depends on Decimal implementation
         assert float(wpt.lat) == pytest.approx(52.520008123456789, rel=1e-15)
@@ -124,14 +124,14 @@ class TestValidEdgeCases:
 
     def test_time_formats(self, time_formats_gpx_string: str) -> None:
         """Test parsing various ISO 8601 time formats."""
-        gpx = GPX.from_string(time_formats_gpx_string)
+        gpx = from_string(time_formats_gpx_string)
         # All waypoints should have valid times
         for wpt in gpx.wpt:
             assert wpt.time is not None
 
     def test_unicode_content(self, unicode_content_gpx_string: str) -> None:
         """Test parsing Unicode content in names and descriptions."""
-        gpx = GPX.from_string(unicode_content_gpx_string)
+        gpx = from_string(unicode_content_gpx_string)
         assert gpx.metadata is not None
         assert gpx.metadata.name is not None
         assert "internacional" in gpx.metadata.name
@@ -143,7 +143,7 @@ class TestValidEdgeCases:
 
     def test_extreme_elevations(self, extreme_elevations_gpx_string: str) -> None:
         """Test parsing extreme elevation values."""
-        gpx = GPX.from_string(extreme_elevations_gpx_string)
+        gpx = from_string(extreme_elevations_gpx_string)
 
         # Mount Everest
         everest = next(w for w in gpx.wpt if "Everest" in (w.name or ""))
@@ -159,7 +159,7 @@ class TestValidEdgeCases:
 
     def test_waypoint_with_links(self, waypoint_with_links_gpx_string: str) -> None:
         """Test parsing waypoint with multiple links."""
-        gpx = GPX.from_string(waypoint_with_links_gpx_string)
+        gpx = from_string(waypoint_with_links_gpx_string)
         wpt = gpx.wpt[0]
         assert len(wpt.link) == 4
         assert wpt.link[0].href == "https://example.com/page1"
@@ -168,14 +168,14 @@ class TestValidEdgeCases:
 
     def test_track_single_point(self, track_single_point_gpx_string: str) -> None:
         """Test parsing track with single point in segment."""
-        gpx = GPX.from_string(track_single_point_gpx_string)
+        gpx = from_string(track_single_point_gpx_string)
         trk = gpx.trk[0]
         assert len(trk.trkseg) == 1
         assert len(trk.trkseg[0].trkpt) == 1
 
     def test_metadata_minimal(self, metadata_minimal_gpx_string: str) -> None:
         """Test parsing minimal metadata with only name."""
-        gpx = GPX.from_string(metadata_minimal_gpx_string)
+        gpx = from_string(metadata_minimal_gpx_string)
         assert gpx.metadata is not None
         assert gpx.metadata.name == "Minimal metadata"
         assert gpx.metadata.desc is None
@@ -183,7 +183,7 @@ class TestValidEdgeCases:
 
     def test_all_fix_types(self, all_fix_types_gpx_string: str) -> None:
         """Test parsing all valid fix types."""
-        gpx = GPX.from_string(all_fix_types_gpx_string)
+        gpx = from_string(all_fix_types_gpx_string)
         fixes = [wpt.fix for wpt in gpx.wpt]
         assert Fix("none") in fixes
         assert Fix("2d") in fixes
@@ -195,7 +195,7 @@ class TestValidEdgeCases:
         self, dgps_station_values_gpx_string: str
     ) -> None:
         """Test parsing boundary DGPS station values."""
-        gpx = GPX.from_string(dgps_station_values_gpx_string)
+        gpx = from_string(dgps_station_values_gpx_string)
         dgps_ids = [wpt.dgpsid for wpt in gpx.wpt]
         assert DGPSStation(0) in dgps_ids
         assert DGPSStation(512) in dgps_ids
@@ -203,7 +203,7 @@ class TestValidEdgeCases:
 
     def test_degrees_boundary_values(self, degrees_values_gpx_string: str) -> None:
         """Test parsing boundary degrees values."""
-        gpx = GPX.from_string(degrees_values_gpx_string)
+        gpx = from_string(degrees_values_gpx_string)
         magvars = [wpt.magvar for wpt in gpx.wpt]
         assert Degrees("0") in magvars
         assert Degrees("180") in magvars
@@ -212,7 +212,7 @@ class TestValidEdgeCases:
 
     def test_whitespace_content(self, whitespace_content_gpx_string: str) -> None:
         """Test parsing content with various whitespace."""
-        gpx = GPX.from_string(whitespace_content_gpx_string)
+        gpx = from_string(whitespace_content_gpx_string)
         # Should parse without error
         assert gpx.metadata is not None
         assert gpx.metadata.name is not None
@@ -220,7 +220,7 @@ class TestValidEdgeCases:
 
     def test_special_characters(self, special_characters_gpx_string: str) -> None:
         """Test parsing content with XML special characters."""
-        gpx = GPX.from_string(special_characters_gpx_string)
+        gpx = from_string(special_characters_gpx_string)
         wpt = gpx.wpt[0]
         assert wpt.name is not None
         assert wpt.desc is not None
@@ -232,27 +232,27 @@ class TestValidEdgeCases:
 
     def test_track_with_links(self, track_with_links_gpx_string: str) -> None:
         """Test parsing track with links."""
-        gpx = GPX.from_string(track_with_links_gpx_string)
+        gpx = from_string(track_with_links_gpx_string)
         trk = gpx.trk[0]
         assert len(trk.link) == 2
         assert trk.link[0].href == "https://example.com/track"
 
     def test_route_with_links(self, route_with_links_gpx_string: str) -> None:
         """Test parsing route with links."""
-        gpx = GPX.from_string(route_with_links_gpx_string)
+        gpx = from_string(route_with_links_gpx_string)
         rte = gpx.rte[0]
         assert len(rte.link) == 1
         assert rte.rtept[0].link[0].href == "https://example.com/start"
 
     def test_no_xml_declaration(self, no_xml_declaration_gpx_string: str) -> None:
         """Test parsing GPX without XML declaration."""
-        gpx = GPX.from_string(no_xml_declaration_gpx_string)
+        gpx = from_string(no_xml_declaration_gpx_string)
         assert len(gpx.wpt) == 1
         assert gpx.wpt[0].name == "No XML declaration"
 
     def test_large_gpx(self, large_gpx_string: str) -> None:
         """Test parsing large GPX file."""
-        gpx = GPX.from_string(large_gpx_string)
+        gpx = from_string(large_gpx_string)
         assert gpx.metadata is not None
         trk = gpx.trk[0]
         assert len(trk.trkseg[0].trkpt) == 21
@@ -264,159 +264,159 @@ class TestInvalidEdgeCases:
     def test_missing_lat_raises_error(self, missing_lat_gpx_string: str) -> None:
         """Test that missing latitude raises ValueError."""
         with pytest.raises(ValueError, match="missing required 'lat' attribute"):
-            GPX.from_string(missing_lat_gpx_string)
+            from_string(missing_lat_gpx_string)
 
     def test_missing_lon_raises_error(self, missing_lon_gpx_string: str) -> None:
         """Test that missing longitude raises ValueError."""
         with pytest.raises(ValueError, match="missing required 'lon' attribute"):
-            GPX.from_string(missing_lon_gpx_string)
+            from_string(missing_lon_gpx_string)
 
     def test_invalid_gpx_string_raises_error(self, invalid_gpx_string: str) -> None:
         """Test that invalid GPX (missing lat/lon) raises error."""
         with pytest.raises(ValueError, match="missing required"):
-            GPX.from_string(invalid_gpx_string)
+            from_string(invalid_gpx_string)
 
     def test_lat_too_high_raises_error(self, lat_too_high_gpx_string: str) -> None:
         """Test that latitude > 90 raises ValueError."""
         with pytest.raises(ValueError, match="Invalid latitude"):
-            GPX.from_string(lat_too_high_gpx_string)
+            from_string(lat_too_high_gpx_string)
 
     def test_lat_too_low_raises_error(self, lat_too_low_gpx_string: str) -> None:
         """Test that latitude < -90 raises ValueError."""
         with pytest.raises(ValueError, match="Invalid latitude"):
-            GPX.from_string(lat_too_low_gpx_string)
+            from_string(lat_too_low_gpx_string)
 
     def test_lon_too_high_raises_error(self, lon_too_high_gpx_string: str) -> None:
         """Test that longitude > 180 raises ValueError."""
         with pytest.raises(ValueError, match="Invalid longitude"):
-            GPX.from_string(lon_too_high_gpx_string)
+            from_string(lon_too_high_gpx_string)
 
     def test_lon_too_low_raises_error(self, lon_too_low_gpx_string: str) -> None:
         """Test that longitude < -180 raises ValueError."""
         with pytest.raises(ValueError, match="Invalid longitude"):
-            GPX.from_string(lon_too_low_gpx_string)
+            from_string(lon_too_low_gpx_string)
 
     def test_invalid_fix_value_raises_error(
         self, invalid_fix_value_gpx_string: str
     ) -> None:
         """Test that invalid fix value raises ValueError."""
         with pytest.raises(ValueError, match="Invalid fix"):
-            GPX.from_string(invalid_fix_value_gpx_string)
+            from_string(invalid_fix_value_gpx_string)
 
     def test_invalid_fix_uppercase_raises_error(
         self, invalid_fix_uppercase_gpx_string: str
     ) -> None:
         """Test that uppercase fix value raises ValueError."""
         with pytest.raises(ValueError, match="Invalid fix"):
-            GPX.from_string(invalid_fix_uppercase_gpx_string)
+            from_string(invalid_fix_uppercase_gpx_string)
 
     def test_dgps_station_too_high_raises_error(
         self, dgps_station_too_high_gpx_string: str
     ) -> None:
         """Test that DGPS station ID > 1023 raises ValueError."""
         with pytest.raises(ValueError, match="Invalid DGPS station"):
-            GPX.from_string(dgps_station_too_high_gpx_string)
+            from_string(dgps_station_too_high_gpx_string)
 
     def test_dgps_station_negative_raises_error(
         self, dgps_station_negative_gpx_string: str
     ) -> None:
         """Test that negative DGPS station ID raises ValueError."""
         with pytest.raises(ValueError, match="Invalid DGPS station"):
-            GPX.from_string(dgps_station_negative_gpx_string)
+            from_string(dgps_station_negative_gpx_string)
 
     def test_degrees_too_high_raises_error(
         self, degrees_too_high_gpx_string: str
     ) -> None:
         """Test that degrees >= 360 raises ValueError."""
         with pytest.raises(ValueError, match="Invalid degrees"):
-            GPX.from_string(degrees_too_high_gpx_string)
+            from_string(degrees_too_high_gpx_string)
 
     def test_degrees_negative_raises_error(
         self, degrees_negative_gpx_string: str
     ) -> None:
         """Test that negative degrees raises ValueError."""
         with pytest.raises(ValueError, match="Invalid degrees"):
-            GPX.from_string(degrees_negative_gpx_string)
+            from_string(degrees_negative_gpx_string)
 
     def test_malformed_xml_raises_error(self, malformed_xml_gpx_string: str) -> None:
         """Test that malformed XML raises ParseError."""
         with pytest.raises(ET.ParseError):
-            GPX.from_string(malformed_xml_gpx_string)
+            from_string(malformed_xml_gpx_string)
 
     def test_missing_bounds_minlat_raises_error(
         self, missing_bounds_minlat_gpx_string: str
     ) -> None:
         """Test that bounds missing minlat raises ValueError."""
         with pytest.raises(ValueError, match="missing required 'minlat' attribute"):
-            GPX.from_string(missing_bounds_minlat_gpx_string)
+            from_string(missing_bounds_minlat_gpx_string)
 
     def test_missing_email_id_raises_error(
         self, missing_email_id_gpx_string: str
     ) -> None:
         """Test that email missing id raises ValueError."""
         with pytest.raises(ValueError, match="missing required 'id' attribute"):
-            GPX.from_string(missing_email_id_gpx_string)
+            from_string(missing_email_id_gpx_string)
 
     def test_missing_email_domain_raises_error(
         self, missing_email_domain_gpx_string: str
     ) -> None:
         """Test that email missing domain raises ValueError."""
         with pytest.raises(ValueError, match="missing required 'domain' attribute"):
-            GPX.from_string(missing_email_domain_gpx_string)
+            from_string(missing_email_domain_gpx_string)
 
     def test_missing_link_href_raises_error(
         self, missing_link_href_gpx_string: str
     ) -> None:
         """Test that link missing href raises ValueError."""
         with pytest.raises(ValueError, match="missing required 'href' attribute"):
-            GPX.from_string(missing_link_href_gpx_string)
+            from_string(missing_link_href_gpx_string)
 
     def test_missing_copyright_author_raises_error(
         self, missing_copyright_author_gpx_string: str
     ) -> None:
         """Test that copyright missing author raises ValueError."""
         with pytest.raises(ValueError, match="missing required 'author' attribute"):
-            GPX.from_string(missing_copyright_author_gpx_string)
+            from_string(missing_copyright_author_gpx_string)
 
     def test_non_numeric_lat_raises_error(
         self, non_numeric_lat_gpx_string: str
     ) -> None:
         """Test that non-numeric latitude raises ValueError."""
         with pytest.raises(ValueError, match="Invalid latitude"):
-            GPX.from_string(non_numeric_lat_gpx_string)
+            from_string(non_numeric_lat_gpx_string)
 
     def test_non_numeric_lon_raises_error(
         self, non_numeric_lon_gpx_string: str
     ) -> None:
         """Test that non-numeric longitude raises ValueError."""
         with pytest.raises(ValueError, match="Invalid longitude"):
-            GPX.from_string(non_numeric_lon_gpx_string)
+            from_string(non_numeric_lon_gpx_string)
 
     def test_non_numeric_elevation_raises_error(
         self, non_numeric_elevation_gpx_string: str
     ) -> None:
         """Test that non-numeric elevation raises error."""
         with pytest.raises(InvalidOperation):
-            GPX.from_string(non_numeric_elevation_gpx_string)
+            from_string(non_numeric_elevation_gpx_string)
 
     def test_empty_file_raises_error(self, empty_file_gpx_string: str) -> None:
         """Test that empty file raises ParseError."""
         with pytest.raises(ET.ParseError):
-            GPX.from_string(empty_file_gpx_string)
+            from_string(empty_file_gpx_string)
 
     def test_missing_trkpt_lat_raises_error(
         self, missing_trkpt_lat_gpx_string: str
     ) -> None:
         """Test that track point missing latitude raises ValueError."""
         with pytest.raises(ValueError, match="missing required 'lat' attribute"):
-            GPX.from_string(missing_trkpt_lat_gpx_string)
+            from_string(missing_trkpt_lat_gpx_string)
 
     def test_missing_rtept_lat_raises_error(
         self, missing_rtept_lat_gpx_string: str
     ) -> None:
         """Test that route point missing latitude raises ValueError."""
         with pytest.raises(ValueError, match="missing required 'lat' attribute"):
-            GPX.from_string(missing_rtept_lat_gpx_string)
+            from_string(missing_rtept_lat_gpx_string)
 
 
 class TestRoundtripEdgeCases:
@@ -426,9 +426,9 @@ class TestRoundtripEdgeCases:
         self, high_precision_coords_gpx_string: str
     ) -> None:
         """Test that roundtrip preserves high precision coordinates."""
-        gpx1 = GPX.from_string(high_precision_coords_gpx_string)
+        gpx1 = from_string(high_precision_coords_gpx_string)
         output = gpx1.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         assert gpx2.wpt[0].lat == gpx1.wpt[0].lat
         assert gpx2.wpt[0].lon == gpx1.wpt[0].lon
@@ -436,9 +436,9 @@ class TestRoundtripEdgeCases:
 
     def test_roundtrip_preserves_unicode(self, unicode_content_gpx_string: str) -> None:
         """Test that roundtrip preserves Unicode content."""
-        gpx1 = GPX.from_string(unicode_content_gpx_string)
+        gpx1 = from_string(unicode_content_gpx_string)
         output = gpx1.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         assert gpx2.metadata is not None
         assert gpx1.metadata is not None
@@ -452,9 +452,9 @@ class TestRoundtripEdgeCases:
         self, special_characters_gpx_string: str
     ) -> None:
         """Test that roundtrip preserves special XML characters."""
-        gpx1 = GPX.from_string(special_characters_gpx_string)
+        gpx1 = from_string(special_characters_gpx_string)
         output = gpx1.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         assert gpx2.wpt[0].name == gpx1.wpt[0].name
         assert gpx2.wpt[0].desc == gpx1.wpt[0].desc
@@ -464,9 +464,9 @@ class TestRoundtripEdgeCases:
         self, waypoint_all_fields_gpx_string: str
     ) -> None:
         """Test that roundtrip preserves all waypoint fields."""
-        gpx1 = GPX.from_string(waypoint_all_fields_gpx_string)
+        gpx1 = from_string(waypoint_all_fields_gpx_string)
         output = gpx1.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         wpt1 = gpx1.wpt[0]
         wpt2 = gpx2.wpt[0]
@@ -495,9 +495,9 @@ class TestRoundtripEdgeCases:
         self, empty_track_gpx_string: str
     ) -> None:
         """Test that roundtrip preserves empty tracks/routes."""
-        gpx1 = GPX.from_string(empty_track_gpx_string)
+        gpx1 = from_string(empty_track_gpx_string)
         output = gpx1.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         assert len(gpx2.trk) == 1
         assert gpx2.trk[0].name == gpx1.trk[0].name
@@ -507,9 +507,9 @@ class TestRoundtripEdgeCases:
         self, extreme_elevations_gpx_string: str
     ) -> None:
         """Test that roundtrip preserves extreme elevation values."""
-        gpx1 = GPX.from_string(extreme_elevations_gpx_string)
+        gpx1 = from_string(extreme_elevations_gpx_string)
         output = gpx1.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         for i, wpt in enumerate(gpx2.wpt):
             assert wpt.ele == gpx1.wpt[i].ele

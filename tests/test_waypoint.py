@@ -6,7 +6,7 @@ from typing import Any
 
 import pytest
 
-from gpx import GPX, Waypoint
+from gpx import Waypoint, from_string
 from gpx.types import Degrees, DGPSStation, Fix, Latitude, Longitude
 
 #: GPX 1.1 namespace
@@ -18,87 +18,87 @@ class TestWaypointParsing:
 
     def test_parse_waypoint_lat_lon(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint latitude and longitude."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         assert wpt.lat == Latitude("52.5200")
         assert wpt.lon == Longitude("13.4050")
 
     def test_parse_waypoint_elevation(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint elevation."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         assert wpt.ele == Decimal("34.5")
 
     def test_parse_waypoint_time(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint timestamp."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         expected_time = datetime(2023, 6, 15, 10, 30, 0, tzinfo=UTC)
         assert wpt.time == expected_time
 
     def test_parse_waypoint_name(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint name."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         assert wpt.name == "Berlin"
 
     def test_parse_waypoint_description(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint description."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         assert wpt.desc == "Capital of Germany"
 
     def test_parse_waypoint_comment(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint comment."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         assert wpt.cmt == "A comment"
 
     def test_parse_waypoint_source(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint source."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         assert wpt.src == "Manual"
 
     def test_parse_waypoint_symbol(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint symbol."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         assert wpt.sym == "City"
 
     def test_parse_waypoint_type(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint type."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         assert wpt.type == "City"
 
     def test_parse_waypoint_fix(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint fix type."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         assert wpt.fix == Fix("3d")
 
     def test_parse_waypoint_satellites(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint satellite count."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         assert wpt.sat == 8
 
     def test_parse_waypoint_hdop(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint horizontal dilution of precision."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         assert wpt.hdop == Decimal("1.2")
 
     def test_parse_waypoint_vdop(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint vertical dilution of precision."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         assert wpt.vdop == Decimal("1.5")
 
     def test_parse_waypoint_pdop(self, gpx_with_waypoint_string: str) -> None:
         """Test parsing waypoint position dilution of precision."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
         assert wpt.pdop == Decimal("1.8")
 
@@ -137,9 +137,9 @@ class TestWaypointBuilding:
 
     def test_build_waypoint_roundtrip(self, gpx_with_waypoint_string: str) -> None:
         """Test that parsing and building produces equivalent output."""
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         output = gpx.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         assert gpx2.wpt[0].lat == gpx.wpt[0].lat
         assert gpx2.wpt[0].lon == gpx.wpt[0].lon
@@ -360,7 +360,7 @@ class TestWaypointGeoInterface:
     def test_waypoint_geo_interface(
         self, gpx_with_waypoint_string: str, waypoint_geo_interface: dict[str, Any]
     ) -> None:
-        gpx = GPX.from_string(gpx_with_waypoint_string)
+        gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
 
         assert wpt.__geo_interface__ == waypoint_geo_interface

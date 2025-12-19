@@ -9,7 +9,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from gpx import GPX
+from gpx import GPX, from_string
 
 if TYPE_CHECKING:
     from gpx.track_segment import TrackSegment
@@ -30,13 +30,13 @@ class TestTrackStatistics:
     def track_gpx(self) -> GPX:
         """Load track with statistics data."""
         gpx_string = load_fixture(VALID_FIXTURES_DIR / "track_with_stats.gpx")
-        return GPX.from_string(gpx_string)
+        return from_string(gpx_string)
 
     @pytest.fixture
     def multi_segment_gpx(self) -> GPX:
         """Load track with multiple segments."""
         gpx_string = load_fixture(VALID_FIXTURES_DIR / "track_multi_segment.gpx")
-        return GPX.from_string(gpx_string)
+        return from_string(gpx_string)
 
     def test_track_total_distance(self, track_gpx: GPX) -> None:
         """Test track total distance calculation."""
@@ -203,7 +203,7 @@ class TestTrackSegmentStatistics:
     def segment(self) -> TrackSegment:
         """Load track with statistics data and return first segment."""
         gpx_string = load_fixture(VALID_FIXTURES_DIR / "track_with_stats.gpx")
-        gpx = GPX.from_string(gpx_string)
+        gpx = from_string(gpx_string)
         return gpx.trk[0].trkseg[0]
 
     def test_segment_total_distance(self, segment: TrackSegment) -> None:
@@ -308,7 +308,7 @@ class TestRouteStatistics:
     def route_gpx(self) -> GPX:
         """Load route with statistics data."""
         gpx_string = load_fixture(VALID_FIXTURES_DIR / "route_with_stats.gpx")
-        return GPX.from_string(gpx_string)
+        return from_string(gpx_string)
 
     def test_route_total_distance(self, route_gpx: GPX) -> None:
         """Test route total distance calculation."""
@@ -333,7 +333,7 @@ class TestRouteStatistics:
             </rtept>
           </rte>
         </gpx>"""
-        gpx = GPX.from_string(gpx_string)
+        gpx = from_string(gpx_string)
         route = gpx.rte[0]
         assert route.total_duration == timedelta()
 
@@ -441,7 +441,7 @@ class TestBoundsProperties:
     def bounds_gpx(self) -> GPX:
         """Load GPX with bounds."""
         gpx_string = load_fixture(VALID_FIXTURES_DIR / "metadata_with_bounds.gpx")
-        return GPX.from_string(gpx_string)
+        return from_string(gpx_string)
 
     def test_bounds_geo_interface(self, bounds_gpx: GPX) -> None:
         """Test bounds GeoJSON interface returns Polygon."""
@@ -512,7 +512,7 @@ class TestEdgeCaseStatistics:
             </trkseg>
           </trk>
         </gpx>"""
-        gpx = GPX.from_string(gpx_string)
+        gpx = from_string(gpx_string)
         track = gpx.trk[0]
         # Duration is 0, so avg_speed should be 0
         assert track.avg_speed == 0.0
@@ -532,7 +532,7 @@ class TestEdgeCaseStatistics:
             </trkseg>
           </trk>
         </gpx>"""
-        gpx = GPX.from_string(gpx_string)
+        gpx = from_string(gpx_string)
         track = gpx.trk[0]
         # Same location, so moving_duration should be 0 (speed < 0.5 km/h)
         # and avg_moving_speed should be 0
@@ -550,7 +550,7 @@ class TestEdgeCaseStatistics:
             </trkseg>
           </trk>
         </gpx>"""
-        gpx = GPX.from_string(gpx_string)
+        gpx = from_string(gpx_string)
         segment = gpx.trk[0].trkseg[0]
         assert segment.total_duration == timedelta()
 
@@ -567,7 +567,7 @@ class TestEdgeCaseStatistics:
             </rtept>
           </rte>
         </gpx>"""
-        gpx = GPX.from_string(gpx_string)
+        gpx = from_string(gpx_string)
         route = gpx.rte[0]
         assert route.avg_moving_speed == 0.0
 
@@ -582,7 +582,7 @@ class TestEdgeCaseStatistics:
             </trkseg>
           </trk>
         </gpx>"""
-        gpx = GPX.from_string(gpx_string)
+        gpx = from_string(gpx_string)
         track = gpx.trk[0]
         geo = track.__geo_interface__
         # Without properties, returns pure geometry (no "geometry" key)
@@ -599,7 +599,7 @@ class TestEdgeCaseStatistics:
             <rtept lat="52.5210" lon="13.4060"/>
           </rte>
         </gpx>"""
-        gpx = GPX.from_string(gpx_string)
+        gpx = from_string(gpx_string)
         route = gpx.rte[0]
         geo = route.__geo_interface__
         # Without properties, returns pure geometry
@@ -617,7 +617,7 @@ class TestEdgeCaseStatistics:
             </trkseg>
           </trk>
         </gpx>"""
-        gpx = GPX.from_string(gpx_string)
+        gpx = from_string(gpx_string)
         segment = gpx.trk[0].trkseg[0]
         geo = segment.__geo_interface__
         # TrackSegment always returns pure geometry

@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from gpx import GPX, Bounds, Copyright, Email, Link, Metadata, Person
+from gpx import Bounds, Copyright, Email, Link, Metadata, Person, from_string
 from gpx.types import Latitude, Longitude
 
 #: GPX 1.1 namespace
@@ -14,32 +14,32 @@ class TestMetadataParsing:
 
     def test_parse_metadata_name(self, gpx_with_metadata_string: str) -> None:
         """Test parsing metadata name."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         assert gpx.metadata.name == "Test GPX File"
 
     def test_parse_metadata_desc(self, gpx_with_metadata_string: str) -> None:
         """Test parsing metadata description."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         assert gpx.metadata.desc == "A test GPX file for unit testing"
 
     def test_parse_metadata_time(self, gpx_with_metadata_string: str) -> None:
         """Test parsing metadata time."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         expected = datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC)
         assert gpx.metadata is not None
         assert gpx.metadata.time == expected
 
     def test_parse_metadata_keywords(self, gpx_with_metadata_string: str) -> None:
         """Test parsing metadata keywords."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         assert gpx.metadata.keywords == "test, gpx, example"
 
     def test_parse_metadata_author(self, gpx_with_metadata_string: str) -> None:
         """Test parsing metadata author."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         assert gpx.metadata.author is not None
         assert gpx.metadata is not None
@@ -47,7 +47,7 @@ class TestMetadataParsing:
 
     def test_parse_metadata_copyright(self, gpx_with_metadata_string: str) -> None:
         """Test parsing metadata copyright."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         assert gpx.metadata.copyright is not None
         assert gpx.metadata is not None
@@ -55,14 +55,14 @@ class TestMetadataParsing:
 
     def test_parse_metadata_links(self, gpx_with_metadata_string: str) -> None:
         """Test parsing metadata links."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         assert gpx.metadata.link is not None
         assert len(gpx.metadata.link) == 1
 
     def test_parse_metadata_bounds(self, gpx_with_metadata_string: str) -> None:
         """Test parsing metadata bounds."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         assert gpx.metadata.bounds is not None
         assert gpx.metadata is not None
@@ -87,9 +87,9 @@ class TestMetadataBuilding:
 
     def test_build_metadata_roundtrip(self, gpx_with_metadata_string: str) -> None:
         """Test metadata roundtrip."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         output = gpx.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         assert gpx.metadata is not None
         assert gpx2.metadata is not None
@@ -127,7 +127,7 @@ class TestBoundsParsing:
 
     def test_parse_bounds(self, gpx_with_metadata_string: str) -> None:
         """Test parsing bounds."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         bounds = gpx.metadata.bounds
         assert bounds is not None
@@ -151,9 +151,9 @@ class TestBoundsBuilding:
 
     def test_bounds_roundtrip(self, gpx_with_metadata_string: str) -> None:
         """Test bounds roundtrip."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         output = gpx.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         assert gpx.metadata is not None
         assert gpx.metadata.bounds is not None
@@ -184,21 +184,21 @@ class TestLinkParsing:
 
     def test_parse_link_href(self, gpx_with_metadata_string: str) -> None:
         """Test parsing link href."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         link = gpx.metadata.link[0]
         assert link.href == "https://example.com/gpx"
 
     def test_parse_link_text(self, gpx_with_metadata_string: str) -> None:
         """Test parsing link text."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         link = gpx.metadata.link[0]
         assert link.text == "GPX File Link"
 
     def test_parse_link_type(self, gpx_with_metadata_string: str) -> None:
         """Test parsing link type."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         link = gpx.metadata.link[0]
         assert link.type == "text/html"
@@ -223,9 +223,9 @@ class TestLinkBuilding:
 
     def test_link_roundtrip(self, gpx_with_metadata_string: str) -> None:
         """Test link roundtrip."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         output = gpx.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         assert gpx.metadata is not None
         assert gpx2.metadata is not None
@@ -253,7 +253,7 @@ class TestPersonParsing:
 
     def test_parse_person_name(self, gpx_with_metadata_string: str) -> None:
         """Test parsing person name."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         person = gpx.metadata.author
         assert person is not None
@@ -261,7 +261,7 @@ class TestPersonParsing:
 
     def test_parse_person_email(self, gpx_with_metadata_string: str) -> None:
         """Test parsing person email."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         person = gpx.metadata.author
         assert person is not None
@@ -271,7 +271,7 @@ class TestPersonParsing:
 
     def test_parse_person_link(self, gpx_with_metadata_string: str) -> None:
         """Test parsing person link."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         person = gpx.metadata.author
         assert person is not None
@@ -303,9 +303,9 @@ class TestPersonBuilding:
 
     def test_person_roundtrip(self, gpx_with_metadata_string: str) -> None:
         """Test person roundtrip."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         output = gpx.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         assert gpx.metadata is not None
         assert gpx.metadata.author is not None
@@ -338,7 +338,7 @@ class TestEmailParsing:
 
     def test_parse_email(self, gpx_with_metadata_string: str) -> None:
         """Test parsing email."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         assert gpx.metadata.author is not None
         email = gpx.metadata.author.email
@@ -376,7 +376,7 @@ class TestCopyrightParsing:
 
     def test_parse_copyright_author(self, gpx_with_metadata_string: str) -> None:
         """Test parsing copyright author."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         copyright_ = gpx.metadata.copyright
         assert copyright_ is not None
@@ -384,7 +384,7 @@ class TestCopyrightParsing:
 
     def test_parse_copyright_year(self, gpx_with_metadata_string: str) -> None:
         """Test parsing copyright year."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         copyright_ = gpx.metadata.copyright
         assert copyright_ is not None
@@ -392,7 +392,7 @@ class TestCopyrightParsing:
 
     def test_parse_copyright_license(self, gpx_with_metadata_string: str) -> None:
         """Test parsing copyright license."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         copyright_ = gpx.metadata.copyright
         assert copyright_ is not None
@@ -416,9 +416,9 @@ class TestCopyrightBuilding:
 
     def test_copyright_roundtrip(self, gpx_with_metadata_string: str) -> None:
         """Test copyright roundtrip."""
-        gpx = GPX.from_string(gpx_with_metadata_string)
+        gpx = from_string(gpx_with_metadata_string)
         output = gpx.to_string()
-        gpx2 = GPX.from_string(output)
+        gpx2 = from_string(output)
 
         assert gpx.metadata is not None
         assert gpx.metadata.copyright is not None

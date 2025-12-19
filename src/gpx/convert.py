@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 import struct
+import xml.etree.ElementTree as ET
 from decimal import Decimal
 from typing import Any
 
@@ -16,6 +17,7 @@ from .route import Route
 from .track import Track
 from .track_segment import TrackSegment
 from .types import Latitude, Longitude, SupportsGeoInterface
+from .utils import remove_encoding_from_string
 from .waypoint import Waypoint
 
 #: WKB geometry type codes
@@ -31,6 +33,32 @@ WKB_GEOMETRYCOLLECTION = 7
 WKB_Z_FLAG = 1000
 #: EWKB Z flag (high bit)
 EWKB_Z_FLAG = 0x80000000
+
+
+def from_string(gpx_str: str) -> GPX:
+    """Create a GPX instance from a string.
+
+    Args:
+        gpx_str: The string containing the GPX data.
+
+    Returns:
+        The GPX instance.
+
+    Example:
+        >>> from gpx import from_string
+        >>> gpx = from_string('''<?xml version="1.0"?>
+        ... <gpx version="1.1" creator="MyApp">
+        ...     <metadata><name>My Track</name></metadata>
+        ... </gpx>''')
+        >>> print(gpx.creator)
+        MyApp
+
+    """
+    # ET.fromstring() does not support encoding declarations in the string
+    gpx_str = remove_encoding_from_string(gpx_str)
+    element = ET.fromstring(gpx_str)
+
+    return GPX.from_xml(element)
 
 
 def from_geo_interface(

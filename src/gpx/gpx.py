@@ -11,7 +11,7 @@ import struct
 import xml.etree.ElementTree as ET
 from dataclasses import KW_ONLY, dataclass, field
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from .base import GPXModel
 from .metadata import Metadata  # noqa: TC001
@@ -19,10 +19,6 @@ from .route import Route  # noqa: TC001
 from .track import Track  # noqa: TC001
 from .utils import build_to_xml
 from .waypoint import Waypoint  # noqa: TC001
-
-if TYPE_CHECKING:
-    from typing import Self
-
 
 #: GPX 1.1 namespace
 GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
@@ -162,55 +158,6 @@ class GPX(GPXModel):
         build_to_xml(self, element, nsmap=nsmap)
 
         return element
-
-    @classmethod
-    def from_string(cls, gpx_str: str) -> Self:
-        """Create a GPX instance from a string.
-
-        Args:
-            gpx_str: The string containing the GPX data.
-
-        Returns:
-            The GPX instance.
-
-        Example:
-            >>> from gpx import GPX
-            >>> gpx = GPX.from_string('''<?xml version="1.0"?>
-            ... <gpx version="1.1" creator="MyApp">
-            ...     <metadata><name>My Track</name></metadata>
-            ... </gpx>''')
-            >>> print(gpx.creator)
-            MyApp
-
-        """
-        from .utils import remove_encoding_from_string  # noqa: PLC0415
-
-        # ET.fromstring() does not support encoding declarations in the string
-        gpx_str = remove_encoding_from_string(gpx_str)
-        element = ET.fromstring(gpx_str)
-
-        return cls.from_xml(element)
-
-    @classmethod
-    def from_file(cls, gpx_file: str | Path) -> Self:
-        """Create a GPX instance from a file.
-
-        Args:
-            gpx_file: The file path containing the GPX data.
-
-        Returns:
-            The GPX instance.
-
-        Example:
-            >>> from gpx import GPX
-            >>> gpx = GPX.from_file("path/to/file.gpx")
-            >>> print(gpx.creator)
-
-        """
-        gpx_tree = ET.parse(str(gpx_file))
-        element = gpx_tree.getroot()
-
-        return cls.from_xml(element)
 
     def to_string(self, *, pretty_print: bool = True) -> str:
         """Serialize the GPX instance to a string.

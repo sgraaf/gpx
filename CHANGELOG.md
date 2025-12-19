@@ -17,6 +17,7 @@ The **third number** is for emergencies when we need to start branches for older
   - `read_geojson()`: Read GeoJSON files
   - `read_kml()`: Read KML files
 - New `convert` module with `from_*()` functions for converting from data formats:
+  - `from_string()`: Convert from a GPX string
   - `from_geo_interface()`: Convert from objects that implement the `__geo_interface__` protocol (e.g., Shapely)
   - `from_wkb()`: Convert from Well-Known Binary bytes
   - `from_wkt()`: Convert from Well-Known Text strings
@@ -35,6 +36,8 @@ The **third number** is for emergencies when we need to start branches for older
 ### Removed
 
 - All aliases and proxies.
+- `GPX.from_file()` method in favor of `io.read_gpx()`.
+- `GPX.from_string()` method in favor of `convert.from_string()`.
 
 ## [2025.1.0](https://github.com/sgraaf/gpx/compare/0.2.1...2025.1.0) - 2025-11-29
 

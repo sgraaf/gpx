@@ -36,10 +36,10 @@ Check out the [*gpx* documentation](https://gpx.readthedocs.io/en/stable/) for t
 ### Reading a GPX file
 
 ```python
-from gpx import GPX
+from gpx import read_gpx
 
 # Read GPX data from file
-gpx = GPX.from_file("path/to/file.gpx")
+gpx = read_gpx("path/to/file.gpx")
 
 # Access basic properties
 print(f"Creator: {gpx.creator}")
@@ -132,6 +132,8 @@ gpx = GPX(
 ### Writing GPX files
 
 ```python
+from gpx import from_string
+
 # Write GPX data to file
 gpx.write_gpx("output.gpx")
 
@@ -140,7 +142,7 @@ gpx_string = gpx.to_string()
 print(gpx_string)
 
 # Parse from string
-gpx = GPX.from_string(gpx_string)
+gpx = from_string(gpx_string)
 ```
 
 ### Working with routes
