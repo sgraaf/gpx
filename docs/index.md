@@ -12,6 +12,7 @@ maxdepth: 2
 
 installation
 usage
+cli
 ```
 
 ## API Reference

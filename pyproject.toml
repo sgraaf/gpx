@@ -26,6 +26,7 @@ dependencies = []
 
 [dependency-groups]
 docs = [
+    "cogapp",
     "furo",
     "myst-parser",
     "sphinx",

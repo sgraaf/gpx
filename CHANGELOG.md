@@ -23,6 +23,7 @@ The **third number** is for emergencies when we need to start branches for older
     - Reduce coordinate precision (`--precision`, `--elevation-precision`)
   - `gpx merge`: Merge multiple GPX files into one
   - `gpx convert`: Convert between GPX, GeoJSON, and KML formats
+- New CLI reference documentation page with auto-generated help output using cog
 - New `io` module with `read_*()` functions for reading file formats:
   - `read_gpx()`: Read GPX files
   - `read_geojson()`: Read GeoJSON files
