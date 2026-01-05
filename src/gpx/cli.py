@@ -7,23 +7,25 @@ information display, editing, merging, and format conversion.
 from __future__ import annotations
 
 import argparse
+import contextlib
+import json
 import sys
-from datetime import datetime, timezone
-from decimal import Decimal, InvalidOperation
+from datetime import UTC, datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import TYPE_CHECKING
 
 from .gpx import GPX
 from .io import read_geojson, read_gpx, read_kml
 from .metadata import Metadata
+from .route import Route
 from .track import Track
 from .track_segment import TrackSegment
+from .types import Latitude, Longitude
+from .waypoint import Waypoint
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
-
-    from .route import Route
-    from .waypoint import Waypoint
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -46,7 +48,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     try:
         return args.func(args)
     except Exception as e:  # noqa: BLE001
-        print(f"Error: {e}", file=sys.stderr)  # noqa: T201
+        print(f"Error: {e}", file=sys.stderr)
         return 1
 
 
@@ -113,21 +115,22 @@ def _cmd_validate(args: argparse.Namespace) -> int:
     file_path: Path = args.file
 
     if not file_path.exists():
-        print(f"Error: File not found: {file_path}", file=sys.stderr)  # noqa: T201
+        print(f"Error: File not found: {file_path}", file=sys.stderr)
         return 1
 
     try:
         gpx = read_gpx(file_path)
-        print(f"✓ Valid GPX file: {file_path}")  # noqa: T201
-        print(f"  Creator: {gpx.creator}")  # noqa: T201
-        print(f"  Waypoints: {len(gpx.wpt)}")  # noqa: T201
-        print(f"  Routes: {len(gpx.rte)}")  # noqa: T201
-        print(f"  Tracks: {len(gpx.trk)}")  # noqa: T201
-        return 0
     except Exception as e:  # noqa: BLE001
-        print(f"✗ Invalid GPX file: {file_path}", file=sys.stderr)  # noqa: T201
-        print(f"  Error: {e}", file=sys.stderr)  # noqa: T201
+        print(f"✗ Invalid GPX file: {file_path}", file=sys.stderr)
+        print(f"  Error: {e}", file=sys.stderr)
         return 1
+
+    print(f"✓ Valid GPX file: {file_path}")
+    print(f"  Creator: {gpx.creator}")
+    print(f"  Waypoints: {len(gpx.wpt)}")
+    print(f"  Routes: {len(gpx.rte)}")
+    print(f"  Tracks: {len(gpx.trk)}")
+    return 0
 
 
 # =============================================================================
@@ -159,12 +162,10 @@ def _add_info_parser(
 
 def _cmd_info(args: argparse.Namespace) -> int:
     """Execute the info command."""
-    import json
-
     file_path: Path = args.file
 
     if not file_path.exists():
-        print(f"Error: File not found: {file_path}", file=sys.stderr)  # noqa: T201
+        print(f"Error: File not found: {file_path}", file=sys.stderr)
         return 1
 
     gpx = read_gpx(file_path)
@@ -172,14 +173,14 @@ def _cmd_info(args: argparse.Namespace) -> int:
     info = _gather_gpx_info(gpx)
 
     if args.json:
-        print(json.dumps(info, indent=2, default=str))  # noqa: T201
+        print(json.dumps(info, indent=2, default=str))
     else:
         _print_gpx_info(file_path, info)
 
     return 0
 
 
-def _gather_gpx_info(gpx: GPX) -> dict:  # noqa: C901, PLR0912
+def _gather_gpx_info(gpx: GPX) -> dict:  # noqa: C901
     """Gather information about a GPX object."""
     info: dict = {
         "creator": gpx.creator,
@@ -248,7 +249,7 @@ def _gather_track_info(track: Track, index: int) -> dict:
         track_info["avg_speed_kmh"] = track.avg_speed * 3.6
 
     # Elevation stats
-    try:
+    with contextlib.suppress(ValueError, ZeroDivisionError):
         track_info["elevation"] = {
             "min_m": float(track.min_elevation),
             "max_m": float(track.max_elevation),
@@ -256,8 +257,6 @@ def _gather_track_info(track: Track, index: int) -> dict:
             "total_ascent_m": float(track.total_ascent),
             "total_descent_m": float(track.total_descent),
         }
-    except (ValueError, ZeroDivisionError):
-        pass  # No elevation data
 
     return track_info
 
@@ -272,15 +271,13 @@ def _gather_route_info(route: Route, index: int) -> dict:
     }
 
     # Elevation stats
-    try:
+    with contextlib.suppress(ValueError, ZeroDivisionError):
         route_info["elevation"] = {
             "min_m": float(route.min_elevation),
             "max_m": float(route.max_elevation),
             "total_ascent_m": float(route.total_ascent),
             "total_descent_m": float(route.total_descent),
         }
-    except (ValueError, ZeroDivisionError):
-        pass  # No elevation data
 
     return route_info
 
@@ -312,88 +309,100 @@ def _calculate_bounds(gpx: GPX) -> dict:
     }
 
 
-def _print_gpx_info(file_path: Path, info: dict) -> None:  # noqa: C901, PLR0912
+def _print_gpx_info(  # noqa: C901, PLR0912, PLR0915
+    file_path: Path, info: dict
+) -> None:
     """Print GPX information in a human-readable format."""
-    print(f"GPX File: {file_path}")  # noqa: T201
-    print(f"Creator: {info['creator']}")  # noqa: T201
-    print()  # noqa: T201
+    print(f"GPX File: {file_path}")
+    print(f"Creator: {info['creator']}")
+    print()
 
     # Metadata
     if "metadata" in info:
-        print("Metadata:")  # noqa: T201
+        print("Metadata:")
         meta = info["metadata"]
         if "name" in meta:
-            print(f"  Name: {meta['name']}")  # noqa: T201
+            print(f"  Name: {meta['name']}")
         if "description" in meta:
-            print(f"  Description: {meta['description']}")  # noqa: T201
+            print(f"  Description: {meta['description']}")
         if "author" in meta:
-            print(f"  Author: {meta['author']}")  # noqa: T201
+            print(f"  Author: {meta['author']}")
         if "time" in meta:
-            print(f"  Time: {meta['time']}")  # noqa: T201
+            print(f"  Time: {meta['time']}")
         if "keywords" in meta:
-            print(f"  Keywords: {meta['keywords']}")  # noqa: T201
-        print()  # noqa: T201
+            print(f"  Keywords: {meta['keywords']}")
+        print()
 
     # Summary
-    print("Contents:")  # noqa: T201
-    print(f"  Waypoints: {info['waypoints']}")  # noqa: T201
-    print(f"  Routes: {info['routes']}")  # noqa: T201
-    print(f"  Tracks: {info['tracks']}")  # noqa: T201
-    print()  # noqa: T201
+    print("Contents:")
+    print(f"  Waypoints: {info['waypoints']}")
+    print(f"  Routes: {info['routes']}")
+    print(f"  Tracks: {info['tracks']}")
+    print()
 
     # Track statistics
     if "track_statistics" in info:
-        print("Track Statistics:")  # noqa: T201
+        print("Track Statistics:")
         for track in info["track_statistics"]:
             name = track["name"] or f"Track {track['index'] + 1}"
-            print(f"  {name}:")  # noqa: T201
-            print(f"    Segments: {track['segments']}")  # noqa: T201
-            print(f"    Points: {track['points']}")  # noqa: T201
-            print(f"    Distance: {track['distance_m']:.2f} m ({track['distance_m'] / 1000:.2f} km)")  # noqa: T201
+            print(f"  {name}:")
+            print(f"    Segments: {track['segments']}")
+            print(f"    Points: {track['points']}")
+            distance_km = track["distance_m"] / 1000
+            print(f"    Distance: {track['distance_m']:.2f} m ({distance_km:.2f} km)")
             if track["duration_s"] > 0:
                 hours = int(track["duration_s"] // 3600)
                 minutes = int((track["duration_s"] % 3600) // 60)
                 seconds = int(track["duration_s"] % 60)
-                print(f"    Duration: {hours:02d}:{minutes:02d}:{seconds:02d}")  # noqa: T201
+                print(f"    Duration: {hours:02d}:{minutes:02d}:{seconds:02d}")
             if "avg_speed_kmh" in track:
-                print(f"    Avg Speed: {track['avg_speed_kmh']:.2f} km/h")  # noqa: T201
+                print(f"    Avg Speed: {track['avg_speed_kmh']:.2f} km/h")
             if "elevation" in track:
                 ele = track["elevation"]
-                print(f"    Elevation: {ele['min_m']:.1f}m - {ele['max_m']:.1f}m (avg: {ele['avg_m']:.1f}m)")  # noqa: T201
-                print(f"    Ascent/Descent: +{ele['total_ascent_m']:.1f}m / -{ele['total_descent_m']:.1f}m")  # noqa: T201
-        print()  # noqa: T201
+                avg_ele = ele["avg_m"]
+                print(
+                    f"    Elevation: {ele['min_m']:.1f}m - {ele['max_m']:.1f}m (avg: {avg_ele:.1f}m)"
+                )
+                print(
+                    f"    Ascent/Descent: +{ele['total_ascent_m']:.1f}m / -{ele['total_descent_m']:.1f}m"
+                )
+        print()
 
     # Route statistics
     if "route_statistics" in info:
-        print("Route Statistics:")  # noqa: T201
+        print("Route Statistics:")
         for route in info["route_statistics"]:
             name = route["name"] or f"Route {route['index'] + 1}"
-            print(f"  {name}:")  # noqa: T201
-            print(f"    Points: {route['points']}")  # noqa: T201
-            print(f"    Distance: {route['distance_m']:.2f} m ({route['distance_m'] / 1000:.2f} km)")  # noqa: T201
+            print(f"  {name}:")
+            print(f"    Points: {route['points']}")
+            distance_km = route["distance_m"] / 1000
+            print(f"    Distance: {route['distance_m']:.2f} m ({distance_km:.2f} km)")
             if "elevation" in route:
                 ele = route["elevation"]
-                print(f"    Elevation: {ele['min_m']:.1f}m - {ele['max_m']:.1f}m")  # noqa: T201
-                print(f"    Ascent/Descent: +{ele['total_ascent_m']:.1f}m / -{ele['total_descent_m']:.1f}m")  # noqa: T201
-        print()  # noqa: T201
+                print(f"    Elevation: {ele['min_m']:.1f}m - {ele['max_m']:.1f}m")
+                print(
+                    f"    Ascent/Descent: +{ele['total_ascent_m']:.1f}m / -{ele['total_descent_m']:.1f}m"
+                )
+        print()
 
     # Bounds
-    if "bounds" in info and info["bounds"]:
+    if info.get("bounds"):
         bounds = info["bounds"]
-        print("Bounds:")  # noqa: T201
-        print(f"  Latitude: {bounds['min_lat']:.6f} to {bounds['max_lat']:.6f}")  # noqa: T201
-        print(f"  Longitude: {bounds['min_lon']:.6f} to {bounds['max_lon']:.6f}")  # noqa: T201
+        print("Bounds:")
+        print(f"  Latitude: {bounds['min_lat']:.6f} to {bounds['max_lat']:.6f}")
+        print(f"  Longitude: {bounds['min_lon']:.6f} to {bounds['max_lon']:.6f}")
 
     # Overall statistics
     if "total_distance_m" in info:
-        print()  # noqa: T201
-        print("Overall:")  # noqa: T201
-        print(f"  Total Distance: {info['total_distance_m']:.2f} m ({info['total_distance_m'] / 1000:.2f} km)")  # noqa: T201
+        print()
+        print("Overall:")
+        total_km = info["total_distance_m"] / 1000
+        print(f"  Total Distance: {info['total_distance_m']:.2f} m ({total_km:.2f} km)")
         if info["total_duration_s"] > 0:
             hours = int(info["total_duration_s"] // 3600)
             minutes = int((info["total_duration_s"] % 3600) // 60)
             seconds = int(info["total_duration_s"] % 60)
-            print(f"  Total Duration: {hours:02d}:{minutes:02d}:{seconds:02d}")  # noqa: T201
+            print(f"  Total Duration: {hours:02d}:{minutes:02d}:{seconds:02d}")
 
 
 # =============================================================================
@@ -401,14 +410,15 @@ def _print_gpx_info(file_path: Path, info: dict) -> None:  # noqa: C901, PLR0912
 # =============================================================================
 
 
-def _add_edit_parser(  # noqa: C901, PLR0915
+def _add_edit_parser(
     subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
 ) -> None:
     """Add the edit subcommand parser."""
     parser = subparsers.add_parser(
         "edit",
         help="Edit a GPX file with various transformations",
-        description="Edit a GPX file with various transformations like cropping, trimming, reversing, and stripping metadata.",
+        description="Edit a GPX file with various transformations like cropping, "
+        "trimming, reversing, and stripping metadata.",
     )
     parser.add_argument(
         "input",
@@ -423,7 +433,9 @@ def _add_edit_parser(  # noqa: C901, PLR0915
     )
 
     # Crop options
-    crop_group = parser.add_argument_group("crop options", "Crop to a geographic bounding box")
+    crop_group = parser.add_argument_group(
+        "crop options", "Crop to a geographic bounding box"
+    )
     crop_group.add_argument(
         "--min-lat",
         type=float,
@@ -465,7 +477,9 @@ def _add_edit_parser(  # noqa: C901, PLR0915
     )
 
     # Reverse options
-    reverse_group = parser.add_argument_group("reverse options", "Reverse routes and/or tracks")
+    reverse_group = parser.add_argument_group(
+        "reverse options", "Reverse routes and/or tracks"
+    )
     reverse_group.add_argument(
         "--reverse",
         action="store_true",
@@ -526,7 +540,9 @@ def _add_edit_parser(  # noqa: C901, PLR0915
     )
 
     # Precision options
-    precision_group = parser.add_argument_group("precision options", "Reduce coordinate precision")
+    precision_group = parser.add_argument_group(
+        "precision options", "Reduce coordinate precision"
+    )
     precision_group.add_argument(
         "--precision",
         type=int,
@@ -543,13 +559,13 @@ def _add_edit_parser(  # noqa: C901, PLR0915
     parser.set_defaults(func=_cmd_edit)
 
 
-def _cmd_edit(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR0915
+def _cmd_edit(args: argparse.Namespace) -> int:
     """Execute the edit command."""
     input_path: Path = args.input
     output_path: Path = args.output if args.output else input_path
 
     if not input_path.exists():
-        print(f"Error: File not found: {input_path}", file=sys.stderr)  # noqa: T201
+        print(f"Error: File not found: {input_path}", file=sys.stderr)
         return 1
 
     gpx = read_gpx(input_path)
@@ -582,84 +598,7 @@ def _cmd_edit(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR0915
             trk=gpx.trk,
         )
     elif gpx.metadata:
-        metadata = gpx.metadata
-        if args.strip_name:
-            metadata = Metadata(
-                desc=metadata.desc,
-                author=metadata.author,
-                copyright=metadata.copyright,
-                link=metadata.link,
-                time=metadata.time,
-                keywords=metadata.keywords,
-                bounds=metadata.bounds,
-            )
-        if args.strip_desc:
-            metadata = Metadata(
-                name=metadata.name,
-                author=metadata.author,
-                copyright=metadata.copyright,
-                link=metadata.link,
-                time=metadata.time,
-                keywords=metadata.keywords,
-                bounds=metadata.bounds,
-            )
-        if args.strip_author:
-            metadata = Metadata(
-                name=metadata.name,
-                desc=metadata.desc,
-                copyright=metadata.copyright,
-                link=metadata.link,
-                time=metadata.time,
-                keywords=metadata.keywords,
-                bounds=metadata.bounds,
-            )
-        if args.strip_copyright:
-            metadata = Metadata(
-                name=metadata.name,
-                desc=metadata.desc,
-                author=metadata.author,
-                link=metadata.link,
-                time=metadata.time,
-                keywords=metadata.keywords,
-                bounds=metadata.bounds,
-            )
-        if args.strip_time:
-            metadata = Metadata(
-                name=metadata.name,
-                desc=metadata.desc,
-                author=metadata.author,
-                copyright=metadata.copyright,
-                link=metadata.link,
-                keywords=metadata.keywords,
-                bounds=metadata.bounds,
-            )
-        if args.strip_keywords:
-            metadata = Metadata(
-                name=metadata.name,
-                desc=metadata.desc,
-                author=metadata.author,
-                copyright=metadata.copyright,
-                link=metadata.link,
-                time=metadata.time,
-                bounds=metadata.bounds,
-            )
-        if args.strip_links:
-            metadata = Metadata(
-                name=metadata.name,
-                desc=metadata.desc,
-                author=metadata.author,
-                copyright=metadata.copyright,
-                time=metadata.time,
-                keywords=metadata.keywords,
-                bounds=metadata.bounds,
-            )
-        gpx = GPX(
-            creator=gpx.creator,
-            metadata=metadata,
-            wpt=gpx.wpt,
-            rte=gpx.rte,
-            trk=gpx.trk,
-        )
+        gpx = _apply_strip_metadata(gpx, args)
 
     # Apply precision reduction
     if args.precision is not None or args.elevation_precision is not None:
@@ -667,8 +606,93 @@ def _cmd_edit(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912, PLR0915
 
     # Write output
     gpx.write_gpx(output_path)
-    print(f"Written to: {output_path}")  # noqa: T201
+    print(f"Written to: {output_path}")
     return 0
+
+
+def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
+    """Apply metadata stripping based on args."""
+    metadata = gpx.metadata
+    if not metadata:
+        return gpx
+
+    if args.strip_name:
+        metadata = Metadata(
+            desc=metadata.desc,
+            author=metadata.author,
+            copyright=metadata.copyright,
+            link=metadata.link,
+            time=metadata.time,
+            keywords=metadata.keywords,
+            bounds=metadata.bounds,
+        )
+    if args.strip_desc:
+        metadata = Metadata(
+            name=metadata.name,
+            author=metadata.author,
+            copyright=metadata.copyright,
+            link=metadata.link,
+            time=metadata.time,
+            keywords=metadata.keywords,
+            bounds=metadata.bounds,
+        )
+    if args.strip_author:
+        metadata = Metadata(
+            name=metadata.name,
+            desc=metadata.desc,
+            copyright=metadata.copyright,
+            link=metadata.link,
+            time=metadata.time,
+            keywords=metadata.keywords,
+            bounds=metadata.bounds,
+        )
+    if args.strip_copyright:
+        metadata = Metadata(
+            name=metadata.name,
+            desc=metadata.desc,
+            author=metadata.author,
+            link=metadata.link,
+            time=metadata.time,
+            keywords=metadata.keywords,
+            bounds=metadata.bounds,
+        )
+    if args.strip_time:
+        metadata = Metadata(
+            name=metadata.name,
+            desc=metadata.desc,
+            author=metadata.author,
+            copyright=metadata.copyright,
+            link=metadata.link,
+            keywords=metadata.keywords,
+            bounds=metadata.bounds,
+        )
+    if args.strip_keywords:
+        metadata = Metadata(
+            name=metadata.name,
+            desc=metadata.desc,
+            author=metadata.author,
+            copyright=metadata.copyright,
+            link=metadata.link,
+            time=metadata.time,
+            bounds=metadata.bounds,
+        )
+    if args.strip_links:
+        metadata = Metadata(
+            name=metadata.name,
+            desc=metadata.desc,
+            author=metadata.author,
+            copyright=metadata.copyright,
+            time=metadata.time,
+            keywords=metadata.keywords,
+            bounds=metadata.bounds,
+        )
+    return GPX(
+        creator=gpx.creator,
+        metadata=metadata,
+        wpt=gpx.wpt,
+        rte=gpx.rte,
+        trk=gpx.trk,
+    )
 
 
 def _parse_datetime(dt_str: str) -> datetime:
@@ -683,19 +707,23 @@ def _parse_datetime(dt_str: str) -> datetime:
 
     for fmt in formats:
         try:
-            dt = datetime.strptime(dt_str, fmt)
+            dt = datetime.strptime(dt_str, fmt)  # noqa: DTZ007
             # Add UTC timezone if none specified
             if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=timezone.utc)
-            return dt
+                dt = dt.replace(tzinfo=UTC)
         except ValueError:
             continue
+        else:
+            return dt
 
-    msg = f"Invalid datetime format: {dt_str}. Use ISO 8601 format (e.g., 2024-01-01T10:00:00)"
+    msg = (
+        f"Invalid datetime format: {dt_str}. "
+        "Use ISO 8601 format (e.g., 2024-01-01T10:00:00)"
+    )
     raise ValueError(msg)
 
 
-def _apply_crop(
+def _apply_crop(  # noqa: C901
     gpx: GPX,
     min_lat: float | None,
     max_lat: float | None,
@@ -703,9 +731,6 @@ def _apply_crop(
     max_lon: float | None,
 ) -> GPX:
     """Apply geographic crop to GPX data."""
-    from .route import Route
-    from .types import Latitude, Longitude
-    from .waypoint import Waypoint
 
     def is_in_bounds(point: Waypoint) -> bool:
         lat, lon = float(point.lat), float(point.lon)
@@ -715,9 +740,7 @@ def _apply_crop(
             return False
         if min_lon is not None and lon < min_lon:
             return False
-        if max_lon is not None and lon > max_lon:
-            return False
-        return True
+        return not (max_lon is not None and lon > max_lon)
 
     # Filter waypoints
     new_wpt = [w for w in gpx.wpt if is_in_bounds(w)]
@@ -777,16 +800,13 @@ def _apply_trim(
     end_dt: datetime | None,
 ) -> GPX:
     """Apply time-based trim to GPX data."""
-    from .route import Route
 
     def is_in_time_range(point: Waypoint) -> bool:
         if point.time is None:
             return True  # Keep points without timestamps
         if start_dt is not None and point.time < start_dt:
             return False
-        if end_dt is not None and point.time > end_dt:
-            return False
-        return True
+        return not (end_dt is not None and point.time > end_dt)
 
     # Filter waypoints
     new_wpt = [w for w in gpx.wpt if is_in_time_range(w)]
@@ -847,33 +867,31 @@ def _apply_reverse(
     reverse_tracks: bool,
 ) -> GPX:
     """Apply reversal to routes and/or tracks."""
-    from .route import Route
-
     new_rte = gpx.rte
     new_trk = gpx.trk
 
     if reverse_routes:
-        new_rte = []
-        for route in gpx.rte:
-            new_rte.append(
-                Route(
-                    name=route.name,
-                    cmt=route.cmt,
-                    desc=route.desc,
-                    src=route.src,
-                    link=route.link,
-                    number=route.number,
-                    type=route.type,
-                    rtept=list(reversed(route.rtept)),
-                )
+        new_rte = [
+            Route(
+                name=route.name,
+                cmt=route.cmt,
+                desc=route.desc,
+                src=route.src,
+                link=route.link,
+                number=route.number,
+                type=route.type,
+                rtept=list(reversed(route.rtept)),
             )
+            for route in gpx.rte
+        ]
 
     if reverse_tracks:
         new_trk = []
         for track in gpx.trk:
-            new_trkseg = []
-            for segment in reversed(track.trkseg):
-                new_trkseg.append(TrackSegment(trkpt=list(reversed(segment.trkpt))))
+            new_trkseg = [
+                TrackSegment(trkpt=list(reversed(segment.trkpt)))
+                for segment in reversed(track.trkseg)
+            ]
             new_trk.append(
                 Track(
                     name=track.name,
@@ -902,9 +920,6 @@ def _apply_precision(
     elevation_precision: int | None,
 ) -> GPX:
     """Apply precision reduction to coordinates and elevations."""
-    from .route import Route
-    from .types import Latitude, Longitude
-    from .waypoint import Waypoint
 
     def round_point(point: Waypoint) -> Waypoint:
         lat = point.lat
@@ -945,29 +960,27 @@ def _apply_precision(
     new_wpt = [round_point(w) for w in gpx.wpt]
 
     # Round routes
-    new_rte = []
-    for route in gpx.rte:
-        new_rtept = [round_point(p) for p in route.rtept]
-        new_rte.append(
-            Route(
-                name=route.name,
-                cmt=route.cmt,
-                desc=route.desc,
-                src=route.src,
-                link=route.link,
-                number=route.number,
-                type=route.type,
-                rtept=new_rtept,
-            )
+    new_rte = [
+        Route(
+            name=route.name,
+            cmt=route.cmt,
+            desc=route.desc,
+            src=route.src,
+            link=route.link,
+            number=route.number,
+            type=route.type,
+            rtept=[round_point(p) for p in route.rtept],
         )
+        for route in gpx.rte
+    ]
 
     # Round tracks
     new_trk = []
     for track in gpx.trk:
-        new_trkseg = []
-        for segment in track.trkseg:
-            new_trkpt = [round_point(p) for p in segment.trkpt]
-            new_trkseg.append(TrackSegment(trkpt=new_trkpt))
+        new_trkseg = [
+            TrackSegment(trkpt=[round_point(p) for p in segment.trkpt])
+            for segment in track.trkseg
+        ]
         new_trk.append(
             Track(
                 name=track.name,
@@ -1035,14 +1048,11 @@ def _cmd_merge(args: argparse.Namespace) -> int:
     # Verify all files exist
     for file_path in files:
         if not file_path.exists():
-            print(f"Error: File not found: {file_path}", file=sys.stderr)  # noqa: T201
+            print(f"Error: File not found: {file_path}", file=sys.stderr)
             return 1
 
     # Read all GPX files
-    gpx_files = []
-    for file_path in files:
-        gpx = read_gpx(file_path)
-        gpx_files.append(gpx)
+    gpx_files = [read_gpx(file_path) for file_path in files]
 
     # Merge
     merged_wpt: list[Waypoint] = []
@@ -1063,10 +1073,10 @@ def _cmd_merge(args: argparse.Namespace) -> int:
 
     # Write output
     merged_gpx.write_gpx(output_path)
-    print(f"Merged {len(files)} files into: {output_path}")  # noqa: T201
-    print(f"  Waypoints: {len(merged_wpt)}")  # noqa: T201
-    print(f"  Routes: {len(merged_rte)}")  # noqa: T201
-    print(f"  Tracks: {len(merged_trk)}")  # noqa: T201
+    print(f"Merged {len(files)} files into: {output_path}")
+    print(f"  Waypoints: {len(merged_wpt)}")
+    print(f"  Routes: {len(merged_rte)}")
+    print(f"  Tracks: {len(merged_trk)}")
     return 0
 
 
@@ -1119,37 +1129,53 @@ def _cmd_convert(args: argparse.Namespace) -> int:
     output_path: Path = args.output
 
     if not input_path.exists():
-        print(f"Error: File not found: {input_path}", file=sys.stderr)  # noqa: T201
+        print(f"Error: File not found: {input_path}", file=sys.stderr)
         return 1
 
     # Determine input format
-    input_format = args.from_format
+    input_format = args.from_format or _detect_format(input_path)
     if not input_format:
-        input_format = _detect_format(input_path)
-        if not input_format:
-            print(f"Error: Could not detect input format for: {input_path}", file=sys.stderr)  # noqa: T201
-            return 1
+        print(
+            f"Error: Could not detect input format for: {input_path}", file=sys.stderr
+        )
+        return 1
 
     # Determine output format
-    output_format = args.to_format
+    output_format = args.to_format or _detect_format(output_path)
     if not output_format:
-        output_format = _detect_format(output_path)
-        if not output_format:
-            print(f"Error: Could not detect output format for: {output_path}", file=sys.stderr)  # noqa: T201
-            return 1
+        print(
+            f"Error: Could not detect output format for: {output_path}", file=sys.stderr
+        )
+        return 1
 
     # Read input
-    if input_format == "gpx":
-        gpx = read_gpx(input_path)
-    elif input_format == "geojson":
-        gpx = read_geojson(input_path)
-    elif input_format == "kml":
-        gpx = read_kml(input_path)
-    else:
-        print(f"Error: Unsupported input format: {input_format}", file=sys.stderr)  # noqa: T201
+    gpx = _read_input(input_path, input_format)
+    if gpx is None:
+        print(f"Error: Unsupported input format: {input_format}", file=sys.stderr)
         return 1
 
     # Write output
+    if not _write_output(gpx, output_path, output_format):
+        print(f"Error: Unsupported output format: {output_format}", file=sys.stderr)
+        return 1
+
+    print(f"Converted {input_path} ({input_format}) to {output_path} ({output_format})")
+    return 0
+
+
+def _read_input(input_path: Path, input_format: str) -> GPX | None:
+    """Read input file based on format."""
+    if input_format == "gpx":
+        return read_gpx(input_path)
+    if input_format == "geojson":
+        return read_geojson(input_path)
+    if input_format == "kml":
+        return read_kml(input_path)
+    return None
+
+
+def _write_output(gpx: GPX, output_path: Path, output_format: str) -> bool:
+    """Write output file based on format."""
     if output_format == "gpx":
         gpx.write_gpx(output_path)
     elif output_format == "geojson":
@@ -1157,11 +1183,8 @@ def _cmd_convert(args: argparse.Namespace) -> int:
     elif output_format == "kml":
         gpx.write_kml(output_path)
     else:
-        print(f"Error: Unsupported output format: {output_format}", file=sys.stderr)  # noqa: T201
-        return 1
-
-    print(f"Converted {input_path} ({input_format}) to {output_path} ({output_format})")  # noqa: T201
-    return 0
+        return False
+    return True
 
 
 def _detect_format(path: Path) -> str | None:
