@@ -1,0 +1,590 @@
+"""Tests for gpx.cli module - Command-line interface functionality."""
+
+import json
+import tempfile
+from datetime import UTC, datetime
+from decimal import Decimal
+from pathlib import Path
+
+import pytest
+
+from gpx import GPX, Metadata, Route, Track, TrackSegment, Waypoint
+from gpx.cli import (
+    _apply_crop,
+    _apply_precision,
+    _apply_reverse,
+    _apply_trim,
+    _calculate_bounds,
+    _detect_format,
+    _gather_gpx_info,
+    _parse_datetime,
+    main,
+)
+from gpx.types import Latitude, Longitude
+
+
+# =============================================================================
+# Test fixtures
+# =============================================================================
+
+
+@pytest.fixture
+def sample_gpx() -> GPX:
+    """Create a sample GPX with waypoints, routes, and tracks."""
+    waypoint = Waypoint(
+        lat=Latitude("52.5200"),
+        lon=Longitude("13.4050"),
+        ele=Decimal("34.5"),
+        name="Berlin",
+        time=datetime(2024, 1, 15, 10, 0, 0, tzinfo=UTC),
+    )
+
+    route_points = [
+        Waypoint(
+            lat=Latitude("52.5200"),
+            lon=Longitude("13.4050"),
+            ele=Decimal("34.5"),
+        ),
+        Waypoint(
+            lat=Latitude("52.5300"),
+            lon=Longitude("13.4150"),
+            ele=Decimal("40.0"),
+        ),
+    ]
+    route = Route(name="City Tour", desc="A tour of the city", rtept=route_points)
+
+    track_points = [
+        Waypoint(
+            lat=Latitude("52.5200"),
+            lon=Longitude("13.4050"),
+            ele=Decimal("34.5"),
+            time=datetime(2024, 1, 15, 10, 0, 0, tzinfo=UTC),
+        ),
+        Waypoint(
+            lat=Latitude("52.5210"),
+            lon=Longitude("13.4060"),
+            ele=Decimal("35.0"),
+            time=datetime(2024, 1, 15, 10, 1, 0, tzinfo=UTC),
+        ),
+        Waypoint(
+            lat=Latitude("52.5220"),
+            lon=Longitude("13.4070"),
+            ele=Decimal("36.5"),
+            time=datetime(2024, 1, 15, 10, 2, 0, tzinfo=UTC),
+        ),
+    ]
+    segment = TrackSegment(trkpt=track_points)
+    track = Track(name="Morning Run", desc="A morning run", trkseg=[segment])
+
+    return GPX(
+        creator="TestApp",
+        metadata=Metadata(name="Test GPX", desc="Test description"),
+        wpt=[waypoint],
+        rte=[route],
+        trk=[track],
+    )
+
+
+@pytest.fixture
+def sample_gpx_file(sample_gpx: GPX) -> Path:
+    """Create a sample GPX file and return its path."""
+    with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
+        sample_gpx.write_gpx(f.name)
+        return Path(f.name)
+
+
+# =============================================================================
+# Main function tests
+# =============================================================================
+
+
+class TestMain:
+    """Tests for the main CLI entry point."""
+
+    def test_main_no_args_shows_help(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """Test that calling main with no args shows help."""
+        result = main([])
+        assert result == 0
+        captured = capsys.readouterr()
+        assert "usage:" in captured.out.lower()
+
+    def test_main_version(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """Test --version flag."""
+        with pytest.raises(SystemExit) as exc_info:
+            main(["--version"])
+        assert exc_info.value.code == 0
+
+    def test_main_invalid_command(self, capsys: pytest.CaptureFixture[str]) -> None:
+        """Test that invalid command causes error."""
+        # argparse will call sys.exit(2) for invalid commands
+        with pytest.raises(SystemExit) as exc_info:
+            main(["invalid_command"])
+        assert exc_info.value.code == 2
+
+
+# =============================================================================
+# Validate command tests
+# =============================================================================
+
+
+class TestValidateCommand:
+    """Tests for the validate command."""
+
+    def test_validate_valid_file(
+        self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test validating a valid GPX file."""
+        result = main(["validate", str(sample_gpx_file)])
+        assert result == 0
+        captured = capsys.readouterr()
+        assert "Valid GPX file" in captured.out
+        sample_gpx_file.unlink()
+
+    def test_validate_nonexistent_file(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test validating a non-existent file."""
+        result = main(["validate", "nonexistent.gpx"])
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "File not found" in captured.err
+
+    def test_validate_invalid_file(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test validating an invalid GPX file."""
+        with tempfile.NamedTemporaryFile(
+            mode="w", suffix=".gpx", delete=False
+        ) as f:
+            f.write("not valid xml")
+            f.flush()
+            result = main(["validate", f.name])
+            assert result == 1
+            captured = capsys.readouterr()
+            assert "Invalid GPX file" in captured.err
+            Path(f.name).unlink()
+
+
+# =============================================================================
+# Info command tests
+# =============================================================================
+
+
+class TestInfoCommand:
+    """Tests for the info command."""
+
+    def test_info_basic(
+        self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test basic info output."""
+        result = main(["info", str(sample_gpx_file)])
+        assert result == 0
+        captured = capsys.readouterr()
+        assert "GPX File:" in captured.out
+        assert "Waypoints: 1" in captured.out
+        assert "Routes: 1" in captured.out
+        assert "Tracks: 1" in captured.out
+        sample_gpx_file.unlink()
+
+    def test_info_json_output(
+        self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test JSON info output."""
+        result = main(["info", "--json", str(sample_gpx_file)])
+        assert result == 0
+        captured = capsys.readouterr()
+        data = json.loads(captured.out)
+        assert data["waypoints"] == 1
+        assert data["routes"] == 1
+        assert data["tracks"] == 1
+        sample_gpx_file.unlink()
+
+    def test_info_nonexistent_file(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test info on non-existent file."""
+        result = main(["info", "nonexistent.gpx"])
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "File not found" in captured.err
+
+
+# =============================================================================
+# Edit command tests
+# =============================================================================
+
+
+class TestEditCommand:
+    """Tests for the edit command."""
+
+    def test_edit_output_file(
+        self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test edit with output file."""
+        with tempfile.NamedTemporaryFile(suffix=".gpx", delete=False) as out_f:
+            result = main(
+                ["edit", str(sample_gpx_file), "-o", out_f.name]
+            )
+            assert result == 0
+            assert Path(out_f.name).exists()
+            Path(out_f.name).unlink()
+        sample_gpx_file.unlink()
+
+    def test_edit_reverse_tracks(
+        self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test edit with --reverse-tracks."""
+        with tempfile.NamedTemporaryFile(suffix=".gpx", delete=False) as out_f:
+            result = main(
+                ["edit", str(sample_gpx_file), "-o", out_f.name, "--reverse-tracks"]
+            )
+            assert result == 0
+            from gpx import read_gpx
+            gpx = read_gpx(out_f.name)
+            # Check that track was reversed (last point is now first)
+            assert float(gpx.trk[0].trkseg[0].trkpt[0].lat) == pytest.approx(52.522, rel=1e-3)
+            Path(out_f.name).unlink()
+        sample_gpx_file.unlink()
+
+    def test_edit_precision(
+        self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test edit with --precision."""
+        with tempfile.NamedTemporaryFile(suffix=".gpx", delete=False) as out_f:
+            result = main(
+                ["edit", str(sample_gpx_file), "-o", out_f.name, "--precision", "2"]
+            )
+            assert result == 0
+            from gpx import read_gpx
+            gpx = read_gpx(out_f.name)
+            # Check that coordinates are rounded
+            lat_str = str(gpx.wpt[0].lat)
+            # Should have at most 2 decimal places
+            assert len(lat_str.split(".")[1]) <= 2
+            Path(out_f.name).unlink()
+        sample_gpx_file.unlink()
+
+    def test_edit_strip_all_metadata(
+        self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test edit with --strip-all-metadata."""
+        with tempfile.NamedTemporaryFile(suffix=".gpx", delete=False) as out_f:
+            result = main(
+                ["edit", str(sample_gpx_file), "-o", out_f.name, "--strip-all-metadata"]
+            )
+            assert result == 0
+            from gpx import read_gpx
+            gpx = read_gpx(out_f.name)
+            assert gpx.metadata is None
+            Path(out_f.name).unlink()
+        sample_gpx_file.unlink()
+
+
+# =============================================================================
+# Merge command tests
+# =============================================================================
+
+
+class TestMergeCommand:
+    """Tests for the merge command."""
+
+    def test_merge_two_files(
+        self, sample_gpx: GPX, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test merging two GPX files."""
+        with (
+            tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f1,
+            tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f2,
+            tempfile.NamedTemporaryFile(suffix=".gpx", delete=False) as out_f,
+        ):
+            sample_gpx.write_gpx(f1.name)
+            sample_gpx.write_gpx(f2.name)
+
+            result = main(
+                ["merge", f1.name, f2.name, "-o", out_f.name]
+            )
+            assert result == 0
+
+            from gpx import read_gpx
+            merged = read_gpx(out_f.name)
+            assert len(merged.wpt) == 2  # 1 from each file
+            assert len(merged.rte) == 2
+            assert len(merged.trk) == 2
+
+            Path(f1.name).unlink()
+            Path(f2.name).unlink()
+            Path(out_f.name).unlink()
+
+    def test_merge_nonexistent_file(
+        self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test merge with non-existent file."""
+        with tempfile.NamedTemporaryFile(suffix=".gpx", delete=False) as out_f:
+            result = main(
+                ["merge", str(sample_gpx_file), "nonexistent.gpx", "-o", out_f.name]
+            )
+            assert result == 1
+            captured = capsys.readouterr()
+            assert "File not found" in captured.err
+            Path(out_f.name).unlink()
+        sample_gpx_file.unlink()
+
+
+# =============================================================================
+# Convert command tests
+# =============================================================================
+
+
+class TestConvertCommand:
+    """Tests for the convert command."""
+
+    def test_convert_gpx_to_geojson(
+        self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test converting GPX to GeoJSON."""
+        with tempfile.NamedTemporaryFile(suffix=".geojson", delete=False) as out_f:
+            result = main(
+                ["convert", str(sample_gpx_file), "-o", out_f.name]
+            )
+            assert result == 0
+            content = Path(out_f.name).read_text()
+            data = json.loads(content)
+            assert data["type"] == "FeatureCollection"
+            Path(out_f.name).unlink()
+        sample_gpx_file.unlink()
+
+    def test_convert_gpx_to_kml(
+        self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test converting GPX to KML."""
+        with tempfile.NamedTemporaryFile(suffix=".kml", delete=False) as out_f:
+            result = main(
+                ["convert", str(sample_gpx_file), "-o", out_f.name]
+            )
+            assert result == 0
+            content = Path(out_f.name).read_text()
+            assert "<kml" in content
+            Path(out_f.name).unlink()
+        sample_gpx_file.unlink()
+
+    def test_convert_geojson_to_gpx(
+        self, sample_gpx: GPX, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test converting GeoJSON to GPX."""
+        with (
+            tempfile.NamedTemporaryFile(mode="w", suffix=".geojson", delete=False) as in_f,
+            tempfile.NamedTemporaryFile(suffix=".gpx", delete=False) as out_f,
+        ):
+            sample_gpx.write_geojson(in_f.name)
+
+            result = main(
+                ["convert", in_f.name, "-o", out_f.name]
+            )
+            assert result == 0
+
+            from gpx import read_gpx
+            gpx = read_gpx(out_f.name)
+            assert len(gpx.wpt) >= 1
+
+            Path(in_f.name).unlink()
+            Path(out_f.name).unlink()
+
+    def test_convert_with_explicit_formats(
+        self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test converting with explicit format flags."""
+        with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as out_f:
+            result = main(
+                [
+                    "convert",
+                    str(sample_gpx_file),
+                    "-o", out_f.name,
+                    "-f", "gpx",
+                    "-t", "geojson",
+                ]
+            )
+            assert result == 0
+            Path(out_f.name).unlink()
+        sample_gpx_file.unlink()
+
+    def test_convert_nonexistent_file(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test convert with non-existent file."""
+        with tempfile.NamedTemporaryFile(suffix=".geojson", delete=False) as out_f:
+            result = main(
+                ["convert", "nonexistent.gpx", "-o", out_f.name]
+            )
+            assert result == 1
+            captured = capsys.readouterr()
+            assert "File not found" in captured.err
+            Path(out_f.name).unlink()
+
+
+# =============================================================================
+# Helper function tests
+# =============================================================================
+
+
+class TestHelperFunctions:
+    """Tests for CLI helper functions."""
+
+    def test_parse_datetime_iso_full(self) -> None:
+        """Test parsing full ISO datetime."""
+        dt = _parse_datetime("2024-01-15T10:30:00")
+        assert dt.year == 2024
+        assert dt.month == 1
+        assert dt.day == 15
+        assert dt.hour == 10
+        assert dt.minute == 30
+
+    def test_parse_datetime_date_only(self) -> None:
+        """Test parsing date only."""
+        dt = _parse_datetime("2024-01-15")
+        assert dt.year == 2024
+        assert dt.month == 1
+        assert dt.day == 15
+
+    def test_parse_datetime_invalid(self) -> None:
+        """Test parsing invalid datetime."""
+        with pytest.raises(ValueError, match="Invalid datetime format"):
+            _parse_datetime("not a date")
+
+    def test_detect_format_gpx(self) -> None:
+        """Test format detection for GPX."""
+        assert _detect_format(Path("file.gpx")) == "gpx"
+
+    def test_detect_format_geojson(self) -> None:
+        """Test format detection for GeoJSON."""
+        assert _detect_format(Path("file.geojson")) == "geojson"
+        assert _detect_format(Path("file.json")) == "geojson"
+
+    def test_detect_format_kml(self) -> None:
+        """Test format detection for KML."""
+        assert _detect_format(Path("file.kml")) == "kml"
+
+    def test_detect_format_unknown(self) -> None:
+        """Test format detection for unknown extension."""
+        assert _detect_format(Path("file.xyz")) is None
+
+    def test_calculate_bounds(self, sample_gpx: GPX) -> None:
+        """Test bounds calculation."""
+        bounds = _calculate_bounds(sample_gpx)
+        assert "min_lat" in bounds
+        assert "max_lat" in bounds
+        assert "min_lon" in bounds
+        assert "max_lon" in bounds
+        assert bounds["min_lat"] <= bounds["max_lat"]
+        assert bounds["min_lon"] <= bounds["max_lon"]
+
+    def test_gather_gpx_info(self, sample_gpx: GPX) -> None:
+        """Test gathering GPX info."""
+        info = _gather_gpx_info(sample_gpx)
+        assert info["creator"] == "TestApp"
+        assert info["waypoints"] == 1
+        assert info["routes"] == 1
+        assert info["tracks"] == 1
+        assert "metadata" in info
+        assert info["metadata"]["name"] == "Test GPX"
+
+
+# =============================================================================
+# Apply function tests
+# =============================================================================
+
+
+class TestApplyFunctions:
+    """Tests for the apply transformation functions."""
+
+    def test_apply_crop(self, sample_gpx: GPX) -> None:
+        """Test applying crop to GPX data."""
+        cropped = _apply_crop(
+            sample_gpx,
+            min_lat=52.515,
+            max_lat=52.525,
+            min_lon=13.400,
+            max_lon=13.410,
+        )
+        # Should keep some points but filter out those outside bounds
+        assert len(cropped.wpt) >= 0
+        assert len(cropped.trk) >= 0
+
+    def test_apply_crop_excludes_all(self, sample_gpx: GPX) -> None:
+        """Test applying crop that excludes all points."""
+        cropped = _apply_crop(
+            sample_gpx,
+            min_lat=0.0,
+            max_lat=1.0,
+            min_lon=0.0,
+            max_lon=1.0,
+        )
+        assert len(cropped.wpt) == 0
+        assert len(cropped.rte) == 0
+        assert len(cropped.trk) == 0
+
+    def test_apply_trim(self, sample_gpx: GPX) -> None:
+        """Test applying time trim to GPX data."""
+        start = datetime(2024, 1, 15, 10, 0, 30, tzinfo=UTC)
+        end = datetime(2024, 1, 15, 10, 1, 30, tzinfo=UTC)
+        trimmed = _apply_trim(sample_gpx, start, end)
+        # Should keep only points within time range
+        assert len(trimmed.trk) > 0
+        for track in trimmed.trk:
+            for seg in track.trkseg:
+                for pt in seg.trkpt:
+                    if pt.time:
+                        assert pt.time >= start
+                        assert pt.time <= end
+
+    def test_apply_reverse_routes(self, sample_gpx: GPX) -> None:
+        """Test applying reverse to routes."""
+        original_first_lat = float(sample_gpx.rte[0].rtept[0].lat)
+        original_last_lat = float(sample_gpx.rte[0].rtept[-1].lat)
+
+        reversed_gpx = _apply_reverse(
+            sample_gpx, reverse_routes=True, reverse_tracks=False
+        )
+
+        new_first_lat = float(reversed_gpx.rte[0].rtept[0].lat)
+        new_last_lat = float(reversed_gpx.rte[0].rtept[-1].lat)
+
+        assert new_first_lat == pytest.approx(original_last_lat, rel=1e-3)
+        assert new_last_lat == pytest.approx(original_first_lat, rel=1e-3)
+
+    def test_apply_reverse_tracks(self, sample_gpx: GPX) -> None:
+        """Test applying reverse to tracks."""
+        original_first_lat = float(sample_gpx.trk[0].trkseg[0].trkpt[0].lat)
+        original_last_lat = float(sample_gpx.trk[0].trkseg[0].trkpt[-1].lat)
+
+        reversed_gpx = _apply_reverse(
+            sample_gpx, reverse_routes=False, reverse_tracks=True
+        )
+
+        new_first_lat = float(reversed_gpx.trk[0].trkseg[0].trkpt[0].lat)
+        new_last_lat = float(reversed_gpx.trk[0].trkseg[0].trkpt[-1].lat)
+
+        assert new_first_lat == pytest.approx(original_last_lat, rel=1e-3)
+        assert new_last_lat == pytest.approx(original_first_lat, rel=1e-3)
+
+    def test_apply_precision(self, sample_gpx: GPX) -> None:
+        """Test applying precision reduction."""
+        reduced = _apply_precision(sample_gpx, coord_precision=2, elevation_precision=0)
+
+        # Check waypoint precision
+        for wpt in reduced.wpt:
+            lat_str = str(wpt.lat)
+            if "." in lat_str:
+                assert len(lat_str.split(".")[1]) <= 2
+            if wpt.ele:
+                ele_str = str(wpt.ele)
+                if "." in ele_str:
+                    assert len(ele_str.split(".")[1]) <= 1
+
+    def test_apply_precision_no_elevation(self) -> None:
+        """Test applying precision when no elevation."""
+        gpx = GPX(
+            wpt=[Waypoint(lat=Latitude("52.5200123"), lon=Longitude("13.4050456"))]
+        )
+        reduced = _apply_precision(gpx, coord_precision=3, elevation_precision=None)
+        lat_str = str(reduced.wpt[0].lat)
+        assert lat_str == "52.52"

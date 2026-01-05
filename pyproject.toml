@@ -41,6 +41,9 @@ dev = [
     { include-group = "tests" },
 ]
 
+[project.scripts]
+gpx = "gpx.cli:main"
+
 [project.urls]
 Documentation = "https://gpx.readthedocs.io/en/stable/"
 Changelog = "https://gpx.readthedocs.io/en/stable/changelog.html"
@@ -68,6 +71,9 @@ pydocstyle.convention = "google"
 ]
 "docs/conf.py" = [
     "INP001",  # implicit-namespace-package (flake8-no-pep420)
+]
+"src/gpx/cli.py" = [
+    "T201",  # print (flake8-print) - CLI uses print for output
 ]
 "tests/**/test_*.py" = [
     "D",  # pydocstyle

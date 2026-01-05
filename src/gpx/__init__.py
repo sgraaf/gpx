@@ -2,6 +2,7 @@
 
 from .base import GPXModel
 from .bounds import Bounds
+from .cli import main as cli_main
 from .convert import from_geo_interface, from_string, from_wkb, from_wkt
 from .copyright import Copyright
 from .email import Email
@@ -34,6 +35,7 @@ __all__ = [
     "Track",
     "TrackSegment",
     "Waypoint",
+    "cli_main",
     "from_geo_interface",
     "from_string",
     "from_wkb",
