@@ -47,7 +47,7 @@ class Waypoint(GPXModel):
         pdop: Position dilution of precision. Defaults to None.
         ageofdgpsdata: Number of seconds since last DGPS update. Defaults to None.
         dgpsid: ID of DGPS station used in differential correction. Defaults to None.
-        extensions: Extension elements from other namespaces. Defaults to None.
+        extensions: Extension elements from other XML namespaces. Defaults to None.
 
     """
 

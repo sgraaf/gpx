@@ -39,7 +39,7 @@ class Track(GPXModel):
         link: Links to external information about track. Defaults to empty list.
         number: GPS track number. Defaults to None.
         type: Type (classification) of track. Defaults to None.
-        extensions: Extension elements from other namespaces. Defaults to None.
+        extensions: Extension elements from other XML namespaces. Defaults to None.
         trkseg: List of track segments. Defaults to empty list.
 
     """

@@ -40,7 +40,6 @@ tests = [
 dev = [
     { include-group = "docs" },
     { include-group = "tests" },
-    "pre-commit>=4.5.1",
 ]
 
 [project.scripts]

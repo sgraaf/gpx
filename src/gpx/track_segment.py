@@ -33,7 +33,7 @@ class TrackSegment(GPXModel):
 
     Args:
         trkpt: List of track points. Defaults to empty list.
-        extensions: Extension elements from other namespaces. Defaults to None.
+        extensions: Extension elements from other XML namespaces. Defaults to None.
 
     """
 

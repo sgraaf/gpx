@@ -45,7 +45,7 @@ class GPX(GPXModel):
         wpt: List of waypoints. Defaults to empty list.
         rte: List of routes. Defaults to empty list.
         trk: List of tracks. Defaults to empty list.
-        extensions: Extension elements from other namespaces. Defaults to None.
+        extensions: Extension elements from other XML namespaces. Defaults to None.
 
     """
 

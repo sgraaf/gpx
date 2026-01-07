@@ -12,6 +12,8 @@ import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from .base import GPX_NAMESPACE
+
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
@@ -461,8 +463,6 @@ class Extensions:
             The XML element containing all extension elements.
 
         """
-        from .base import GPX_NAMESPACE  # noqa: PLC0415
-
         if tag is None:
             tag = self._tag
 

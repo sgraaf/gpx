@@ -268,25 +268,6 @@ def parse_from_xml(cls: type[Any], element: ET.Element) -> dict[str, Any]:  # no
     return result
 
 
-def is_extensions_type(field_type: type) -> bool:
-    """Check if a type is the Extensions class.
-
-    Args:
-        field_type: The type to check.
-
-    Returns:
-        True if the type is Extensions, False otherwise.
-
-    """
-    from .extensions import Extensions  # noqa: PLC0415
-
-    # Handle Optional[Extensions]
-    if is_optional(field_type):
-        inner = get_inner_type(field_type)
-        return inner is Extensions
-    return field_type is Extensions
-
-
 def build_to_xml(  # noqa: C901, PLR0912
     obj: Any,  # noqa: ANN401
     element: ET.Element,

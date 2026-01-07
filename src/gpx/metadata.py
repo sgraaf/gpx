@@ -39,7 +39,7 @@ class Metadata(GPXModel):
             Defaults to None.
         bounds: Minimum and maximum coordinates which describe the extent
             of the coordinates in the file. Defaults to None.
-        extensions: Extension elements from other namespaces. Defaults to None.
+        extensions: Extension elements from other XML namespaces. Defaults to None.
 
     """
 

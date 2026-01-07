@@ -173,7 +173,7 @@ print(f"Route distance: {route.total_distance:.2f} meters")
 
 ### Working with GPX Extensions
 
-*gpx* supports reading and writing GPX extensions from any namespace, enabling lossless round-trip handling of vendor-specific data like Garmin's heart rate, cadence, and temperature:
+*gpx* supports reading and writing GPX extensions from any namespace, enabling lossless round-trip handling of vendor-specific data like Garmin's `TrackPointExtension`:
 
 ```python
 from gpx import read_gpx

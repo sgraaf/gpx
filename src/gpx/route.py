@@ -39,7 +39,7 @@ class Route(GPXModel):
             empty list.
         number: GPS route number. Defaults to None.
         type: Type (classification) of route. Defaults to None.
-        extensions: Extension elements from other namespaces. Defaults to None.
+        extensions: Extension elements from other XML namespaces. Defaults to None.
         rtept: List of route points. Defaults to empty list.
 
     """

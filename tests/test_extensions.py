@@ -11,6 +11,8 @@ import pytest
 from gpx import (
     GPX,
     Extensions,
+    Latitude,
+    Longitude,
     Metadata,
     Route,
     Track,
@@ -18,7 +20,6 @@ from gpx import (
     Waypoint,
     read_gpx,
 )
-from gpx.types import Latitude, Longitude
 
 if TYPE_CHECKING:
     from pathlib import Path
