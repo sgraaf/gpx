@@ -4,8 +4,8 @@ These tests verify that the most critical functionality of the package works.
 They are designed to catch major breakage and ensure basic operations succeed.
 """
 
+import datetime as dt
 import tempfile
-from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -143,7 +143,7 @@ class TestProgrammaticCreation:
             lon=Longitude("13.4050"),
             ele=Decimal("100.5"),
             name="Test Point",
-            time=datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC),
+            time=dt.datetime(2024, 1, 1, 12, 0, 0, tzinfo=dt.UTC),
         )
 
         assert wpt.lat == Latitude("52.5200")
@@ -156,13 +156,13 @@ class TestProgrammaticCreation:
         pt1 = Waypoint(
             lat=Latitude("52.5200"),
             lon=Longitude("13.4050"),
-            time=datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC),
+            time=dt.datetime(2024, 1, 1, 12, 0, 0, tzinfo=dt.UTC),
         )
 
         pt2 = Waypoint(
             lat=Latitude("52.5210"),
             lon=Longitude("13.4060"),
-            time=datetime(2024, 1, 1, 12, 1, 0, tzinfo=UTC),
+            time=dt.datetime(2024, 1, 1, 12, 1, 0, tzinfo=dt.UTC),
         )
 
         # Create segment
@@ -196,7 +196,7 @@ class TestProgrammaticCreation:
         metadata = Metadata(
             name="My GPX File",
             desc="Created for smoke testing",
-            time=datetime(2024, 1, 1, 12, 0, 0, tzinfo=UTC),
+            time=dt.datetime(2024, 1, 1, 12, 0, 0, tzinfo=dt.UTC),
         )
 
         # Create GPX
@@ -314,7 +314,7 @@ class TestEndToEnd:
             pt = Waypoint(
                 lat=Latitude(f"52.{5200 + i}"),
                 lon=Longitude(f"13.{4050 + i}"),
-                time=datetime(2024, 1, 1, 12, i, 0, tzinfo=UTC),
+                time=dt.datetime(2024, 1, 1, 12, i, 0, tzinfo=dt.UTC),
             )
             track_points.append(pt)
 

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import timedelta
+import datetime as dt
 from decimal import Decimal
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -50,15 +50,15 @@ class TestTrackStatistics:
         track = track_gpx.trk[0]
         duration = track.total_duration
         # 15 minutes total
-        assert duration == timedelta(minutes=15)
+        assert duration == dt.timedelta(minutes=15)
 
     def test_track_moving_duration(self, track_gpx: GPX) -> None:
         """Test track moving duration calculation."""
         track = track_gpx.trk[0]
         duration = track.moving_duration
-        assert isinstance(duration, timedelta)
+        assert isinstance(duration, dt.timedelta)
         # Should be greater than 0 since we have movement
-        assert duration > timedelta()
+        assert duration > dt.timedelta()
 
     def test_track_avg_speed(self, track_gpx: GPX) -> None:
         """Test track average speed calculation."""
@@ -185,7 +185,7 @@ class TestTrackStatistics:
 
         # Duration should sum across segments
         duration = track.total_duration
-        assert duration > timedelta()
+        assert duration > dt.timedelta()
 
         # Speed profile should combine segments
         profile = track.speed_profile
@@ -215,13 +215,13 @@ class TestTrackSegmentStatistics:
     def test_segment_total_duration(self, segment: TrackSegment) -> None:
         """Test segment total duration calculation."""
         duration = segment.total_duration
-        assert duration == timedelta(minutes=15)
+        assert duration == dt.timedelta(minutes=15)
 
     def test_segment_moving_duration(self, segment: TrackSegment) -> None:
         """Test segment moving duration calculation."""
         duration = segment.moving_duration
-        assert isinstance(duration, timedelta)
-        assert duration > timedelta()
+        assert isinstance(duration, dt.timedelta)
+        assert duration > dt.timedelta()
 
     def test_segment_avg_speed(self, segment: TrackSegment) -> None:
         """Test segment average speed calculation."""
@@ -321,7 +321,7 @@ class TestRouteStatistics:
         """Test route total duration calculation."""
         route = route_gpx.rte[0]
         duration = route.total_duration
-        assert duration == timedelta(minutes=15)
+        assert duration == dt.timedelta(minutes=15)
 
     def test_route_total_duration_single_point(self) -> None:
         """Test route duration with single point returns zero."""
@@ -335,14 +335,14 @@ class TestRouteStatistics:
         </gpx>"""
         gpx = from_string(gpx_string)
         route = gpx.rte[0]
-        assert route.total_duration == timedelta()
+        assert route.total_duration == dt.timedelta()
 
     def test_route_moving_duration(self, route_gpx: GPX) -> None:
         """Test route moving duration calculation."""
         route = route_gpx.rte[0]
         duration = route.moving_duration
-        assert isinstance(duration, timedelta)
-        assert duration > timedelta()
+        assert isinstance(duration, dt.timedelta)
+        assert duration > dt.timedelta()
 
     def test_route_avg_speed(self, route_gpx: GPX) -> None:
         """Test route average speed calculation."""
@@ -552,7 +552,7 @@ class TestEdgeCaseStatistics:
         </gpx>"""
         gpx = from_string(gpx_string)
         segment = gpx.trk[0].trkseg[0]
-        assert segment.total_duration == timedelta()
+        assert segment.total_duration == dt.timedelta()
 
     def test_route_no_movement_avg_moving_speed_zero(self) -> None:
         """Test route average moving speed is zero when no movement."""

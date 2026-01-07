@@ -6,8 +6,8 @@ which are logically connected in order, following the GPX 1.1 specification.
 
 from __future__ import annotations
 
+import datetime as dt
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, overload
 
@@ -110,20 +110,20 @@ class TrackSegment(GPXModel):
         )
 
     @property
-    def total_duration(self) -> timedelta:
+    def total_duration(self) -> dt.timedelta:
         """The total duration."""
         if len(self.trkpt) < 2:  # noqa: PLR2004
-            return timedelta()
+            return dt.timedelta()
         return self.trkpt[0].duration_to(self.trkpt[-1])
 
     @property
-    def moving_duration(self) -> timedelta:
+    def moving_duration(self) -> dt.timedelta:
         """The moving duration.
 
         The moving duration is the total duration with a
         speed greater than 0.5 km/h.
         """
-        duration = timedelta()
+        duration = dt.timedelta()
         for i, point in enumerate(self.trkpt[:-1]):
             if point.speed_to(self.trkpt[i + 1]) > 0.5 / 3.6:  # 0.5 km/h
                 duration += point.duration_to(self.trkpt[i + 1])
@@ -164,7 +164,7 @@ class TrackSegment(GPXModel):
         return min(self._speeds)
 
     @property
-    def speed_profile(self) -> list[tuple[datetime, float]]:
+    def speed_profile(self) -> list[tuple[dt.datetime, float]]:
         """The speed profile.
 
         The speed profile is a list of (timestamp, speed) tuples.

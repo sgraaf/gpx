@@ -1,6 +1,6 @@
 """Tests for metadata-related classes: Metadata, Bounds, Link, Person, Email, Copyright."""
 
-from datetime import UTC, datetime
+import datetime as dt
 
 from gpx import Bounds, Copyright, Email, Link, Metadata, Person, from_string
 from gpx.types import Latitude, Longitude
@@ -27,7 +27,7 @@ class TestMetadataParsing:
     def test_parse_metadata_time(self, gpx_with_metadata_string: str) -> None:
         """Test parsing metadata time."""
         gpx = from_string(gpx_with_metadata_string)
-        expected = datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC)
+        expected = dt.datetime(2023, 6, 15, 10, 0, 0, tzinfo=dt.UTC)
         assert gpx.metadata is not None
         assert gpx.metadata.time == expected
 
@@ -113,7 +113,7 @@ class TestMetadataCreation:
         meta = Metadata(
             name="Test",
             desc="Description",
-            time=datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC),
+            time=dt.datetime(2023, 6, 15, 10, 0, 0, tzinfo=dt.UTC),
             keywords="test, metadata",
         )
 

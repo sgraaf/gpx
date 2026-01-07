@@ -1,6 +1,6 @@
 """Tests for gpx.track and gpx.track_segment modules."""
 
-from datetime import timedelta
+import datetime as dt
 from decimal import Decimal
 from typing import Any
 
@@ -90,7 +90,7 @@ class TestTrackSegmentStatistics:
         """Test track segment total duration calculation."""
         duration = sample_track_segment.total_duration
         # 4 points with 1 minute intervals = 3 minutes
-        assert duration == timedelta(minutes=3)
+        assert duration == dt.timedelta(minutes=3)
 
     def test_track_segment_avg_speed(self, sample_track_segment: TrackSegment) -> None:
         """Test track segment average speed calculation."""
@@ -242,7 +242,7 @@ class TestTrackStatistics:
         gpx = from_string(gpx_with_track_string)
         trk = gpx.trk[0]
         # Duration should be sum of all segment durations
-        total = sum([seg.total_duration for seg in trk.trkseg], timedelta())
+        total = sum([seg.total_duration for seg in trk.trkseg], dt.timedelta())
         assert trk.total_duration == total
 
     def test_track_bounds(self, gpx_with_track_string: str) -> None:

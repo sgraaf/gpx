@@ -6,8 +6,8 @@ describing a path, following the GPX 1.1 specification.
 
 from __future__ import annotations
 
+import datetime as dt
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, overload
 
@@ -128,18 +128,18 @@ class Track(GPXModel):
         return sum(trkseg.total_distance for trkseg in self.trkseg)
 
     @property
-    def total_duration(self) -> timedelta:
+    def total_duration(self) -> dt.timedelta:
         """The total duration of the track (in seconds)."""
-        return sum((trkseg.total_duration for trkseg in self.trkseg), timedelta())
+        return sum((trkseg.total_duration for trkseg in self.trkseg), dt.timedelta())
 
     @property
-    def moving_duration(self) -> timedelta:
+    def moving_duration(self) -> dt.timedelta:
         """The moving duration of the track.
 
         The moving duration is the total duration with a
         speed greater than 0.5 km/h.
         """
-        return sum((trkseg.moving_duration for trkseg in self.trkseg), timedelta())
+        return sum((trkseg.moving_duration for trkseg in self.trkseg), dt.timedelta())
 
     @property
     def avg_speed(self) -> float:
@@ -170,7 +170,7 @@ class Track(GPXModel):
         return min(trkseg.min_speed for trkseg in self.trkseg)
 
     @property
-    def speed_profile(self) -> list[tuple[datetime, float]]:
+    def speed_profile(self) -> list[tuple[dt.datetime, float]]:
         """The speed profile of the track.
 
         The speed profile is a list of (timestamp, speed) tuples.

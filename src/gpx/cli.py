@@ -8,9 +8,9 @@ from __future__ import annotations
 
 import argparse
 import contextlib
+import datetime as dt
 import json
 import sys
-from datetime import UTC, datetime
 from decimal import Decimal
 from importlib import metadata
 from pathlib import Path
@@ -702,7 +702,7 @@ def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
     )
 
 
-def _parse_datetime(dt_str: str) -> datetime:
+def _parse_datetime(dt_str: str) -> dt.datetime:
     """Parse an ISO 8601 datetime string."""
     # Try various ISO 8601 formats
     formats = [
@@ -714,14 +714,14 @@ def _parse_datetime(dt_str: str) -> datetime:
 
     for fmt in formats:
         try:
-            dt = datetime.strptime(dt_str, fmt)  # noqa: DTZ007
-            # Add UTC timezone if none specified
-            if dt.tzinfo is None:
-                dt = dt.replace(tzinfo=UTC)
+            dt_ = dt.datetime.strptime(dt_str, fmt)  # noqa: DTZ007
+            # Add dt.UTC timezone if none specified
+            if dt_.tzinfo is None:
+                dt_ = dt_.replace(tzinfo=dt.UTC)
         except ValueError:
             continue
         else:
-            return dt
+            return dt_
 
     msg = (
         f"Invalid datetime format: {dt_str}. "
@@ -803,8 +803,8 @@ def _apply_crop(  # noqa: C901
 
 def _apply_trim(
     gpx: GPX,
-    start_dt: datetime | None,
-    end_dt: datetime | None,
+    start_dt: dt.datetime | None,
+    end_dt: dt.datetime | None,
 ) -> GPX:
     """Apply time-based trim to GPX data."""
 

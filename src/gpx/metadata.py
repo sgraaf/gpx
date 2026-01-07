@@ -6,8 +6,8 @@ file, author, and copyright restrictions, following the GPX 1.1 specification.
 
 from __future__ import annotations
 
+import datetime as dt  # noqa: TC003
 from dataclasses import dataclass, field
-from datetime import datetime  # noqa: TC003
 
 from .base import GPXModel
 from .bounds import Bounds  # noqa: TC001
@@ -48,6 +48,6 @@ class Metadata(GPXModel):
     author: Person | None = None
     copyright: Copyright | None = None
     link: list[Link] = field(default_factory=list)
-    time: datetime | None = None
+    time: dt.datetime | None = None
     keywords: str | None = None
     bounds: Bounds | None = None

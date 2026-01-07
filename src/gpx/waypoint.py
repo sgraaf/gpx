@@ -6,8 +6,8 @@ or named feature on a map, following the GPX 1.1 specification.
 
 from __future__ import annotations
 
+import datetime as dt
 from dataclasses import KW_ONLY, dataclass, field
-from datetime import datetime, timedelta
 from decimal import Decimal
 from math import atan2, cos, radians, sin, sqrt
 from typing import Any
@@ -27,7 +27,7 @@ class Waypoint(GPXModel):
         lat: Latitude of the point in decimal degrees, WGS84 datum.
         lon: Longitude of the point in decimal degrees, WGS84 datum.
         ele: Elevation (in meters) of the point. Defaults to None.
-        time: Creation/modification timestamp for element (UTC). Defaults to None.
+        time: Creation/modification timestamp for element (dt.UTC). Defaults to None.
         magvar: Magnetic variation (in degrees) at the point. Defaults to None.
         geoidheight: Height (in meters) of geoid (mean sea level) above WGS84
             earth ellipsoid. Defaults to None.
@@ -55,7 +55,7 @@ class Waypoint(GPXModel):
     lon: Longitude
     _: KW_ONLY
     ele: Decimal | None = None
-    time: datetime | None = None
+    time: dt.datetime | None = None
     magvar: Degrees | None = None
     geoidheight: Decimal | None = None
     name: str | None = None
@@ -124,19 +124,19 @@ class Waypoint(GPXModel):
         δ = 2 * atan2(sqrt(a), sqrt(1 - a))
         return R * δ
 
-    def duration_to(self, other: Waypoint) -> timedelta:
+    def duration_to(self, other: Waypoint) -> dt.timedelta:
         """Return the duration to another waypoint.
 
         Args:
             other: The other waypoint.
 
         Returns:
-            The duration to the other waypoint. Returns zero timedelta if either
+            The duration to the other waypoint. Returns zero dt.timedelta if either
             waypoint lacks a timestamp.
 
         """
         if self.time is None or other.time is None:
-            return timedelta()
+            return dt.timedelta()
         return other.time - self.time
 
     def speed_to(self, other: Waypoint) -> float:

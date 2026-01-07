@@ -1,6 +1,6 @@
 """Tests for gpx.route module."""
 
-from datetime import timedelta
+import datetime as dt
 from decimal import Decimal
 from typing import Any
 
@@ -127,7 +127,7 @@ class TestRouteStatistics:
         """Test route total duration calculation."""
         duration = sample_route.total_duration
         # 4 points with 1 minute intervals = 3 minutes
-        assert duration == timedelta(minutes=3)
+        assert duration == dt.timedelta(minutes=3)
 
     def test_route_avg_speed(self, sample_route: Route) -> None:
         """Test route average speed calculation."""

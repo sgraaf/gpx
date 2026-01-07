@@ -1,8 +1,8 @@
 """Tests for gpx.cli module - Command-line interface functionality."""
 
+import datetime as dt
 import json
 import tempfile
-from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 
@@ -35,7 +35,7 @@ def sample_gpx() -> GPX:
         lon=Longitude("13.4050"),
         ele=Decimal("34.5"),
         name="Berlin",
-        time=datetime(2024, 1, 15, 10, 0, 0, tzinfo=UTC),
+        time=dt.datetime(2024, 1, 15, 10, 0, 0, tzinfo=dt.UTC),
     )
 
     route_points = [
@@ -57,19 +57,19 @@ def sample_gpx() -> GPX:
             lat=Latitude("52.5200"),
             lon=Longitude("13.4050"),
             ele=Decimal("34.5"),
-            time=datetime(2024, 1, 15, 10, 0, 0, tzinfo=UTC),
+            time=dt.datetime(2024, 1, 15, 10, 0, 0, tzinfo=dt.UTC),
         ),
         Waypoint(
             lat=Latitude("52.5210"),
             lon=Longitude("13.4060"),
             ele=Decimal("35.0"),
-            time=datetime(2024, 1, 15, 10, 1, 0, tzinfo=UTC),
+            time=dt.datetime(2024, 1, 15, 10, 1, 0, tzinfo=dt.UTC),
         ),
         Waypoint(
             lat=Latitude("52.5220"),
             lon=Longitude("13.4070"),
             ele=Decimal("36.5"),
-            time=datetime(2024, 1, 15, 10, 2, 0, tzinfo=UTC),
+            time=dt.datetime(2024, 1, 15, 10, 2, 0, tzinfo=dt.UTC),
         ),
     ]
     segment = TrackSegment(trkpt=track_points)
@@ -487,8 +487,8 @@ class TestApplyFunctions:
 
     def test_apply_trim(self, sample_gpx: GPX) -> None:
         """Test applying time trim to GPX data."""
-        start = datetime(2024, 1, 15, 10, 0, 30, tzinfo=UTC)
-        end = datetime(2024, 1, 15, 10, 1, 30, tzinfo=UTC)
+        start = dt.datetime(2024, 1, 15, 10, 0, 30, tzinfo=dt.UTC)
+        end = dt.datetime(2024, 1, 15, 10, 1, 30, tzinfo=dt.UTC)
         trimmed = _apply_trim(sample_gpx, start, end)
         # Should keep only points within time range
         assert len(trimmed.trk) > 0

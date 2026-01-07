@@ -12,10 +12,10 @@ This allows automatic determination of attributes vs elements based on type hint
 
 from __future__ import annotations
 
+import datetime as dt
 import re
 import xml.etree.ElementTree as ET
 from dataclasses import fields
-from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -75,12 +75,12 @@ def remove_encoding_from_string(s: str) -> str:
     return re.sub(r"(encoding=[\"\'].+[\"\'])", "", s)
 
 
-def from_isoformat(dt_str: str) -> datetime:
+def from_isoformat(dt_str: str) -> dt.datetime:
     """Convert a string in ISO 8601 format to a `datetime` object."""
-    return datetime.fromisoformat(dt_str)
+    return dt.datetime.fromisoformat(dt_str)
 
 
-def to_isoformat(dt: datetime) -> str:
+def to_isoformat(dt: dt.datetime) -> str:
     """Convert a `datetime` object to a string in ISO 8601 format."""
     return dt.isoformat(
         timespec="milliseconds" if dt.microsecond else "seconds"
@@ -250,7 +250,7 @@ def parse_from_xml(cls: type[Any], element: ET.Element) -> dict[str, Any]:  # no
                 elif child.text is None:
                     result[field.name] = None
                 # Simple type - handle datetime specially
-                elif inner_type is datetime:
+                elif inner_type is dt.datetime:
                     result[field.name] = from_isoformat(child.text)
                 else:
                     result[field.name] = inner_type(child.text)
@@ -337,7 +337,7 @@ def build_to_xml(  # noqa: C901, PLR0912
             else:
                 # Simple type - handle datetime specially
                 child = ET.SubElement(element, _ns_tag(field.name, element))
-                if isinstance(value, datetime):
+                if isinstance(value, dt.datetime):
                     child.text = to_isoformat(value)
                 else:
                     child.text = str(value)
@@ -455,7 +455,7 @@ def _convert_value_to_json(value: Any) -> Any:  # noqa: ANN401
         The JSON-serializable value.
 
     """
-    if isinstance(value, datetime):
+    if isinstance(value, dt.datetime):
         return to_isoformat(value)
     if isinstance(value, SupportsFloat):  # Decimal and similar
         return float(value)

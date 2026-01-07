@@ -1,7 +1,7 @@
 """Pytest configuration and fixtures for GPX tests."""
 
+import datetime as dt
 import xml.etree.ElementTree as ET
-from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -260,7 +260,7 @@ def sample_waypoint() -> Waypoint:
         lat=Latitude("52.5200"),
         lon=Longitude("13.4050"),
         ele=Decimal("34.5"),
-        time=datetime(2023, 6, 15, 10, 30, 0, tzinfo=UTC),
+        time=dt.datetime(2023, 6, 15, 10, 30, 0, tzinfo=dt.UTC),
         name="Berlin",
         desc="Capital of Germany",
     )
@@ -318,7 +318,7 @@ def sample_metadata() -> Metadata:
     return Metadata(
         name="Test GPX",
         desc="A test GPX file",
-        time=datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC),
+        time=dt.datetime(2023, 6, 15, 10, 0, 0, tzinfo=dt.UTC),
         keywords="test, gpx",
     )
 

@@ -1,6 +1,6 @@
 """Tests for gpx.waypoint module."""
 
-from datetime import UTC, datetime, timedelta
+import datetime as dt
 from decimal import Decimal
 from typing import Any
 
@@ -33,7 +33,7 @@ class TestWaypointParsing:
         """Test parsing waypoint timestamp."""
         gpx = from_string(gpx_with_waypoint_string)
         wpt = gpx.wpt[0]
-        expected_time = datetime(2023, 6, 15, 10, 30, 0, tzinfo=UTC)
+        expected_time = dt.datetime(2023, 6, 15, 10, 30, 0, tzinfo=dt.UTC)
         assert wpt.time == expected_time
 
     def test_parse_waypoint_name(self, gpx_with_waypoint_string: str) -> None:
@@ -156,7 +156,7 @@ class TestWaypointCalculations:
             lat=Latitude("52.5200"),
             lon=Longitude("13.4050"),
             ele=Decimal("34.0"),
-            time=datetime(2023, 6, 15, 10, 0, 0, tzinfo=UTC),
+            time=dt.datetime(2023, 6, 15, 10, 0, 0, tzinfo=dt.UTC),
         )
 
     @pytest.fixture
@@ -166,7 +166,7 @@ class TestWaypointCalculations:
             lat=Latitude("48.1351"),
             lon=Longitude("11.5820"),
             ele=Decimal("520.0"),
-            time=datetime(2023, 6, 15, 14, 0, 0, tzinfo=UTC),
+            time=dt.datetime(2023, 6, 15, 14, 0, 0, tzinfo=dt.UTC),
         )
 
     @pytest.fixture
@@ -176,7 +176,7 @@ class TestWaypointCalculations:
             lat=Latitude("52.5210"),
             lon=Longitude("13.4060"),
             ele=Decimal("35.0"),
-            time=datetime(2023, 6, 15, 10, 1, 0, tzinfo=UTC),
+            time=dt.datetime(2023, 6, 15, 10, 1, 0, tzinfo=dt.UTC),
         )
 
     def test_distance_to_same_point(self, berlin_waypoint: Waypoint) -> None:
@@ -233,7 +233,7 @@ class TestWaypointCalculations:
     ) -> None:
         """Test duration calculation between waypoints."""
         duration = berlin_waypoint.duration_to(munich_waypoint)
-        expected = timedelta(hours=4)
+        expected = dt.timedelta(hours=4)
         assert duration == expected
 
     def test_duration_to_no_time(self, berlin_waypoint: Waypoint) -> None:
@@ -244,7 +244,7 @@ class TestWaypointCalculations:
         )
 
         duration = berlin_waypoint.duration_to(wpt2)
-        assert duration == timedelta()
+        assert duration == dt.timedelta()
 
     def test_speed_to(
         self,
@@ -315,7 +315,7 @@ class TestWaypointCreation:
             lat=Latitude("52.5200"),
             lon=Longitude("13.4050"),
             ele=Decimal("34.5"),
-            time=datetime(2023, 6, 15, 10, 30, 0, tzinfo=UTC),
+            time=dt.datetime(2023, 6, 15, 10, 30, 0, tzinfo=dt.UTC),
             magvar=Degrees("15.5"),
             geoidheight=Decimal("10.0"),
             name="Test Point",
