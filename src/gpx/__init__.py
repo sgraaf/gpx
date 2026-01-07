@@ -34,7 +34,6 @@ __all__ = [
     "Track",
     "TrackSegment",
     "Waypoint",
-    "cli_main",
     "from_geo_interface",
     "from_string",
     "from_wkb",
