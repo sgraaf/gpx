@@ -76,46 +76,6 @@ def extract_namespaces_from_string(xml_string: str) -> dict[str, str]:
     return namespaces
 
 
-def extract_namespaces(element: ET.Element) -> dict[str, str]:
-    """Extract namespace prefix mappings from an XML element.
-
-    Note: ElementTree doesn't preserve namespace prefix information after parsing.
-    This function exists for API compatibility but may return limited results.
-    For best results, use extract_namespaces_from_string() on the raw XML string
-    before parsing.
-
-    Args:
-        element: The XML element to extract namespaces from.
-
-    Returns:
-        A dictionary mapping namespace prefixes to URIs. The default namespace
-        (if present) is mapped to the empty string key.
-
-    """
-    namespaces: dict[str, str] = {}
-
-    # Check element attributes for xmlns declarations
-    # Note: ElementTree may not preserve these after parsing
-    for key, value in element.items():
-        if key == "xmlns":
-            # Default namespace
-            namespaces[""] = value
-        elif key.startswith("xmlns:"):
-            # Prefixed namespace
-            prefix = key[6:]  # Remove "xmlns:" prefix
-            namespaces[prefix] = value
-
-    # Recursively check descendants
-    for child in element:
-        child_namespaces = extract_namespaces(child)
-        # Only add if not already present (parent takes precedence)
-        for prefix, uri in child_namespaces.items():
-            if prefix not in namespaces:
-                namespaces[prefix] = uri
-
-    return namespaces
-
-
 def _ns_tag(tag: str, element: ET.Element) -> str:
     """Return a namespaced tag in Clark notation based on the parent element's namespace.
 

@@ -19,7 +19,7 @@ from .extensions import Extensions  # noqa: TC001
 from .metadata import Metadata  # noqa: TC001
 from .route import Route  # noqa: TC001
 from .track import Track  # noqa: TC001
-from .utils import build_to_xml, parse_from_xml
+from .utils import build_to_xml
 from .waypoint import Waypoint  # noqa: TC001
 
 #: GPX 1.1 namespace
@@ -63,26 +63,6 @@ class GPX(GPXModel):
     trk: list[Track] = field(default_factory=list)
     extensions: Extensions | None = None
     nsmap: dict[str, str] | None = field(default=None, repr=False)
-
-    @classmethod
-    def from_xml(cls, element: ET.Element) -> GPX:
-        """Parse the GPX from an XML element.
-
-        Note: This method does not preserve namespace prefixes by itself.
-        Use read_gpx() or from_string() for full namespace prefix preservation.
-
-        Args:
-            element: The XML element to parse.
-
-        Returns:
-            The parsed GPX instance.
-
-        Raises:
-            ValueError: If required attributes are missing.
-
-        """
-        # Use the standard parsing logic from the base class
-        return cls(**parse_from_xml(cls, element))
 
     @property
     def __geo_interface__(self) -> dict[str, Any]:

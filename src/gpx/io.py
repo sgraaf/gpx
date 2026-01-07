@@ -12,14 +12,13 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from .convert import from_geo_interface
+from .convert import from_geo_interface, from_string
 from .gpx import GPX
 from .metadata import Metadata
 from .route import Route
 from .track import Track
 from .track_segment import TrackSegment
 from .types import Latitude, Longitude
-from .utils import extract_namespaces_from_string, remove_encoding_from_string
 from .waypoint import Waypoint
 
 #: KML namespace
@@ -40,22 +39,7 @@ def read_gpx(file_path: str | Path) -> GPX:
         >>> gpx = read_gpx("path/to/file.gpx")
 
     """
-    with Path(file_path).open(encoding="utf-8") as f:
-        gpx_str = f.read()
-
-    # Extract namespace prefixes before parsing (ElementTree loses this info)
-    namespaces = extract_namespaces_from_string(gpx_str)
-
-    # Remove encoding declaration if present
-    gpx_str = remove_encoding_from_string(gpx_str)
-
-    root = ET.fromstring(gpx_str)
-    gpx = GPX.from_xml(root)
-
-    # Preserve the extracted namespace prefixes
-    gpx.nsmap = namespaces
-
-    return gpx
+    return from_string(Path(file_path).read_text("utf-8"))
 
 
 def read_geojson(file_path: str | Path, *, creator: str | None = None) -> GPX:
