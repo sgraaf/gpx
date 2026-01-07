@@ -198,7 +198,7 @@ wheels = [
 
 [[package]]
 name = "gpx"
-version = "2025.1.0"
+version = "2026.1.0"
 source = { editable = "." }
 
 [package.dev-dependencies]
