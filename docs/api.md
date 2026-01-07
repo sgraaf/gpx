@@ -84,6 +84,13 @@
     :members:
 ```
 
+## `gpx.extensions` Module
+
+```{eval-rst}
+.. automodule:: gpx.extensions
+    :members:
+```
+
 ## `gpx.person` Module
 
 ```{eval-rst}

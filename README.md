@@ -171,6 +171,60 @@ gpx.rte.append(route)
 print(f"Route distance: {route.total_distance:.2f} meters")
 ```
 
+### Working with GPX Extensions
+
+*gpx* supports reading and writing GPX extensions from any namespace, enabling lossless round-trip handling of vendor-specific data like Garmin's heart rate, cadence, and temperature:
+
+```python
+from gpx import read_gpx
+
+# Define extension namespace
+GARMIN_TPX = "http://www.garmin.com/xmlschemas/TrackPointExtension/v2"
+
+# Read GPX file with extensions
+gpx = read_gpx("activity.gpx")
+
+# Access extension data from track points
+for track in gpx.trk:
+    for segment in track.trkseg:
+        for point in segment.trkpt:
+            if point.extensions:
+                # Get heart rate, cadence, temperature
+                hr = point.extensions.get_int("hr", namespace=GARMIN_TPX)
+                cad = point.extensions.get_int("cad", namespace=GARMIN_TPX)
+                temp = point.extensions.get_float("atemp", namespace=GARMIN_TPX)
+                if hr:
+                    print(f"Heart rate: {hr} bpm")
+```
+
+Creating GPX files with extensions:
+
+```python
+import xml.etree.ElementTree as ET
+from gpx import GPX, Waypoint, Track, TrackSegment, Extensions
+from decimal import Decimal
+
+# Register namespace prefix for cleaner XML output
+GARMIN_TPX = "http://www.garmin.com/xmlschemas/TrackPointExtension/v2"
+ET.register_namespace("gpxtpx", GARMIN_TPX)
+
+# Create extension element
+tpx = ET.Element(f"{{{GARMIN_TPX}}}TrackPointExtension")
+hr = ET.SubElement(tpx, f"{{{GARMIN_TPX}}}hr")
+hr.text = "145"
+
+# Create waypoint with extensions
+point = Waypoint(
+    lat=Decimal("52.0"),
+    lon=Decimal("4.0"),
+    extensions=Extensions(elements=[tpx]),
+)
+
+# Build GPX with the point
+gpx = GPX(trk=[Track(trkseg=[TrackSegment(trkpt=[point])])])
+gpx.write_gpx("with_extensions.gpx")
+```
+
 ### Converting to other formats
 
 *gpx* supports converting GPX data to various formats:

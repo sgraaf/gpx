@@ -15,6 +15,7 @@ from typing import Any
 from gpx.types import Degrees, DGPSStation, Fix, Latitude, Longitude  # noqa: TC001
 
 from .base import GPXModel
+from .extensions import Extensions  # noqa: TC001
 from .link import Link  # noqa: TC001
 from .utils import build_geo_feature
 
@@ -46,6 +47,7 @@ class Waypoint(GPXModel):
         pdop: Position dilution of precision. Defaults to None.
         ageofdgpsdata: Number of seconds since last DGPS update. Defaults to None.
         dgpsid: ID of DGPS station used in differential correction. Defaults to None.
+        extensions: Extension elements from other namespaces. Defaults to None.
 
     """
 
@@ -72,6 +74,7 @@ class Waypoint(GPXModel):
     pdop: Decimal | None = None
     ageofdgpsdata: Decimal | None = None
     dgpsid: DGPSStation | None = None
+    extensions: Extensions | None = None
 
     @property
     def _coordinates(

@@ -12,6 +12,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Any, overload
 
 from .base import GPXModel
+from .extensions import Extensions  # noqa: TC001
 from .utils import build_geo_feature
 from .waypoint import Waypoint  # noqa: TC001
 
@@ -32,12 +33,14 @@ class TrackSegment(GPXModel):
 
     Args:
         trkpt: List of track points. Defaults to empty list.
+        extensions: Extension elements from other namespaces. Defaults to None.
 
     """
 
     _tag = "trkseg"
 
     trkpt: list[Waypoint] = field(default_factory=list)
+    extensions: Extensions | None = None
 
     @property
     def __geo_interface__(self) -> dict[str, Any]:

@@ -15,6 +15,8 @@ The **third number** is for emergencies when we need to start branches for older
 
 ### Added
 
+- GPX Extensions support: Added `Extensions` class for handling GPX extension elements from any namespace (e.g., Garmin TrackPointExtension). Extensions are now parsed, preserved, and serialized during round-trip processing, enabling lossless handling of vendor-specific data like heart rate, cadence, temperature, etc.
+- New `extensions` field on all models that support extensions per GPX 1.1 spec: `GPX`, `Metadata`, `Waypoint`, `Track`, `TrackSegment`, and `Route`.
 - New `cli` module with command-line interface (CLI) for common GPX operations:
   - `gpx validate`: Validate a GPX file
   - `gpx info`: Show information and statistics about a GPX file
