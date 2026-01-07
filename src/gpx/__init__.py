@@ -1,4 +1,4 @@
-"""gpx is a pure Python package that brings support for reading, manipulating, writing and converting GPX files."""
+"""gpx is a zero-dependency, pure Python package for reading, manipulating, writing and converting GPX files."""
 
 from .base import GPXModel
 from .bounds import Bounds
@@ -34,6 +34,7 @@ __all__ = [
     "Track",
     "TrackSegment",
     "Waypoint",
+    "cli_main",
     "from_geo_interface",
     "from_string",
     "from_wkb",

@@ -5,7 +5,7 @@ build-backend = "uv_build"
 [project]
 name = "gpx"
 version = "2025.1.0"
-description = "gpx is a pure Python package that brings support for reading, manipulating, writing and converting GPX files."
+description = "gpx is a zero-dependency, pure Python package for reading, manipulating, writing and converting GPX files."
 authors = [{name = "Steven van de Graaf", email = "steven@vandegraaf.xyz"}]
 readme = "README.md"
 license = {file = "LICENSE"}
@@ -26,6 +26,7 @@ dependencies = []
 
 [dependency-groups]
 docs = [
+    "cogapp",
     "furo",
     "myst-parser",
     "sphinx",
@@ -40,6 +41,9 @@ dev = [
     { include-group = "docs" },
     { include-group = "tests" },
 ]
+
+[project.scripts]
+gpx = "gpx.cli:cli"
 
 [project.urls]
 Documentation = "https://gpx.readthedocs.io/en/stable/"
@@ -68,6 +72,9 @@ pydocstyle.convention = "google"
 ]
 "docs/conf.py" = [
     "INP001",  # implicit-namespace-package (flake8-no-pep420)
+]
+"src/gpx/cli.py" = [
+    "T201",  # print (flake8-print) - CLI uses print for output
 ]
 "tests/**/test_*.py" = [
     "D",  # pydocstyle

@@ -9,7 +9,7 @@
 [![Documentation Status](https://readthedocs.org/projects/gpx/badge/?version=latest)](https://gpx.readthedocs.io/en/latest/?badge=latest)
 [![PyPI - License](https://img.shields.io/pypi/l/gpx)](https://img.shields.io/pypi/l/gpx)
 
-*gpx* is a pure Python package that brings support for reading, manipulating, writing and converting GPX (GPS Exchange Format) files.
+*gpx* is a zero-dependency, pure Python package for reading, manipulating, writing and converting GPX (GPS Exchange Format) files.
 
 <!-- end docs-include-index -->
 
@@ -232,6 +232,34 @@ gpx = from_geo_interface(line)
 # Or convert from a GeoJSON dict directly
 geojson = {"type": "Point", "coordinates": [4.9041, 52.3676]}
 gpx = from_geo_interface(geojson)
+```
+
+### Command-Line Interface
+
+*gpx* provides a command-line interface (CLI) for common GPX operations:
+
+```sh
+# Validate a GPX file
+gpx validate path/to/file.gpx
+
+# Show information and statistics about a GPX file
+gpx info path/to/file.gpx
+gpx info --json path/to/file.gpx  # Output as JSON
+
+# Edit a GPX file
+gpx edit input.gpx -o output.gpx --reverse-tracks
+gpx edit input.gpx -o output.gpx --min-lat 52.0 --max-lat 53.0
+gpx edit input.gpx -o output.gpx --start 2024-01-01T10:00:00 --end 2024-01-01T12:00:00
+gpx edit input.gpx -o output.gpx --precision 5 --elevation-precision 1
+gpx edit input.gpx -o output.gpx --strip-all-metadata
+
+# Merge multiple GPX files
+gpx merge file1.gpx file2.gpx file3.gpx -o merged.gpx
+
+# Convert between formats
+gpx convert input.gpx -o output.geojson
+gpx convert input.gpx -o output.kml
+gpx convert input.geojson -o output.gpx
 ```
 
 <!-- end docs-include-usage -->

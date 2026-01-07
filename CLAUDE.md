@@ -4,7 +4,7 @@ This file provides guidance for AI assistants working with the *gpx* codebase.
 
 ## Project Overview
 
-*gpx* is a pure Python library for reading, manipulating, writing, and converting GPX (GPS Exchange Format) files. It provides a fully-typed, dataclass-based interface for working with GPX 1.1 specification data.
+*gpx* is a zero-dependency, pure Python package for reading, manipulating, writing and converting GPX (GPS Exchange Format) files. It provides a fully-typed, dataclass-based interface for working with GPX 1.1 specification data.
 
 -   **Package name**: `gpx` (on PyPI)
 -   **Current version**: 2025.1.0

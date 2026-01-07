@@ -12,6 +12,18 @@ The **third number** is for emergencies when we need to start branches for older
 
 ### Added
 
+- New `cli` module with command-line interface (CLI) for common GPX operations:
+  - `gpx validate`: Validate a GPX file
+  - `gpx info`: Show information and statistics about a GPX file
+  - `gpx edit`: Edit a GPX file with various transformations:
+    - Crop to a geographic bounding box (`--min-lat`, `--min-lon`, `--max-lat`, `--max-lon`)
+    - Trim to a date/time range (`--start`, `--end`)
+    - Reverse routes and/or tracks (`--reverse`, `--reverse-routes`, `--reverse-tracks`)
+    - Strip metadata fields (`--strip-name`, `--strip-desc`, `--strip-author`, `--strip-copyright`, `--strip-time`, `--strip-keywords`, `--strip-links`, `--strip-all-metadata`)
+    - Reduce coordinate precision (`--precision`, `--elevation-precision`)
+  - `gpx merge`: Merge multiple GPX files into one
+  - `gpx convert`: Convert between GPX, GeoJSON, and KML formats
+- New CLI reference documentation page with auto-generated help output using `cog`
 - New `io` module with `read_*()` functions for reading file formats:
   - `read_gpx()`: Read GPX files
   - `read_geojson()`: Read GeoJSON files
