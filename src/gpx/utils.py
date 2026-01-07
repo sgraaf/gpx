@@ -45,6 +45,37 @@ def _get_namespace(element: ET.Element) -> str:
     return ""
 
 
+def extract_namespaces_from_string(xml_string: str) -> dict[str, str]:
+    """Extract namespace prefix mappings from an XML string.
+
+    This function extracts all namespace declarations (xmlns attributes) from
+    the XML string using regex, before ElementTree parsing which loses prefix info.
+
+    Args:
+        xml_string: The XML string to extract namespaces from.
+
+    Returns:
+        A dictionary mapping namespace prefixes to URIs. The default namespace
+        (if present) is mapped to the empty string key.
+
+    """
+    namespaces: dict[str, str] = {}
+
+    # Match xmlns declarations: xmlns="..." or xmlns:prefix="..."
+    # Pattern matches both default namespace and prefixed namespaces
+    xmlns_pattern = re.compile(r'xmlns(?::([a-zA-Z0-9_-]+))?=["\']([^"\']+)["\']')
+
+    for match in xmlns_pattern.finditer(xml_string):
+        prefix = match.group(1)  # None for default namespace
+        uri = match.group(2)
+
+        # Use empty string for default namespace (xmlns="...")
+        key = prefix if prefix else ""
+        namespaces[key] = uri
+
+    return namespaces
+
+
 def _ns_tag(tag: str, element: ET.Element) -> str:
     """Return a namespaced tag in Clark notation based on the parent element's namespace.
 
@@ -293,8 +324,8 @@ def build_to_xml(  # noqa: C901, PLR0912
     type_hints = get_type_hints(obj.__class__)
 
     for field in fields(obj):
-        # Skip KW_ONLY marker
-        if field.name == "_":
+        # Skip KW_ONLY marker and nsmap field (used internally for namespace preservation)
+        if field.name in {"_", "nsmap"}:
             continue
 
         field_type = type_hints.get(field.name, field.type)

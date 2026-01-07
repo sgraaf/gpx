@@ -12,14 +12,13 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Any
 
-from .convert import from_geo_interface
+from .convert import from_geo_interface, from_string
 from .gpx import GPX
 from .metadata import Metadata
 from .route import Route
 from .track import Track
 from .track_segment import TrackSegment
 from .types import Latitude, Longitude
-from .utils import remove_encoding_from_string
 from .waypoint import Waypoint
 
 #: KML namespace
@@ -33,21 +32,14 @@ def read_gpx(file_path: str | Path) -> GPX:
         file_path: Path to the GPX file.
 
     Returns:
-        A GPX object.
+        A GPX object with namespace prefixes preserved.
 
     Example:
         >>> from gpx import read_gpx
         >>> gpx = read_gpx("path/to/file.gpx")
 
     """
-    with Path(file_path).open(encoding="utf-8") as f:
-        gpx_str = f.read()
-
-    # Remove encoding declaration if present
-    gpx_str = remove_encoding_from_string(gpx_str)
-
-    root = ET.fromstring(gpx_str)
-    return GPX.from_xml(root)
+    return from_string(Path(file_path).read_text("utf-8"))
 
 
 def read_geojson(file_path: str | Path, *, creator: str | None = None) -> GPX:

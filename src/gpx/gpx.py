@@ -6,6 +6,7 @@ following the GPX 1.1 specification.
 
 from __future__ import annotations
 
+import contextlib
 import json
 import struct
 import xml.etree.ElementTree as ET
@@ -46,6 +47,9 @@ class GPX(GPXModel):
         rte: List of routes. Defaults to empty list.
         trk: List of tracks. Defaults to empty list.
         extensions: Extension elements from other XML namespaces. Defaults to None.
+        nsmap: Namespace prefix mappings from the original XML. Defaults to None.
+            This is used internally to preserve namespace prefixes during
+            round-trip parsing. Users typically don't need to set this.
 
     """
 
@@ -58,6 +62,7 @@ class GPX(GPXModel):
     rte: list[Route] = field(default_factory=list)
     trk: list[Track] = field(default_factory=list)
     extensions: Extensions | None = None
+    nsmap: dict[str, str] | None = field(default=None, repr=False)
 
     @property
     def __geo_interface__(self) -> dict[str, Any]:
@@ -128,7 +133,9 @@ class GPX(GPXModel):
         Args:
             tag: The XML tag name. Defaults to "gpx".
             nsmap: Optional namespace mapping. Defaults to GPX 1.1 namespace
-                with XML Schema instance namespace.
+                with XML Schema instance namespace. If the GPX instance has
+                stored namespace mappings (from parsing), those will be used
+                to preserve original namespace prefixes.
 
         Returns:
             The XML element.
@@ -137,18 +144,42 @@ class GPX(GPXModel):
         if tag is None:
             tag = self._tag
 
+        # Use stored namespace mappings if available to preserve prefixes
         if nsmap is None:
-            nsmap = {
-                None: GPX_NAMESPACE,
-                "xsi": XSI_NAMESPACE,
-            }
+            if self.nsmap:
+                # Build nsmap from stored prefixes, converting to the format
+                # expected by build_to_xml (prefix -> URI, with None for default)
+                nsmap = {}
+                for prefix, uri in self.nsmap.items():
+                    # Empty string prefix means default namespace
+                    key: str | None = None if prefix == "" else prefix
+                    nsmap[key] = uri
 
-        # Register namespaces
-        ET.register_namespace("", GPX_NAMESPACE)
-        ET.register_namespace("xsi", XSI_NAMESPACE)
+                # Ensure xsi namespace is included if not already present
+                if "xsi" not in self.nsmap:
+                    nsmap["xsi"] = XSI_NAMESPACE
+            else:
+                # No stored namespaces, use defaults
+                nsmap = {
+                    None: GPX_NAMESPACE,
+                    "xsi": XSI_NAMESPACE,
+                }
+
+        # Register namespaces with their original prefixes
+        for prefix_key, uri in nsmap.items():
+            if prefix_key is None:
+                # Register default namespace
+                ET.register_namespace("", uri)
+            elif isinstance(prefix_key, str) and not prefix_key.startswith("xml"):
+                # Only register non-reserved prefixes
+                # Skip prefixes starting with "xml" (reserved by XML spec)
+                with contextlib.suppress(ValueError):
+                    # If registration fails, ElementTree will generate a prefix automatically
+                    ET.register_namespace(prefix_key, uri)
 
         # Create the element with namespace
-        element = ET.Element(f"{{{GPX_NAMESPACE}}}{tag}")
+        default_ns = nsmap.get(None, GPX_NAMESPACE)
+        element = ET.Element(f"{{{default_ns}}}{tag}")
 
         # Add GPX-specific attributes
         element.set("version", "1.1")
