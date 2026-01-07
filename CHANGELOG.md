@@ -44,7 +44,7 @@ The **third number** is for emergencies when we need to start branches for older
 ### Changed
 
 - Renamed `GPX.to_file()` to `GPX.write_gpx()` for consistency with other write methods.
-- Replaced built-in `tempfile` module usage with pytest's `tmp_path` and `tmp_path_factory` fixtures in test suite for better test isolation and automatic cleanup.
+- Replaced built-in `tempfile` module usage with pytest's `tmp_path` and `tmp_path_factory` fixtures in the test suite for better test isolation and automatic cleanup.
 
 ### Removed
 
