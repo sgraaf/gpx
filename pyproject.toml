@@ -37,10 +37,17 @@ docs = [
 tests = [
     "pytest"
 ]
+typing = [
+    "mypy",
+    "pyrefly",
+    "ty",
+]
 dev = [
     { include-group = "docs" },
     { include-group = "tests" },
+    { include-group = "typing" },
 ]
+
 
 [project.scripts]
 gpx = "gpx.cli:cli"
