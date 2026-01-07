@@ -1,6 +1,8 @@
 ```{include} ../README.md
-:start-after: <!-- start docs-include-index -->
-:end-before: <!-- end docs-include-index -->
+---
+start-after: <!-- start docs-include-index -->
+end-before: <!-- end docs-include-index -->
+---
 ```
 
 ## Contents
@@ -9,7 +11,6 @@
 ---
 maxdepth: 2
 ---
-
 installation
 usage
 api

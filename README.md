@@ -235,13 +235,13 @@ from gpx import GPX, read_gpx
 gpx = read_gpx("path/to/file.gpx")
 
 # Write to file formats
-gpx.write_gpx("output.gpx")           # GPX file
-gpx.write_geojson("output.geojson")   # GeoJSON file
-gpx.write_kml("output.kml")           # KML file (Google Earth)
+gpx.write_gpx("output.gpx")  # GPX file
+gpx.write_geojson("output.geojson")  # GeoJSON file
+gpx.write_kml("output.kml")  # KML file (Google Earth)
 
 # Convert to data formats (strings/bytes)
-wkt_string = gpx.to_wkt()   # Well-Known Text
-wkb_bytes = gpx.to_wkb()    # Well-Known Binary
+wkt_string = gpx.to_wkt()  # Well-Known Text
+wkb_bytes = gpx.to_wkb()  # Well-Known Binary
 
 # Access GeoJSON-compatible data via the __geo_interface__ property
 geojson_dict = gpx.__geo_interface__

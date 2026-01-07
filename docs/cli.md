@@ -19,6 +19,7 @@ def help_output(args):
     cog.out(f"\nRunning `gpx {' '.join(args)}` or `python -m gpx {' '.join(args)}` shows a list of all of the available options and arguments:\n")
     cog.out(f"\n```\n{output}```\n")
 ]]]-->
+
 <!--[[[end]]]-->
 
 ## gpx
@@ -48,6 +49,7 @@ commands:
     merge               Merge multiple GPX files into one
     convert             Convert between GPX, GeoJSON, and KML file formats
 ```
+
 <!--[[[end]]]-->
 
 ## gpx validate
@@ -71,6 +73,7 @@ positional arguments:
 options:
   -h, --help    show this help message and exit
 ```
+
 <!--[[[end]]]-->
 
 ## gpx info
@@ -95,6 +98,7 @@ options:
   -h, --help    show this help message and exit
   --json        Output information in JSON format
 ```
+
 <!--[[[end]]]-->
 
 ## gpx edit
@@ -172,6 +176,7 @@ precision options:
   --elevation-precision DIGITS
                         Number of decimal places for elevation (e.g., 1)
 ```
+
 <!--[[[end]]]-->
 
 ## gpx merge
@@ -197,6 +202,7 @@ options:
   -o, --output-file <OUTPUT_FILE>
                         Path to the output file
 ```
+
 <!--[[[end]]]-->
 
 ## gpx convert
@@ -230,4 +236,5 @@ options:
                         Output format (default: auto-detect from file
                         extension)
 ```
+
 <!--[[[end]]]-->
