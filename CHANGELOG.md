@@ -8,6 +8,9 @@ The **first number** of the version is the year.
 The **second number** is incremented with each release, starting at 1 for each year.
 The **third number** is for emergencies when we need to start branches for older releases.
 
+## [Unreleased](https://github.com/sgraaf/gpx/compare/2026.1.0...HEAD)
+
+
 ## [2026.1.0](https://github.com/sgraaf/gpx/compare/2025.1.0...2026.1.0) - 2026-01-07
 
 ### Added
