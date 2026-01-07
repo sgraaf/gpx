@@ -12,6 +12,7 @@ import json
 import sys
 from datetime import UTC, datetime
 from decimal import Decimal
+from importlib import metadata
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -28,11 +29,11 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 
-def main(argv: Sequence[str] | None = None) -> int:
+def cli(argv: Sequence[str] | None = None) -> int:
     """Entry point for the gpx CLI.
 
     Args:
-        argv: Command-line arguments. Defaults to sys.argv[1:].
+        argv: Command-line arguments. Defaults to `sys.argv[1:]`.
 
     Returns:
         Exit code (0 for success, non-zero for failure).
@@ -61,7 +62,7 @@ def _create_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--version",
         action="version",
-        version="gpx 2025.1.0",
+        version=f"gpx {metadata.version('gpx')}",
     )
 
     subparsers = parser.add_subparsers(
@@ -103,16 +104,17 @@ def _add_validate_parser(
         description="Validate a GPX file by attempting to parse it.",
     )
     parser.add_argument(
-        "file",
+        "input_file",
         type=Path,
-        help="Path to the GPX file to validate",
+        help="Path to the input GPX file",
+        metavar="<INPUT_FILE>",
     )
     parser.set_defaults(func=_cmd_validate)
 
 
 def _cmd_validate(args: argparse.Namespace) -> int:
     """Execute the validate command."""
-    file_path: Path = args.file
+    file_path: Path = args.input_file
 
     if not file_path.exists():
         print(f"Error: File not found: {file_path}", file=sys.stderr)
@@ -148,9 +150,10 @@ def _add_info_parser(
         description="Display detailed information and statistics about a GPX file.",
     )
     parser.add_argument(
-        "file",
+        "input_file",
         type=Path,
-        help="Path to the GPX file",
+        help="Path to the input GPX file",
+        metavar="<INPUT_FILE>",
     )
     parser.add_argument(
         "--json",
@@ -162,7 +165,7 @@ def _add_info_parser(
 
 def _cmd_info(args: argparse.Namespace) -> int:
     """Execute the info command."""
-    file_path: Path = args.file
+    file_path: Path = args.input_file
 
     if not file_path.exists():
         print(f"Error: File not found: {file_path}", file=sys.stderr)
@@ -421,15 +424,19 @@ def _add_edit_parser(
         "trimming, reversing, and stripping metadata.",
     )
     parser.add_argument(
-        "input",
+        "input_file",
         type=Path,
         help="Path to the input GPX file",
+        metavar="<INPUT_FILE>",
     )
     parser.add_argument(
         "-o",
-        "--output",
+        "--output-file",
         type=Path,
-        help="Path to the output file (default: overwrite input)",
+        required=True,
+        help="Path to the output file",
+        metavar="<OUTPUT_FILE>",
+        dest="output_file",
     )
 
     # Crop options
@@ -439,25 +446,25 @@ def _add_edit_parser(
     crop_group.add_argument(
         "--min-lat",
         type=float,
-        metavar="LAT",
+        metavar="LATITUDE",
         help="Minimum latitude for crop",
     )
     crop_group.add_argument(
         "--max-lat",
         type=float,
-        metavar="LAT",
+        metavar="LATITUDE",
         help="Maximum latitude for crop",
     )
     crop_group.add_argument(
         "--min-lon",
         type=float,
-        metavar="LON",
+        metavar="LONGITUDE",
         help="Minimum longitude for crop",
     )
     crop_group.add_argument(
         "--max-lon",
         type=float,
-        metavar="LON",
+        metavar="LONGITUDE",
         help="Maximum longitude for crop",
     )
 
@@ -561,8 +568,8 @@ def _add_edit_parser(
 
 def _cmd_edit(args: argparse.Namespace) -> int:
     """Execute the edit command."""
-    input_path: Path = args.input
-    output_path: Path = args.output if args.output else input_path
+    input_path: Path = args.input_file
+    output_path: Path = args.output_file
 
     if not input_path.exists():
         print(f"Error: File not found: {input_path}", file=sys.stderr)
@@ -1018,32 +1025,28 @@ def _add_merge_parser(
         description="Merge multiple GPX files into a single GPX file.",
     )
     parser.add_argument(
-        "files",
+        "input_files",
         type=Path,
         nargs="+",
         help="Paths to the GPX files to merge",
+        metavar="<INPUT_FILE>",
     )
     parser.add_argument(
         "-o",
-        "--output",
+        "--output-file",
         type=Path,
         required=True,
-        help="Path to the output GPX file",
-    )
-    parser.add_argument(
-        "--creator",
-        type=str,
-        default="gpx-cli",
-        help="Creator string for the merged file (default: gpx-cli)",
+        help="Path to the output file",
+        metavar="<OUTPUT_FILE>",
+        dest="output_file",
     )
     parser.set_defaults(func=_cmd_merge)
 
 
 def _cmd_merge(args: argparse.Namespace) -> int:
     """Execute the merge command."""
-    files: list[Path] = args.files
-    output_path: Path = args.output
-    creator: str = args.creator
+    files: list[Path] = args.input_files
+    output_path: Path = args.output_file
 
     # Verify all files exist
     for file_path in files:
@@ -1065,7 +1068,6 @@ def _cmd_merge(args: argparse.Namespace) -> int:
         merged_trk.extend(gpx.trk)
 
     merged_gpx = GPX(
-        creator=creator,
         wpt=merged_wpt,
         rte=merged_rte,
         trk=merged_trk,
@@ -1091,42 +1093,45 @@ def _add_convert_parser(
     """Add the convert subcommand parser."""
     parser = subparsers.add_parser(
         "convert",
-        help="Convert between GPX, GeoJSON, and KML formats",
-        description="Convert GPX files to other formats or vice versa.",
+        help="Convert between GPX, GeoJSON, and KML file formats",
+        description="Convert GPX files to other file formats or vice versa.",
     )
     parser.add_argument(
-        "input",
+        "input_file",
         type=Path,
         help="Path to the input file",
+        metavar="<INPUT_FILE>",
     )
     parser.add_argument(
         "-o",
-        "--output",
+        "--output-file",
         type=Path,
         required=True,
         help="Path to the output file",
+        metavar="<OUTPUT_FILE>",
+        dest="output_file",
     )
     parser.add_argument(
         "-f",
         "--from-format",
         type=str,
         choices=["gpx", "geojson", "kml"],
-        help="Input format (default: auto-detect from extension)",
+        help="Input format (default: auto-detect from file extension)",
     )
     parser.add_argument(
         "-t",
         "--to-format",
         type=str,
         choices=["gpx", "geojson", "kml"],
-        help="Output format (default: auto-detect from extension)",
+        help="Output format (default: auto-detect from file extension)",
     )
     parser.set_defaults(func=_cmd_convert)
 
 
 def _cmd_convert(args: argparse.Namespace) -> int:
     """Execute the convert command."""
-    input_path: Path = args.input
-    output_path: Path = args.output
+    input_path: Path = args.input_file
+    output_path: Path = args.output_file
 
     if not input_path.exists():
         print(f"Error: File not found: {input_path}", file=sys.stderr)
@@ -1200,4 +1205,4 @@ def _detect_format(path: Path) -> str | None:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(cli())

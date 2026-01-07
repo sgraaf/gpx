@@ -9,7 +9,7 @@
 [![Documentation Status](https://readthedocs.org/projects/gpx/badge/?version=latest)](https://gpx.readthedocs.io/en/latest/?badge=latest)
 [![PyPI - License](https://img.shields.io/pypi/l/gpx)](https://img.shields.io/pypi/l/gpx)
 
-*gpx* is a pure Python package that brings support for reading, manipulating, writing and converting GPX (GPS Exchange Format) files.
+*gpx* is a zero-dependency, pure Python package for reading, manipulating, writing and converting GPX (GPS Exchange Format) files.
 
 <!-- end docs-include-index -->
 
@@ -236,7 +236,7 @@ gpx = from_geo_interface(geojson)
 
 ### Command-Line Interface
 
-*gpx* provides a command-line interface for common GPX operations:
+*gpx* provides a command-line interface (CLI) for common GPX operations:
 
 ```sh
 # Validate a GPX file

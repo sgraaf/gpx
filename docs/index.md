@@ -3,7 +3,7 @@
 :end-before: <!-- end docs-include-index -->
 ```
 
-## User's Guide
+## Contents
 
 ```{toctree}
 ---
@@ -12,25 +12,7 @@ maxdepth: 2
 
 installation
 usage
-cli
-```
-
-## API Reference
-
-```{toctree}
----
-maxdepth: 3
----
-
 api
-```
-
-## Changelog
-
-```{toctree}
----
-maxdepth: 2
----
-
+cli
 changelog
 ```

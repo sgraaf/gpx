@@ -111,10 +111,3 @@
 .. automodule:: gpx.utils
     :members:
 ```
-
-## `gpx.cli` Module
-
-```{eval-rst}
-.. automodule:: gpx.cli
-    :members:
-```

@@ -18,7 +18,7 @@ from gpx.cli import (
     _detect_format,
     _gather_gpx_info,
     _parse_datetime,
-    main,
+    cli,
 )
 from gpx.types import Latitude, Longitude
 
@@ -102,7 +102,7 @@ class TestMain:
 
     def test_main_no_args_shows_help(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test that calling main with no args shows help."""
-        result = main([])
+        result = cli([])
         assert result == 0
         captured = capsys.readouterr()
         assert "usage:" in captured.out.lower()
@@ -110,14 +110,14 @@ class TestMain:
     def test_main_version(self) -> None:
         """Test --version flag."""
         with pytest.raises(SystemExit) as exc_info:
-            main(["--version"])
+            cli(["--version"])
         assert exc_info.value.code == 0
 
     def test_main_invalid_command(self) -> None:
         """Test that invalid command causes error."""
         # argparse will call sys.exit(2) for invalid commands
         with pytest.raises(SystemExit) as exc_info:
-            main(["invalid_command"])
+            cli(["invalid_command"])
         assert exc_info.value.code == 2
 
 
@@ -133,7 +133,7 @@ class TestValidateCommand:
         self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         """Test validating a valid GPX file."""
-        result = main(["validate", str(sample_gpx_file)])
+        result = cli(["validate", str(sample_gpx_file)])
         assert result == 0
         captured = capsys.readouterr()
         assert "Valid GPX file" in captured.out
@@ -143,7 +143,7 @@ class TestValidateCommand:
         self, capsys: pytest.CaptureFixture[str]
     ) -> None:
         """Test validating a non-existent file."""
-        result = main(["validate", "nonexistent.gpx"])
+        result = cli(["validate", "nonexistent.gpx"])
         assert result == 1
         captured = capsys.readouterr()
         assert "File not found" in captured.err
@@ -153,7 +153,7 @@ class TestValidateCommand:
         with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
             f.write("not valid xml")
             f.flush()
-            result = main(["validate", f.name])
+            result = cli(["validate", f.name])
             assert result == 1
             captured = capsys.readouterr()
             assert "Invalid GPX file" in captured.err
@@ -172,7 +172,7 @@ class TestInfoCommand:
         self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         """Test basic info output."""
-        result = main(["info", str(sample_gpx_file)])
+        result = cli(["info", str(sample_gpx_file)])
         assert result == 0
         captured = capsys.readouterr()
         assert "GPX File:" in captured.out
@@ -185,7 +185,7 @@ class TestInfoCommand:
         self, sample_gpx_file: Path, capsys: pytest.CaptureFixture[str]
     ) -> None:
         """Test JSON info output."""
-        result = main(["info", "--json", str(sample_gpx_file)])
+        result = cli(["info", "--json", str(sample_gpx_file)])
         assert result == 0
         captured = capsys.readouterr()
         data = json.loads(captured.out)
@@ -196,7 +196,7 @@ class TestInfoCommand:
 
     def test_info_nonexistent_file(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test info on non-existent file."""
-        result = main(["info", "nonexistent.gpx"])
+        result = cli(["info", "nonexistent.gpx"])
         assert result == 1
         captured = capsys.readouterr()
         assert "File not found" in captured.err
@@ -213,7 +213,7 @@ class TestEditCommand:
     def test_edit_output_file(self, sample_gpx_file: Path) -> None:
         """Test edit with output file."""
         with tempfile.NamedTemporaryFile(suffix=".gpx", delete=False) as out_f:
-            result = main(["edit", str(sample_gpx_file), "-o", out_f.name])
+            result = cli(["edit", str(sample_gpx_file), "-o", out_f.name])
             assert result == 0
             assert Path(out_f.name).exists()
             Path(out_f.name).unlink()
@@ -222,7 +222,7 @@ class TestEditCommand:
     def test_edit_reverse_tracks(self, sample_gpx_file: Path) -> None:
         """Test edit with --reverse-tracks."""
         with tempfile.NamedTemporaryFile(suffix=".gpx", delete=False) as out_f:
-            result = main(
+            result = cli(
                 ["edit", str(sample_gpx_file), "-o", out_f.name, "--reverse-tracks"]
             )
             assert result == 0
@@ -237,7 +237,7 @@ class TestEditCommand:
     def test_edit_precision(self, sample_gpx_file: Path) -> None:
         """Test edit with --precision."""
         with tempfile.NamedTemporaryFile(suffix=".gpx", delete=False) as out_f:
-            result = main(
+            result = cli(
                 ["edit", str(sample_gpx_file), "-o", out_f.name, "--precision", "2"]
             )
             assert result == 0
@@ -252,7 +252,7 @@ class TestEditCommand:
     def test_edit_strip_all_metadata(self, sample_gpx_file: Path) -> None:
         """Test edit with --strip-all-metadata."""
         with tempfile.NamedTemporaryFile(suffix=".gpx", delete=False) as out_f:
-            result = main(
+            result = cli(
                 ["edit", str(sample_gpx_file), "-o", out_f.name, "--strip-all-metadata"]
             )
             assert result == 0
@@ -280,7 +280,7 @@ class TestMergeCommand:
             sample_gpx.write_gpx(f1.name)
             sample_gpx.write_gpx(f2.name)
 
-            result = main(["merge", f1.name, f2.name, "-o", out_f.name])
+            result = cli(["merge", f1.name, f2.name, "-o", out_f.name])
             assert result == 0
 
             merged = read_gpx(out_f.name)
@@ -297,7 +297,7 @@ class TestMergeCommand:
     ) -> None:
         """Test merge with non-existent file."""
         with tempfile.NamedTemporaryFile(suffix=".gpx", delete=False) as out_f:
-            result = main(
+            result = cli(
                 ["merge", str(sample_gpx_file), "nonexistent.gpx", "-o", out_f.name]
             )
             assert result == 1
@@ -318,7 +318,7 @@ class TestConvertCommand:
     def test_convert_gpx_to_geojson(self, sample_gpx_file: Path) -> None:
         """Test converting GPX to GeoJSON."""
         with tempfile.NamedTemporaryFile(suffix=".geojson", delete=False) as out_f:
-            result = main(["convert", str(sample_gpx_file), "-o", out_f.name])
+            result = cli(["convert", str(sample_gpx_file), "-o", out_f.name])
             assert result == 0
             content = Path(out_f.name).read_text()
             data = json.loads(content)
@@ -329,7 +329,7 @@ class TestConvertCommand:
     def test_convert_gpx_to_kml(self, sample_gpx_file: Path) -> None:
         """Test converting GPX to KML."""
         with tempfile.NamedTemporaryFile(suffix=".kml", delete=False) as out_f:
-            result = main(["convert", str(sample_gpx_file), "-o", out_f.name])
+            result = cli(["convert", str(sample_gpx_file), "-o", out_f.name])
             assert result == 0
             content = Path(out_f.name).read_text()
             assert "<kml" in content
@@ -346,7 +346,7 @@ class TestConvertCommand:
         ):
             sample_gpx.write_geojson(in_f.name)
 
-            result = main(["convert", in_f.name, "-o", out_f.name])
+            result = cli(["convert", in_f.name, "-o", out_f.name])
             assert result == 0
 
             gpx = read_gpx(out_f.name)
@@ -358,7 +358,7 @@ class TestConvertCommand:
     def test_convert_with_explicit_formats(self, sample_gpx_file: Path) -> None:
         """Test converting with explicit format flags."""
         with tempfile.NamedTemporaryFile(suffix=".json", delete=False) as out_f:
-            result = main(
+            result = cli(
                 [
                     "convert",
                     str(sample_gpx_file),
@@ -377,7 +377,7 @@ class TestConvertCommand:
     def test_convert_nonexistent_file(self, capsys: pytest.CaptureFixture[str]) -> None:
         """Test convert with non-existent file."""
         with tempfile.NamedTemporaryFile(suffix=".geojson", delete=False) as out_f:
-            result = main(["convert", "nonexistent.gpx", "-o", out_f.name])
+            result = cli(["convert", "nonexistent.gpx", "-o", out_f.name])
             assert result == 1
             captured = capsys.readouterr()
             assert "File not found" in captured.err

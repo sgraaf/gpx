@@ -1,11 +1,12 @@
 # CLI Reference
 
-The `gpx` command-line interface provides tools for validating, inspecting, editing, merging, and converting GPX files.
+The `gpx` command-line interface (CLI) provides tools for validating, inspecting, editing, merging, and converting GPX files. This page shows the `--help` for the `gpx` CLI and all of its sub-commands.
 
 <!--[[[cog
-import cog
 import subprocess
-import textwrap
+
+import cog
+
 
 def help_output(args):
     """Run gpx CLI with args and output formatted help."""
@@ -15,9 +16,8 @@ def help_output(args):
         text=True,
     )
     output = result.stdout or result.stderr
-    cog.out("\n```\n")
-    cog.out(output)
-    cog.out("```\n")
+    cog.out(f"\nRunning `gpx {' '.join(args)}` or `python -m gpx {' '.join(args)}` shows a list of all of the available options and arguments:\n")
+    cog.out(f"\n```\n{output}```\n")
 ]]]-->
 <!--[[[end]]]-->
 
@@ -26,6 +26,8 @@ def help_output(args):
 <!--[[[cog
 help_output(["--help"])
 ]]]-->
+
+Running `gpx --help` or `python -m gpx --help` shows a list of all of the available options and arguments:
 
 ```
 usage: gpx [-h] [--version] {validate,info,edit,merge,convert} ...
@@ -44,7 +46,7 @@ commands:
     info                Show information and statistics about a GPX file
     edit                Edit a GPX file with various transformations
     merge               Merge multiple GPX files into one
-    convert             Convert between GPX, GeoJSON, and KML formats
+    convert             Convert between GPX, GeoJSON, and KML file formats
 ```
 <!--[[[end]]]-->
 
@@ -56,16 +58,18 @@ Validate one or more GPX files for well-formedness and basic structure.
 help_output(["validate", "--help"])
 ]]]-->
 
+Running `gpx validate --help` or `python -m gpx validate --help` shows a list of all of the available options and arguments:
+
 ```
-usage: gpx validate [-h] file
+usage: gpx validate [-h] <INPUT_FILE>
 
 Validate a GPX file by attempting to parse it.
 
 positional arguments:
-  file        Path to the GPX file to validate
+  <INPUT_FILE>  Path to the input GPX file
 
 options:
-  -h, --help  show this help message and exit
+  -h, --help    show this help message and exit
 ```
 <!--[[[end]]]-->
 
@@ -77,17 +81,19 @@ Display information and statistics about a GPX file.
 help_output(["info", "--help"])
 ]]]-->
 
+Running `gpx info --help` or `python -m gpx info --help` shows a list of all of the available options and arguments:
+
 ```
-usage: gpx info [-h] [--json] file
+usage: gpx info [-h] [--json] <INPUT_FILE>
 
 Display detailed information and statistics about a GPX file.
 
 positional arguments:
-  file        Path to the GPX file
+  <INPUT_FILE>  Path to the input GPX file
 
 options:
-  -h, --help  show this help message and exit
-  --json      Output information in JSON format
+  -h, --help    show this help message and exit
+  --json        Output information in JSON format
 ```
 <!--[[[end]]]-->
 
@@ -99,34 +105,37 @@ Edit a GPX file with various transformations.
 help_output(["edit", "--help"])
 ]]]-->
 
+Running `gpx edit --help` or `python -m gpx edit --help` shows a list of all of the available options and arguments:
+
 ```
-usage: gpx edit [-h] [-o OUTPUT] [--min-lat LAT] [--max-lat LAT]
-                [--min-lon LON] [--max-lon LON] [--start DATETIME]
-                [--end DATETIME] [--reverse] [--reverse-routes]
-                [--reverse-tracks] [--strip-name] [--strip-desc]
-                [--strip-author] [--strip-copyright] [--strip-time]
-                [--strip-keywords] [--strip-links] [--strip-all-metadata]
-                [--precision DIGITS] [--elevation-precision DIGITS]
-                input
+usage: gpx edit [-h] -o <OUTPUT_FILE> [--min-lat LATITUDE]
+                [--max-lat LATITUDE] [--min-lon LONGITUDE]
+                [--max-lon LONGITUDE] [--start DATETIME] [--end DATETIME]
+                [--reverse] [--reverse-routes] [--reverse-tracks]
+                [--strip-name] [--strip-desc] [--strip-author]
+                [--strip-copyright] [--strip-time] [--strip-keywords]
+                [--strip-links] [--strip-all-metadata] [--precision DIGITS]
+                [--elevation-precision DIGITS]
+                <INPUT_FILE>
 
 Edit a GPX file with various transformations like cropping, trimming,
 reversing, and stripping metadata.
 
 positional arguments:
-  input                 Path to the input GPX file
+  <INPUT_FILE>          Path to the input GPX file
 
 options:
   -h, --help            show this help message and exit
-  -o OUTPUT, --output OUTPUT
-                        Path to the output file (default: overwrite input)
+  -o, --output-file <OUTPUT_FILE>
+                        Path to the output file
 
 crop options:
   Crop to a geographic bounding box
 
-  --min-lat LAT         Minimum latitude for crop
-  --max-lat LAT         Maximum latitude for crop
-  --min-lon LON         Minimum longitude for crop
-  --max-lon LON         Maximum longitude for crop
+  --min-lat LATITUDE    Minimum latitude for crop
+  --max-lat LATITUDE    Maximum latitude for crop
+  --min-lon LONGITUDE   Minimum longitude for crop
+  --max-lon LONGITUDE   Maximum longitude for crop
 
 trim options:
   Trim to a date/time range
@@ -173,19 +182,20 @@ Merge multiple GPX files into a single file.
 help_output(["merge", "--help"])
 ]]]-->
 
+Running `gpx merge --help` or `python -m gpx merge --help` shows a list of all of the available options and arguments:
+
 ```
-usage: gpx merge [-h] -o OUTPUT [--creator CREATOR] files [files ...]
+usage: gpx merge [-h] -o <OUTPUT_FILE> <INPUT_FILE> [<INPUT_FILE> ...]
 
 Merge multiple GPX files into a single GPX file.
 
 positional arguments:
-  files                 Paths to the GPX files to merge
+  <INPUT_FILE>          Paths to the GPX files to merge
 
 options:
   -h, --help            show this help message and exit
-  -o OUTPUT, --output OUTPUT
-                        Path to the output GPX file
-  --creator CREATOR     Creator string for the merged file (default: gpx-cli)
+  -o, --output-file <OUTPUT_FILE>
+                        Path to the output file
 ```
 <!--[[[end]]]-->
 
@@ -197,23 +207,27 @@ Convert between GPX, GeoJSON, and KML formats.
 help_output(["convert", "--help"])
 ]]]-->
 
-```
-usage: gpx convert [-h] -o OUTPUT [-f {gpx,geojson,kml}]
-                   [-t {gpx,geojson,kml}]
-                   input
+Running `gpx convert --help` or `python -m gpx convert --help` shows a list of all of the available options and arguments:
 
-Convert GPX files to other formats or vice versa.
+```
+usage: gpx convert [-h] -o <OUTPUT_FILE> [-f {gpx,geojson,kml}]
+                   [-t {gpx,geojson,kml}]
+                   <INPUT_FILE>
+
+Convert GPX files to other file formats or vice versa.
 
 positional arguments:
-  input                 Path to the input file
+  <INPUT_FILE>          Path to the input file
 
 options:
   -h, --help            show this help message and exit
-  -o OUTPUT, --output OUTPUT
+  -o, --output-file <OUTPUT_FILE>
                         Path to the output file
-  -f {gpx,geojson,kml}, --from-format {gpx,geojson,kml}
-                        Input format (default: auto-detect from extension)
-  -t {gpx,geojson,kml}, --to-format {gpx,geojson,kml}
-                        Output format (default: auto-detect from extension)
+  -f, --from-format {gpx,geojson,kml}
+                        Input format (default: auto-detect from file
+                        extension)
+  -t, --to-format {gpx,geojson,kml}
+                        Output format (default: auto-detect from file
+                        extension)
 ```
 <!--[[[end]]]-->

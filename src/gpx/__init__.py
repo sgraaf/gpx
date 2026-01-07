@@ -1,8 +1,7 @@
-"""gpx is a pure Python package that brings support for reading, manipulating, writing and converting GPX files."""
+"""gpx is a zero-dependency, pure Python package for reading, manipulating, writing and converting GPX files."""
 
 from .base import GPXModel
 from .bounds import Bounds
-from .cli import main as cli_main
 from .convert import from_geo_interface, from_string, from_wkb, from_wkt
 from .copyright import Copyright
 from .email import Email
