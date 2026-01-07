@@ -193,6 +193,7 @@ def parse_from_xml(cls: type[Any], element: ET.Element) -> dict[str, Any]:  # no
     - Simple types (str, int, etc.)
     - Nested models (types with from_xml() method)
     - Lists of models (list[Model])
+    - Extensions (special handling for GPX extensions)
 
     Args:
         cls: The dataclass type.

@@ -13,6 +13,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Any, overload
 
 from .base import GPXModel
+from .extensions import Extensions  # noqa: TC001
 from .link import Link  # noqa: TC001
 from .utils import build_geo_feature
 from .waypoint import Waypoint  # noqa: TC001
@@ -38,6 +39,7 @@ class Route(GPXModel):
             empty list.
         number: GPS route number. Defaults to None.
         type: Type (classification) of route. Defaults to None.
+        extensions: Extension elements from other XML namespaces. Defaults to None.
         rtept: List of route points. Defaults to empty list.
 
     """
@@ -51,6 +53,7 @@ class Route(GPXModel):
     link: list[Link] = field(default_factory=list)
     number: int | None = None
     type: str | None = None
+    extensions: Extensions | None = None
     rtept: list[Waypoint] = field(default_factory=list)
 
     @property

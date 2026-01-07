@@ -7,27 +7,6 @@
     :members:
 ```
 
-## `gpx.convert` Module
-
-```{eval-rst}
-.. automodule:: gpx.convert
-    :members:
-```
-
-## `gpx.io` Module
-
-```{eval-rst}
-.. automodule:: gpx.io
-    :members:
-```
-
-## `gpx.base` Module
-
-```{eval-rst}
-.. automodule:: gpx.base
-    :members:
-```
-
 ## `gpx.metadata` Module
 
 ```{eval-rst}
@@ -53,6 +32,13 @@
 
 ```{eval-rst}
 .. automodule:: gpx.track
+    :members:
+```
+
+## `gpx.extensions` Module
+
+```{eval-rst}
+.. automodule:: gpx.extensions
     :members:
 ```
 
@@ -102,6 +88,27 @@
 
 ```{eval-rst}
 .. automodule:: gpx.types
+    :members:
+```
+
+## `gpx.base` Module
+
+```{eval-rst}
+.. automodule:: gpx.base
+    :members:
+```
+
+## `gpx.convert` Module
+
+```{eval-rst}
+.. automodule:: gpx.convert
+    :members:
+```
+
+## `gpx.io` Module
+
+```{eval-rst}
+.. automodule:: gpx.io
     :members:
 ```
 

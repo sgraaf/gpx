@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 from .base import GPXModel
+from .extensions import Extensions  # noqa: TC001
 from .metadata import Metadata  # noqa: TC001
 from .route import Route  # noqa: TC001
 from .track import Track  # noqa: TC001
@@ -44,6 +45,7 @@ class GPX(GPXModel):
         wpt: List of waypoints. Defaults to empty list.
         rte: List of routes. Defaults to empty list.
         trk: List of tracks. Defaults to empty list.
+        extensions: Extension elements from other XML namespaces. Defaults to None.
 
     """
 
@@ -55,6 +57,7 @@ class GPX(GPXModel):
     wpt: list[Waypoint] = field(default_factory=list)
     rte: list[Route] = field(default_factory=list)
     trk: list[Track] = field(default_factory=list)
+    extensions: Extensions | None = None
 
     @property
     def __geo_interface__(self) -> dict[str, Any]:

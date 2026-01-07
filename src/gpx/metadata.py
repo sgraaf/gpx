@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from .base import GPXModel
 from .bounds import Bounds  # noqa: TC001
 from .copyright import Copyright  # noqa: TC001
+from .extensions import Extensions  # noqa: TC001
 from .link import Link  # noqa: TC001
 from .person import Person  # noqa: TC001
 
@@ -38,6 +39,7 @@ class Metadata(GPXModel):
             Defaults to None.
         bounds: Minimum and maximum coordinates which describe the extent
             of the coordinates in the file. Defaults to None.
+        extensions: Extension elements from other XML namespaces. Defaults to None.
 
     """
 
@@ -51,3 +53,4 @@ class Metadata(GPXModel):
     time: dt.datetime | None = None
     keywords: str | None = None
     bounds: Bounds | None = None
+    extensions: Extensions | None = None

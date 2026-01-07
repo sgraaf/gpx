@@ -12,6 +12,7 @@ from decimal import Decimal
 from typing import TYPE_CHECKING, Any, overload
 
 from .base import GPXModel
+from .extensions import Extensions  # noqa: TC001
 from .link import Link  # noqa: TC001
 from .track_segment import TrackSegment  # noqa: TC001
 from .utils import build_geo_feature
@@ -38,6 +39,7 @@ class Track(GPXModel):
         link: Links to external information about track. Defaults to empty list.
         number: GPS track number. Defaults to None.
         type: Type (classification) of track. Defaults to None.
+        extensions: Extension elements from other XML namespaces. Defaults to None.
         trkseg: List of track segments. Defaults to empty list.
 
     """
@@ -51,6 +53,7 @@ class Track(GPXModel):
     link: list[Link] = field(default_factory=list)
     number: int | None = None
     type: str | None = None
+    extensions: Extensions | None = None
     trkseg: list[TrackSegment] = field(default_factory=list)
 
     @property

@@ -5,6 +5,7 @@ from .bounds import Bounds
 from .convert import from_geo_interface, from_string, from_wkb, from_wkt
 from .copyright import Copyright
 from .email import Email
+from .extensions import Extensions
 from .gpx import GPX
 from .io import read_geojson, read_gpx, read_kml
 from .link import Link
@@ -23,6 +24,7 @@ __all__ = [
     "DGPSStation",
     "Degrees",
     "Email",
+    "Extensions",
     "Fix",
     "GPXModel",
     "Latitude",
