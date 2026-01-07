@@ -2,7 +2,6 @@
 
 import json
 import struct
-import tempfile
 from decimal import Decimal
 from pathlib import Path
 from typing import Any
@@ -152,16 +151,13 @@ class TestGeoJSONConversion:
         assert data["type"] == "FeatureCollection"
         assert len(data["features"]) == 3  # 1 waypoint + 1 route + 1 track
 
-    def test_gpx_write_geojson(self, sample_gpx: GPX) -> None:
+    def test_gpx_write_geojson(self, sample_gpx: GPX, tmp_path: Path) -> None:
         """Test writing GPX to GeoJSON file."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".geojson", delete=False
-        ) as f:
-            sample_gpx.write_geojson(f.name)
-            content = Path(f.name).read_text()
-            data = json.loads(content)
-            assert data["type"] == "FeatureCollection"
-            Path(f.name).unlink()
+        temp_file = tmp_path / "output.geojson"
+        sample_gpx.write_geojson(temp_file)
+        content = temp_file.read_text()
+        data = json.loads(content)
+        assert data["type"] == "FeatureCollection"
 
     def test_from_geo_interface_feature_collection(
         self, sample_geojson_feature_collection: dict[str, Any]
@@ -223,17 +219,13 @@ class TestGeoJSONConversion:
         assert len(gpx.wpt) == 2
 
     def test_read_geojson_file(
-        self, sample_geojson_feature_collection: dict[str, Any]
+        self, sample_geojson_feature_collection: dict[str, Any], tmp_path: Path
     ) -> None:
         """Test reading GeoJSON from file."""
-        with tempfile.NamedTemporaryFile(
-            mode="w", suffix=".geojson", delete=False
-        ) as f:
-            json.dump(sample_geojson_feature_collection, f)
-            f.flush()
-            gpx = read_geojson(f.name)
-            assert len(gpx.wpt) == 1
-            Path(f.name).unlink()
+        temp_file = tmp_path / "input.geojson"
+        temp_file.write_text(json.dumps(sample_geojson_feature_collection))
+        gpx = read_geojson(temp_file)
+        assert len(gpx.wpt) == 1
 
     def test_geojson_roundtrip(self, sample_gpx: GPX) -> None:
         """Test GeoJSON roundtrip conversion."""
@@ -252,91 +244,83 @@ class TestGeoJSONConversion:
 class TestKMLConversion:
     """Tests for KML conversion functionality."""
 
-    def test_gpx_write_kml(self, sample_gpx: GPX) -> None:
+    def test_gpx_write_kml(self, sample_gpx: GPX, tmp_path: Path) -> None:
         """Test writing GPX to KML file."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".kml", delete=False) as f:
-            sample_gpx.write_kml(f.name)
-            content = Path(f.name).read_text()
-            assert "<?xml" in content
-            assert "<kml" in content
-            assert "<Document>" in content
-            assert "<Placemark>" in content
-            Path(f.name).unlink()
+        temp_file = tmp_path / "output.kml"
+        sample_gpx.write_kml(temp_file)
+        content = temp_file.read_text()
+        assert "<?xml" in content
+        assert "<kml" in content
+        assert "<Document>" in content
+        assert "<Placemark>" in content
 
-    def test_gpx_write_kml_with_metadata(self, sample_gpx: GPX) -> None:
+    def test_gpx_write_kml_with_metadata(self, sample_gpx: GPX, tmp_path: Path) -> None:
         """Test that KML includes metadata name and description."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".kml", delete=False) as f:
-            sample_gpx.write_kml(f.name)
-            content = Path(f.name).read_text()
-            assert "<name>Test GPX</name>" in content
-            assert "<description>Test description</description>" in content
-            Path(f.name).unlink()
+        temp_file = tmp_path / "output.kml"
+        sample_gpx.write_kml(temp_file)
+        content = temp_file.read_text()
+        assert "<name>Test GPX</name>" in content
+        assert "<description>Test description</description>" in content
 
-    def test_gpx_write_kml_with_waypoints(self, sample_gpx: GPX) -> None:
+    def test_gpx_write_kml_with_waypoints(
+        self, sample_gpx: GPX, tmp_path: Path
+    ) -> None:
         """Test that KML includes waypoints as Point placemarks."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".kml", delete=False) as f:
-            sample_gpx.write_kml(f.name)
-            content = Path(f.name).read_text()
-            assert "<Point>" in content
-            assert "<coordinates>13.4050,52.5200,34.5</coordinates>" in content
-            Path(f.name).unlink()
+        temp_file = tmp_path / "output.kml"
+        sample_gpx.write_kml(temp_file)
+        content = temp_file.read_text()
+        assert "<Point>" in content
+        assert "<coordinates>13.4050,52.5200,34.5</coordinates>" in content
 
-    def test_gpx_write_kml_with_routes(self, sample_gpx: GPX) -> None:
+    def test_gpx_write_kml_with_routes(self, sample_gpx: GPX, tmp_path: Path) -> None:
         """Test that KML includes routes as LineString placemarks."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".kml", delete=False) as f:
-            sample_gpx.write_kml(f.name)
-            content = Path(f.name).read_text()
-            assert "<LineString>" in content
-            assert "<name>City Tour</name>" in content
-            Path(f.name).unlink()
+        temp_file = tmp_path / "output.kml"
+        sample_gpx.write_kml(temp_file)
+        content = temp_file.read_text()
+        assert "<LineString>" in content
+        assert "<name>City Tour</name>" in content
 
-    def test_gpx_write_kml_with_tracks(self, sample_gpx: GPX) -> None:
+    def test_gpx_write_kml_with_tracks(self, sample_gpx: GPX, tmp_path: Path) -> None:
         """Test that KML includes tracks as LineString/MultiGeometry."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".kml", delete=False) as f:
-            sample_gpx.write_kml(f.name)
-            content = Path(f.name).read_text()
-            assert "<name>Morning Run</name>" in content
-            Path(f.name).unlink()
+        temp_file = tmp_path / "output.kml"
+        sample_gpx.write_kml(temp_file)
+        content = temp_file.read_text()
+        assert "<name>Morning Run</name>" in content
 
-    def test_read_kml_file(self, sample_kml: str) -> None:
+    def test_read_kml_file(self, sample_kml: str, tmp_path: Path) -> None:
         """Test reading KML from file."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".kml", delete=False) as f:
-            f.write(sample_kml)
-            f.flush()
-            gpx = read_kml(f.name)
-            assert gpx.metadata is not None
-            assert gpx.metadata.name == "Test KML"
-            assert gpx.metadata.desc == "Test description"
-            assert len(gpx.wpt) == 1
-            assert gpx.wpt[0].name == "Berlin"
-            assert len(gpx.rte) == 1
-            assert gpx.rte[0].name == "City Tour"
-            Path(f.name).unlink()
+        temp_file = tmp_path / "input.kml"
+        temp_file.write_text(sample_kml)
+        gpx = read_kml(temp_file)
+        assert gpx.metadata is not None
+        assert gpx.metadata.name == "Test KML"
+        assert gpx.metadata.desc == "Test description"
+        assert len(gpx.wpt) == 1
+        assert gpx.wpt[0].name == "Berlin"
+        assert len(gpx.rte) == 1
+        assert gpx.rte[0].name == "City Tour"
 
-    def test_read_kml_with_creator(self, sample_kml: str) -> None:
+    def test_read_kml_with_creator(self, sample_kml: str, tmp_path: Path) -> None:
         """Test reading KML with custom creator."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".kml", delete=False) as f:
-            f.write(sample_kml)
-            f.flush()
-            gpx = read_kml(f.name, creator="MyApp")
-            assert gpx.creator == "MyApp"
-            Path(f.name).unlink()
+        temp_file = tmp_path / "input.kml"
+        temp_file.write_text(sample_kml)
+        gpx = read_kml(temp_file, creator="MyApp")
+        assert gpx.creator == "MyApp"
 
-    def test_kml_roundtrip(self, sample_gpx: GPX) -> None:
+    def test_kml_roundtrip(self, sample_gpx: GPX, tmp_path: Path) -> None:
         """Test KML roundtrip conversion."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".kml", delete=False) as f:
-            sample_gpx.write_kml(f.name)
-            gpx2 = read_kml(f.name)
-            assert len(gpx2.wpt) == len(sample_gpx.wpt)
-            # Note: Track with single segment becomes a LineString in KML,
-            # which converts back to a route. Total LineStrings = routes + tracks
-            total_linestrings = len(sample_gpx.rte) + len(sample_gpx.trk)
-            assert len(gpx2.rte) == total_linestrings
-            # Only MultiGeometry tracks remain as tracks
-            assert len(gpx2.trk) == 0
-            Path(f.name).unlink()
+        temp_file = tmp_path / "roundtrip.kml"
+        sample_gpx.write_kml(temp_file)
+        gpx2 = read_kml(temp_file)
+        assert len(gpx2.wpt) == len(sample_gpx.wpt)
+        # Note: Track with single segment becomes a LineString in KML,
+        # which converts back to a route. Total LineStrings = routes + tracks
+        total_linestrings = len(sample_gpx.rte) + len(sample_gpx.trk)
+        assert len(gpx2.rte) == total_linestrings
+        # Only MultiGeometry tracks remain as tracks
+        assert len(gpx2.trk) == 0
 
-    def test_kml_multigeometry_for_multi_segment_track(self) -> None:
+    def test_kml_multigeometry_for_multi_segment_track(self, tmp_path: Path) -> None:
         """Test that multi-segment tracks use MultiGeometry in KML."""
         track_points1 = [
             Waypoint(lat=Latitude("52.52"), lon=Longitude("13.405")),
@@ -351,11 +335,10 @@ class TestKMLConversion:
         track = Track(name="Multi-segment", trkseg=[segment1, segment2])
         gpx = GPX(trk=[track])
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".kml", delete=False) as f:
-            gpx.write_kml(f.name)
-            content = Path(f.name).read_text()
-            assert "<MultiGeometry>" in content
-            Path(f.name).unlink()
+        temp_file = tmp_path / "multi_segment.kml"
+        gpx.write_kml(temp_file)
+        content = temp_file.read_text()
+        assert "<MultiGeometry>" in content
 
 
 # =============================================================================
@@ -647,24 +630,21 @@ class TestWKBConversion:
 class TestGPXFileIO:
     """Tests for GPX file reading and writing."""
 
-    def test_read_gpx_function(self, full_gpx_string: str) -> None:
+    def test_read_gpx_function(self, full_gpx_string: str, tmp_path: Path) -> None:
         """Test read_gpx function."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            f.write(full_gpx_string)
-            f.flush()
-            gpx = read_gpx(f.name)
-            assert gpx.metadata is not None
-            assert len(gpx.wpt) >= 1
-            Path(f.name).unlink()
+        temp_file = tmp_path / "input.gpx"
+        temp_file.write_text(full_gpx_string)
+        gpx = read_gpx(temp_file)
+        assert gpx.metadata is not None
+        assert len(gpx.wpt) >= 1
 
-    def test_write_gpx_function(self, sample_gpx: GPX) -> None:
+    def test_write_gpx_function(self, sample_gpx: GPX, tmp_path: Path) -> None:
         """Test write_gpx function."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            sample_gpx.write_gpx(f.name)
-            content = Path(f.name).read_text()
-            assert "<?xml" in content
-            assert "<gpx" in content
-            Path(f.name).unlink()
+        temp_file = tmp_path / "output.gpx"
+        sample_gpx.write_gpx(temp_file)
+        content = temp_file.read_text()
+        assert "<?xml" in content
+        assert "<gpx" in content
 
 
 # =============================================================================

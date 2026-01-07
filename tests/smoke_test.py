@@ -5,7 +5,6 @@ They are designed to catch major breakage and ensure basic operations succeed.
 """
 
 import datetime as dt
-import tempfile
 from decimal import Decimal
 from pathlib import Path
 
@@ -57,34 +56,22 @@ class TestBasicReadWrite:
         assert 'creator="SmokeTest"' in output
         assert 'version="1.1"' in output
 
-    def test_write_gpx_to_file(self) -> None:
+    def test_write_gpx_to_file(self, tmp_path: Path) -> None:
         """Test writing GPX to file."""
         gpx = GPX(creator="SmokeTest")
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            temp_path = Path(f.name)
+        temp_file = tmp_path / "output.gpx"
+        gpx.write_gpx(temp_file)
+        assert temp_file.exists()
+        content = temp_file.read_text()
+        assert 'creator="SmokeTest"' in content
 
-        try:
-            gpx.write_gpx(temp_path)
-            assert temp_path.exists()
-            content = temp_path.read_text()
-            assert 'creator="SmokeTest"' in content
-        finally:
-            if temp_path.exists():
-                temp_path.unlink()
-
-    def test_read_gpx_from_file(self, minimal_gpx_string: str) -> None:
+    def test_read_gpx_from_file(self, minimal_gpx_string: str, tmp_path: Path) -> None:
         """Test reading GPX from file."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            f.write(minimal_gpx_string)
-            temp_path = Path(f.name)
-
-        try:
-            gpx = read_gpx(temp_path)
-            assert gpx.creator == "TestCreator"
-        finally:
-            if temp_path.exists():
-                temp_path.unlink()
+        temp_file = tmp_path / "input.gpx"
+        temp_file.write_text(minimal_gpx_string)
+        gpx = read_gpx(temp_file)
+        assert gpx.creator == "TestCreator"
 
 
 class TestRoundTrip:
@@ -110,27 +97,22 @@ class TestRoundTrip:
         assert len(gpx2.trk) == len(gpx1.trk)
         assert len(gpx2.rte) == len(gpx1.rte)
 
-    def test_roundtrip_file_io(self, full_gpx_string: str) -> None:
+    def test_roundtrip_file_io(self, full_gpx_string: str, tmp_path: Path) -> None:
         """Test round-trip through file I/O."""
         gpx1 = from_string(full_gpx_string)
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            temp_path = Path(f.name)
+        temp_file = tmp_path / "roundtrip.gpx"
 
-        try:
-            # Write to file
-            gpx1.write_gpx(temp_path)
+        # Write to file
+        gpx1.write_gpx(temp_file)
 
-            # Read from file
-            gpx2 = read_gpx(temp_path)
+        # Read from file
+        gpx2 = read_gpx(temp_file)
 
-            # Verify data preserved
-            assert len(gpx2.wpt) == len(gpx1.wpt)
-            assert len(gpx2.trk) == len(gpx1.trk)
-            assert len(gpx2.rte) == len(gpx1.rte)
-        finally:
-            if temp_path.exists():
-                temp_path.unlink()
+        # Verify data preserved
+        assert len(gpx2.wpt) == len(gpx1.wpt)
+        assert len(gpx2.trk) == len(gpx1.trk)
+        assert len(gpx2.rte) == len(gpx1.rte)
 
 
 class TestProgrammaticCreation:
@@ -298,7 +280,7 @@ class TestStatistics:
 class TestEndToEnd:
     """End-to-end smoke test scenarios."""
 
-    def test_complete_workflow(self) -> None:
+    def test_complete_workflow(self, tmp_path: Path) -> None:
         """Test a complete workflow: create, modify, save, load, verify."""
         # 1. Create a GPX file programmatically
         # Add a waypoint
@@ -329,44 +311,37 @@ class TestEndToEnd:
         )
 
         # 2. Save to file
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            temp_path = Path(f.name)
+        temp_file = tmp_path / "workflow.gpx"
+        gpx1.write_gpx(temp_file)
 
-        try:
-            gpx1.write_gpx(temp_path)
+        # 3. Load from file
+        gpx2 = read_gpx(temp_file)
 
-            # 3. Load from file
-            gpx2 = read_gpx(temp_path)
+        # 4. Verify data integrity
+        assert gpx2.creator == "E2E Test"
+        assert gpx2.metadata is not None
+        assert gpx2.metadata.name == "My Activity"
+        assert len(gpx2.wpt) == 1
+        assert gpx2.wpt[0].name == "Start Point"
+        assert len(gpx2.trk) == 1
+        assert gpx2.trk[0].name == "My Track"
+        assert len(gpx2.trk[0].trkseg[0].trkpt) == 3
 
-            # 4. Verify data integrity
-            assert gpx2.creator == "E2E Test"
-            assert gpx2.metadata is not None
-            assert gpx2.metadata.name == "My Activity"
-            assert len(gpx2.wpt) == 1
-            assert gpx2.wpt[0].name == "Start Point"
-            assert len(gpx2.trk) == 1
-            assert gpx2.trk[0].name == "My Track"
-            assert len(gpx2.trk[0].trkseg[0].trkpt) == 3
+        # 5. Modify and re-save
+        # Note: GPX objects are immutable, so we need to create a new one
+        modified_metadata = Metadata(name="Modified Activity")
+        gpx_modified = GPX(
+            creator=gpx2.creator,
+            metadata=modified_metadata,
+            wpt=gpx2.wpt,
+            trk=gpx2.trk,
+        )
+        gpx_modified.write_gpx(temp_file)
 
-            # 5. Modify and re-save
-            # Note: GPX objects are immutable, so we need to create a new one
-            modified_metadata = Metadata(name="Modified Activity")
-            gpx_modified = GPX(
-                creator=gpx2.creator,
-                metadata=modified_metadata,
-                wpt=gpx2.wpt,
-                trk=gpx2.trk,
-            )
-            gpx_modified.write_gpx(temp_path)
-
-            # 6. Load again and verify modification
-            gpx3 = read_gpx(temp_path)
-            assert gpx3.metadata
-            assert gpx3.metadata.name == "Modified Activity"
-
-        finally:
-            if temp_path.exists():
-                temp_path.unlink()
+        # 6. Load again and verify modification
+        gpx3 = read_gpx(temp_file)
+        assert gpx3.metadata
+        assert gpx3.metadata.name == "Modified Activity"
 
     def test_mixed_content_file(self, full_gpx_string: str) -> None:
         """Test working with a GPX file containing all element types."""

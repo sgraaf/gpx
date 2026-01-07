@@ -1,6 +1,5 @@
 """Tests for gpx.gpx module - main GPX class and I/O operations."""
 
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -50,30 +49,24 @@ class TestGPXParsing:
         assert len(gpx.rte) == 1
         assert len(gpx.trk) == 1
 
-    def test_parse_gpx_from_file(self, full_gpx_string: str) -> None:
+    def test_parse_gpx_from_file(self, full_gpx_string: str, tmp_path: Path) -> None:
         """Test parsing GPX from a file."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            f.write(full_gpx_string)
-            f.flush()
+        temp_file = tmp_path / "test.gpx"
+        temp_file.write_text(full_gpx_string)
 
-            gpx = read_gpx(f.name)
-            assert gpx.metadata is not None
-            assert len(gpx.wpt) == 2
+        gpx = read_gpx(temp_file)
+        assert gpx.metadata is not None
+        assert len(gpx.wpt) == 2
 
-            # Cleanup
-            Path(f.name).unlink()
-
-    def test_parse_gpx_from_path_object(self, full_gpx_string: str) -> None:
+    def test_parse_gpx_from_path_object(
+        self, full_gpx_string: str, tmp_path: Path
+    ) -> None:
         """Test parsing GPX from a Path object."""
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            f.write(full_gpx_string)
-            f.flush()
+        temp_file = tmp_path / "test.gpx"
+        temp_file.write_text(full_gpx_string)
 
-            gpx = read_gpx(Path(f.name))
-            assert gpx.metadata is not None
-
-            # Cleanup
-            Path(f.name).unlink()
+        gpx = read_gpx(temp_file)
+        assert gpx.metadata is not None
 
 
 class TestGPXBuilding:
@@ -127,50 +120,49 @@ class TestGPXBuilding:
 class TestGPXFileIO:
     """Tests for GPX file I/O operations."""
 
-    def test_to_file_creates_file(self, full_gpx_string: str) -> None:
+    def test_to_file_creates_file(self, full_gpx_string: str, tmp_path: Path) -> None:
         """Test that to_file creates a file."""
         gpx = from_string(full_gpx_string)
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            gpx.write_gpx(f.name)
-            assert Path(f.name).exists()
-            Path(f.name).unlink()
+        temp_file = tmp_path / "output.gpx"
+        gpx.write_gpx(temp_file)
+        assert temp_file.exists()
 
-    def test_to_file_with_path_object(self, full_gpx_string: str) -> None:
+    def test_to_file_with_path_object(
+        self, full_gpx_string: str, tmp_path: Path
+    ) -> None:
         """Test to_file with Path object."""
         gpx = from_string(full_gpx_string)
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            gpx.write_gpx(Path(f.name))
-            assert Path(f.name).exists()
-            Path(f.name).unlink()
+        temp_file = tmp_path / "output.gpx"
+        gpx.write_gpx(temp_file)
+        assert temp_file.exists()
 
-    def test_roundtrip_file_io(self, full_gpx_string: str) -> None:
+    def test_roundtrip_file_io(self, full_gpx_string: str, tmp_path: Path) -> None:
         """Test complete roundtrip: string -> file -> string."""
         gpx1 = from_string(full_gpx_string)
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            gpx1.write_gpx(f.name)
-            gpx2 = read_gpx(f.name)
+        temp_file = tmp_path / "roundtrip.gpx"
+        gpx1.write_gpx(temp_file)
+        gpx2 = read_gpx(temp_file)
 
-            assert gpx1.metadata is not None
-            assert gpx2.metadata is not None
-            assert gpx2.metadata.name == gpx1.metadata.name
-            assert len(gpx2.wpt) == len(gpx1.wpt)
-            assert len(gpx2.trk) == len(gpx1.trk)
-            assert len(gpx2.rte) == len(gpx1.rte)
+        assert gpx1.metadata is not None
+        assert gpx2.metadata is not None
+        assert gpx2.metadata.name == gpx1.metadata.name
+        assert len(gpx2.wpt) == len(gpx1.wpt)
+        assert len(gpx2.trk) == len(gpx1.trk)
+        assert len(gpx2.rte) == len(gpx1.rte)
 
-            Path(f.name).unlink()
-
-    def test_file_has_xml_declaration(self, minimal_gpx_string: str) -> None:
+    def test_file_has_xml_declaration(
+        self, minimal_gpx_string: str, tmp_path: Path
+    ) -> None:
         """Test that saved file has XML declaration."""
         gpx = from_string(minimal_gpx_string)
 
-        with tempfile.NamedTemporaryFile(mode="w", suffix=".gpx", delete=False) as f:
-            gpx.write_gpx(f.name)
-            content = Path(f.name).read_text()
-            assert '<?xml version="1.0"' in content or "<?xml version='1.0'" in content
-            Path(f.name).unlink()
+        temp_file = tmp_path / "output.gpx"
+        gpx.write_gpx(temp_file)
+        content = temp_file.read_text()
+        assert '<?xml version="1.0"' in content or "<?xml version='1.0'" in content
 
 
 class TestGPXCreation:
