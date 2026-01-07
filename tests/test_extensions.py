@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import copy
 import xml.etree.ElementTree as ET
-from decimal import Decimal
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -18,6 +18,10 @@ from gpx import (
     Waypoint,
     read_gpx,
 )
+from gpx.types import Latitude, Longitude
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # Common extension namespaces for testing
 GARMIN_TPX_NS = "http://www.garmin.com/xmlschemas/TrackPointExtension/v2"
@@ -86,7 +90,9 @@ class TestExtensionsAccessors:
         cad = garmin_tpx_extensions.get_text("cad", namespace=GARMIN_TPX_NS)
         assert cad == "85"
 
-    def test_get_text_without_namespace(self, garmin_tpx_extensions: Extensions) -> None:
+    def test_get_text_without_namespace(
+        self, garmin_tpx_extensions: Extensions
+    ) -> None:
         """Test getting text without namespace (searches all)."""
         hr = garmin_tpx_extensions.get_text("hr")
         assert hr == "142"
@@ -169,7 +175,9 @@ class TestExtensionsMutation:
     def test_set_text_with_parent(self) -> None:
         """Test setting text with parent element."""
         ext = Extensions()
-        ext.set_text("hr", "142", namespace=GARMIN_TPX_NS, parent_tag="TrackPointExtension")
+        ext.set_text(
+            "hr", "142", namespace=GARMIN_TPX_NS, parent_tag="TrackPointExtension"
+        )
 
         assert len(ext) == 1
         assert ext.get_text("hr", namespace=GARMIN_TPX_NS) == "142"
@@ -355,8 +363,8 @@ class TestExtensionsInModels:
         hr.text = "142"
 
         wpt = Waypoint(
-            lat=Decimal("52.0"),
-            lon=Decimal("4.0"),
+            lat=Latitude("52.0"),
+            lon=Longitude("4.0"),
             extensions=Extensions(elements=[tpx]),
         )
 
@@ -374,7 +382,9 @@ class TestExtensionsInModels:
         )
 
         assert segment.extensions is not None
-        assert segment.extensions.get_text("custom", namespace=CUSTOM_NS) == "segment_data"
+        assert (
+            segment.extensions.get_text("custom", namespace=CUSTOM_NS) == "segment_data"
+        )
 
     def test_track_with_extensions(self) -> None:
         """Test creating Track with extensions."""
@@ -413,7 +423,10 @@ class TestExtensionsInModels:
         )
 
         assert metadata.extensions is not None
-        assert metadata.extensions.get_text("custom", namespace=CUSTOM_NS) == "metadata_data"
+        assert (
+            metadata.extensions.get_text("custom", namespace=CUSTOM_NS)
+            == "metadata_data"
+        )
 
     def test_gpx_with_extensions(self) -> None:
         """Test creating GPX with extensions."""
@@ -432,7 +445,7 @@ class TestExtensionsInModels:
 class TestExtensionsGPXRoundTrip:
     """Test full GPX round-trip with extensions."""
 
-    def test_gpx_round_trip_with_extensions(self, tmp_path) -> None:
+    def test_gpx_round_trip_with_extensions(self, tmp_path: Path) -> None:
         """Test full GPX read/write round-trip preserves extensions."""
         # Create GPX with extensions at multiple levels
         ET.register_namespace("gpxtpx", GARMIN_TPX_NS)
@@ -460,14 +473,18 @@ class TestExtensionsGPXRoundTrip:
                         TrackSegment(
                             trkpt=[
                                 Waypoint(
-                                    lat=Decimal("52.0"),
-                                    lon=Decimal("4.0"),
-                                    extensions=Extensions(elements=[copy.deepcopy(tpx)]),
+                                    lat=Latitude("52.0"),
+                                    lon=Longitude("4.0"),
+                                    extensions=Extensions(
+                                        elements=[copy.deepcopy(tpx)]
+                                    ),
                                 ),
                                 Waypoint(
-                                    lat=Decimal("52.1"),
-                                    lon=Decimal("4.1"),
-                                    extensions=Extensions(elements=[copy.deepcopy(tpx)]),
+                                    lat=Latitude("52.1"),
+                                    lon=Longitude("4.1"),
+                                    extensions=Extensions(
+                                        elements=[copy.deepcopy(tpx)]
+                                    ),
                                 ),
                             ]
                         )
@@ -485,7 +502,10 @@ class TestExtensionsGPXRoundTrip:
 
         # Verify GPX level extensions
         assert gpx_read.extensions is not None
-        assert gpx_read.extensions.get_text("metadata", namespace=CUSTOM_NS) == "custom_gpx_data"
+        assert (
+            gpx_read.extensions.get_text("metadata", namespace=CUSTOM_NS)
+            == "custom_gpx_data"
+        )
 
         # Verify track point extensions
         trkpt = gpx_read.trk[0].trkseg[0].trkpt[0]
@@ -493,7 +513,7 @@ class TestExtensionsGPXRoundTrip:
         assert trkpt.extensions.get_text("hr", namespace=GARMIN_TPX_NS) == "145"
         assert trkpt.extensions.get_text("cad", namespace=GARMIN_TPX_NS) == "90"
 
-    def test_parse_gpx_with_garmin_extensions(self, tmp_path) -> None:
+    def test_parse_gpx_with_garmin_extensions(self, tmp_path: Path) -> None:
         """Test parsing a GPX file with Garmin-style extensions."""
         gpx_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="test"
@@ -543,7 +563,7 @@ class TestExtensionsGPXRoundTrip:
         assert trkpt2.extensions.get_int("hr", namespace=GARMIN_TPX_NS) == 145
         assert trkpt2.extensions.get_int("cad", namespace=GARMIN_TPX_NS) == 87
 
-    def test_parse_gpx_with_multiple_extension_namespaces(self, tmp_path) -> None:
+    def test_parse_gpx_with_multiple_extension_namespaces(self, tmp_path: Path) -> None:
         """Test parsing GPX with extensions from multiple namespaces."""
         gpx_content = f"""<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="test"
@@ -590,7 +610,7 @@ class TestExtensionsGPXRoundTrip:
 class TestExtensionsWithoutExtensions:
     """Test that GPX files without extensions still work."""
 
-    def test_gpx_without_extensions(self, tmp_path) -> None:
+    def test_gpx_without_extensions(self, tmp_path: Path) -> None:
         """Test parsing GPX without any extensions."""
         gpx_content = """<?xml version="1.0" encoding="UTF-8"?>
 <gpx version="1.1" creator="test" xmlns="http://www.topografix.com/GPX/1/1">
@@ -612,7 +632,7 @@ class TestExtensionsWithoutExtensions:
         gpx = GPX(
             creator="test",
             wpt=[
-                Waypoint(lat=Decimal("52.0"), lon=Decimal("4.0")),
+                Waypoint(lat=Latitude("52.0"), lon=Longitude("4.0")),
             ],
         )
 

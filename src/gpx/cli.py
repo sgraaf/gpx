@@ -603,6 +603,7 @@ def _cmd_edit(args: argparse.Namespace) -> int:
             wpt=gpx.wpt,
             rte=gpx.rte,
             trk=gpx.trk,
+            extensions=gpx.extensions,
         )
     elif gpx.metadata:
         gpx = _apply_strip_metadata(gpx, args)
@@ -632,6 +633,7 @@ def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
             time=metadata.time,
             keywords=metadata.keywords,
             bounds=metadata.bounds,
+            extensions=metadata.extensions,
         )
     if args.strip_desc:
         metadata = Metadata(
@@ -642,6 +644,7 @@ def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
             time=metadata.time,
             keywords=metadata.keywords,
             bounds=metadata.bounds,
+            extensions=metadata.extensions,
         )
     if args.strip_author:
         metadata = Metadata(
@@ -652,6 +655,7 @@ def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
             time=metadata.time,
             keywords=metadata.keywords,
             bounds=metadata.bounds,
+            extensions=metadata.extensions,
         )
     if args.strip_copyright:
         metadata = Metadata(
@@ -662,6 +666,7 @@ def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
             time=metadata.time,
             keywords=metadata.keywords,
             bounds=metadata.bounds,
+            extensions=metadata.extensions,
         )
     if args.strip_time:
         metadata = Metadata(
@@ -672,6 +677,7 @@ def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
             link=metadata.link,
             keywords=metadata.keywords,
             bounds=metadata.bounds,
+            extensions=metadata.extensions,
         )
     if args.strip_keywords:
         metadata = Metadata(
@@ -682,6 +688,7 @@ def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
             link=metadata.link,
             time=metadata.time,
             bounds=metadata.bounds,
+            extensions=metadata.extensions,
         )
     if args.strip_links:
         metadata = Metadata(
@@ -692,6 +699,7 @@ def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
             time=metadata.time,
             keywords=metadata.keywords,
             bounds=metadata.bounds,
+            extensions=metadata.extensions,
         )
     return GPX(
         creator=gpx.creator,
@@ -699,6 +707,7 @@ def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
         wpt=gpx.wpt,
         rte=gpx.rte,
         trk=gpx.trk,
+        extensions=gpx.extensions,
     )
 
 
@@ -767,6 +776,7 @@ def _apply_crop(  # noqa: C901
                     number=route.number,
                     type=route.type,
                     rtept=new_rtept,
+                    extensions=route.extensions,
                 )
             )
 
@@ -777,7 +787,9 @@ def _apply_crop(  # noqa: C901
         for segment in track.trkseg:
             new_trkpt = [p for p in segment.trkpt if is_in_bounds(p)]
             if new_trkpt:
-                new_trkseg.append(TrackSegment(trkpt=new_trkpt))
+                new_trkseg.append(
+                    TrackSegment(trkpt=new_trkpt, extensions=segment.extensions)
+                )
         if new_trkseg:
             new_trk.append(
                 Track(
@@ -789,6 +801,7 @@ def _apply_crop(  # noqa: C901
                     number=track.number,
                     type=track.type,
                     trkseg=new_trkseg,
+                    extensions=track.extensions,
                 )
             )
 
@@ -798,6 +811,7 @@ def _apply_crop(  # noqa: C901
         wpt=new_wpt,
         rte=new_rte,
         trk=new_trk,
+        extensions=gpx.extensions,
     )
 
 
@@ -833,6 +847,7 @@ def _apply_trim(
                     number=route.number,
                     type=route.type,
                     rtept=new_rtept,
+                    extensions=route.extensions,
                 )
             )
 
@@ -843,7 +858,9 @@ def _apply_trim(
         for segment in track.trkseg:
             new_trkpt = [p for p in segment.trkpt if is_in_time_range(p)]
             if new_trkpt:
-                new_trkseg.append(TrackSegment(trkpt=new_trkpt))
+                new_trkseg.append(
+                    TrackSegment(trkpt=new_trkpt, extensions=segment.extensions)
+                )
         if new_trkseg:
             new_trk.append(
                 Track(
@@ -855,6 +872,7 @@ def _apply_trim(
                     number=track.number,
                     type=track.type,
                     trkseg=new_trkseg,
+                    extensions=track.extensions,
                 )
             )
 
@@ -864,6 +882,7 @@ def _apply_trim(
         wpt=new_wpt,
         rte=new_rte,
         trk=new_trk,
+        extensions=gpx.extensions,
     )
 
 
@@ -888,6 +907,7 @@ def _apply_reverse(
                 number=route.number,
                 type=route.type,
                 rtept=list(reversed(route.rtept)),
+                extensions=route.extensions,
             )
             for route in gpx.rte
         ]
@@ -896,7 +916,9 @@ def _apply_reverse(
         new_trk = []
         for track in gpx.trk:
             new_trkseg = [
-                TrackSegment(trkpt=list(reversed(segment.trkpt)))
+                TrackSegment(
+                    trkpt=list(reversed(segment.trkpt)), extensions=segment.extensions
+                )
                 for segment in reversed(track.trkseg)
             ]
             new_trk.append(
@@ -909,6 +931,7 @@ def _apply_reverse(
                     number=track.number,
                     type=track.type,
                     trkseg=new_trkseg,
+                    extensions=track.extensions,
                 )
             )
 
@@ -918,6 +941,7 @@ def _apply_reverse(
         wpt=gpx.wpt,
         rte=new_rte,
         trk=new_trk,
+        extensions=gpx.extensions,
     )
 
 
@@ -961,6 +985,7 @@ def _apply_precision(
             pdop=point.pdop,
             ageofdgpsdata=point.ageofdgpsdata,
             dgpsid=point.dgpsid,
+            extensions=point.extensions,
         )
 
     # Round waypoints
@@ -977,6 +1002,7 @@ def _apply_precision(
             number=route.number,
             type=route.type,
             rtept=[round_point(p) for p in route.rtept],
+            extensions=route.extensions,
         )
         for route in gpx.rte
     ]
@@ -985,7 +1011,10 @@ def _apply_precision(
     new_trk = []
     for track in gpx.trk:
         new_trkseg = [
-            TrackSegment(trkpt=[round_point(p) for p in segment.trkpt])
+            TrackSegment(
+                trkpt=[round_point(p) for p in segment.trkpt],
+                extensions=segment.extensions,
+            )
             for segment in track.trkseg
         ]
         new_trk.append(
@@ -998,6 +1027,7 @@ def _apply_precision(
                 number=track.number,
                 type=track.type,
                 trkseg=new_trkseg,
+                extensions=track.extensions,
             )
         )
 
@@ -1007,6 +1037,7 @@ def _apply_precision(
         wpt=new_wpt,
         rte=new_rte,
         trk=new_trk,
+        extensions=gpx.extensions,
     )
 
 

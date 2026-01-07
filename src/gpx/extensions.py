@@ -10,7 +10,10 @@ from __future__ import annotations
 import copy
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
-from typing import Iterator
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 @dataclass(slots=True)
@@ -205,10 +208,7 @@ class Extensions:
             >>> hr = extensions.get_text("hr")
 
         """
-        if namespace:
-            ns_tag = f"{{{namespace}}}{tag}"
-        else:
-            ns_tag = None
+        ns_tag = f"{{{namespace}}}{tag}" if namespace else None
 
         for elem in self.elements:
             # Check the element itself
@@ -361,10 +361,7 @@ class Extensions:
             True if an element was removed, False otherwise.
 
         """
-        if namespace:
-            ns_tag = f"{{{namespace}}}{tag}"
-        else:
-            ns_tag = None
+        ns_tag = f"{{{namespace}}}{tag}" if namespace else None
 
         # Check top-level elements
         for i, elem in enumerate(self.elements):
@@ -464,7 +461,7 @@ class Extensions:
             The XML element containing all extension elements.
 
         """
-        from .base import GPX_NAMESPACE
+        from .base import GPX_NAMESPACE  # noqa: PLC0415
 
         if tag is None:
             tag = self._tag
