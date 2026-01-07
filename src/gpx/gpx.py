@@ -292,7 +292,7 @@ class GPX(GPXModel):
                 desc_elem.text = route.desc
             linestring = ET.SubElement(placemark, f"{{{kml_ns}}}LineString")
             coords = ET.SubElement(linestring, f"{{{kml_ns}}}coordinates")
-            coord_strs = []
+            coord_strs: list[str] = []
             for rtept in route.rtept:
                 if rtept.ele is not None:
                     coord_strs.append(f"{rtept.lon},{rtept.lat},{rtept.ele}")
@@ -375,7 +375,7 @@ class GPX(GPXModel):
 
         # Add routes as LINESTRINGs
         for route in self.rte:
-            coords = []
+            coords: list[str] = []
             has_z = any(rtept.ele is not None for rtept in route.rtept)
             for rtept in route.rtept:
                 if has_z:
@@ -390,7 +390,7 @@ class GPX(GPXModel):
 
         # Add tracks as MULTILINESTRINGs
         for track in self.trk:
-            lines = []
+            lines: list[str] = []
             has_z = any(
                 trkpt.ele is not None
                 for trkseg in track.trkseg

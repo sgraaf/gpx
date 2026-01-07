@@ -676,5 +676,5 @@ class TestErrorHandling:
     def test_from_wkb_unexpected_end(self) -> None:
         """Test that truncated WKB raises ValueError."""
         wkb = b"\x01"  # Only byte order, no geometry type
-        with pytest.raises((ValueError, struct.error)):
+        with pytest.raises((ValueError, struct.error)):  # pyrefly: ignore
             from_wkb(wkb)
