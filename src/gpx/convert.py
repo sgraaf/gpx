@@ -17,7 +17,7 @@ from .route import Route
 from .track import Track
 from .track_segment import TrackSegment
 from .types import Latitude, Longitude, SupportsGeoInterface
-from .utils import remove_encoding_from_string
+from .utils import extract_namespaces_from_string, remove_encoding_from_string
 from .waypoint import Waypoint
 
 #: WKB geometry type codes
@@ -42,7 +42,7 @@ def from_string(gpx_str: str) -> GPX:
         gpx_str: The string containing the GPX data.
 
     Returns:
-        The GPX instance.
+        The GPX instance with namespace prefixes preserved.
 
     Example:
         >>> from gpx import from_string
@@ -54,11 +54,19 @@ def from_string(gpx_str: str) -> GPX:
         MyApp
 
     """
+    # Extract namespace prefixes before parsing (ElementTree loses this info)
+    namespaces = extract_namespaces_from_string(gpx_str)
+
     # ET.fromstring() does not support encoding declarations in the string
     gpx_str = remove_encoding_from_string(gpx_str)
     element = ET.fromstring(gpx_str)
 
-    return GPX.from_xml(element)
+    gpx = GPX.from_xml(element)
+
+    # Preserve the extracted namespace prefixes
+    gpx.nsmap = namespaces
+
+    return gpx
 
 
 def from_geo_interface(

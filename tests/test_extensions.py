@@ -608,6 +608,112 @@ class TestExtensionsGPXRoundTrip:
         assert CUSTOM_NS in namespaces
 
 
+class TestExtensionsNamespacePreservation:
+    """Test that namespace prefixes are preserved during round-trip."""
+
+    def test_namespace_prefix_preservation(self, tmp_path: Path) -> None:
+        """Test that namespace prefixes are preserved during read/write."""
+        # Create GPX with specific namespace prefix
+        gpx_content = """<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" xmlns:gpxtpx="http://www.garmin.com/xmlschemas/TrackPointExtension/v2" version="1.1" creator="Test">
+  <trk>
+    <name>Single point track</name>
+    <trkseg>
+        <trkpt lat="42.0405540" lon="-87.6936190">
+            <ele>126.2</ele>
+            <time>2026-01-02T19:42:54Z</time>
+            <extensions>
+            <gpxtpx:TrackPointExtension>
+            <gpxtpx:atemp>17</gpxtpx:atemp>
+            <gpxtpx:hr>137</gpxtpx:hr>
+            <gpxtpx:cad>81</gpxtpx:cad>
+            </gpxtpx:TrackPointExtension>
+            </extensions>
+        </trkpt>
+    </trkseg>
+  </trk>
+</gpx>
+"""
+        # Write input file
+        input_file = tmp_path / "example_in.gpx"
+        input_file.write_text(gpx_content)
+
+        # Read and write back
+        gpx = read_gpx(input_file)
+        output_file = tmp_path / "example_out.gpx"
+        gpx.write_gpx(output_file)
+
+        # Read output file
+        output_content = output_file.read_text()
+
+        # Verify namespace prefix is preserved as "gpxtpx" not "ns0", "ns1", etc.
+        assert "xmlns:gpxtpx=" in output_content
+        assert "gpxtpx:TrackPointExtension" in output_content
+        assert "gpxtpx:atemp" in output_content
+        assert "gpxtpx:hr" in output_content
+        assert "gpxtpx:cad" in output_content
+
+        # Verify no generic namespace prefixes like ns0, ns1, ns2
+        assert "xmlns:ns0=" not in output_content
+        assert "xmlns:ns1=" not in output_content
+        assert "xmlns:ns2=" not in output_content
+        assert "ns2:" not in output_content
+
+    def test_namespace_prefix_preservation_multiple_namespaces(
+        self, tmp_path: Path
+    ) -> None:
+        """Test preserving multiple custom namespace prefixes."""
+        gpx_content = f"""<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1"
+     xmlns:gpxtpx="{GARMIN_TPX_NS}"
+     xmlns:garmin="{GARMIN_GPX_EXT_NS}"
+     xmlns:custom="{CUSTOM_NS}"
+     version="1.1" creator="Test">
+  <extensions>
+    <custom:data>test</custom:data>
+  </extensions>
+  <wpt lat="52.0" lon="4.0">
+    <extensions>
+      <garmin:WaypointExtension>
+        <garmin:DisplayMode>SymbolAndName</garmin:DisplayMode>
+      </garmin:WaypointExtension>
+    </extensions>
+  </wpt>
+  <trk>
+    <trkseg>
+      <trkpt lat="52.1" lon="4.1">
+        <extensions>
+          <gpxtpx:TrackPointExtension>
+            <gpxtpx:hr>140</gpxtpx:hr>
+          </gpxtpx:TrackPointExtension>
+        </extensions>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>
+"""
+        input_file = tmp_path / "multi_ns_in.gpx"
+        input_file.write_text(gpx_content)
+
+        # Read and write back
+        gpx = read_gpx(input_file)
+        output_file = tmp_path / "multi_ns_out.gpx"
+        gpx.write_gpx(output_file)
+
+        # Read output file
+        output_content = output_file.read_text()
+
+        # Verify all namespace prefixes are preserved
+        assert "xmlns:gpxtpx=" in output_content
+        assert "xmlns:garmin=" in output_content
+        assert "xmlns:custom=" in output_content
+
+        # Verify prefixes are used in elements
+        assert "gpxtpx:TrackPointExtension" in output_content
+        assert "garmin:WaypointExtension" in output_content
+        assert "custom:data" in output_content
+
+
 class TestExtensionsWithoutExtensions:
     """Test that GPX files without extensions still work."""
 

@@ -19,7 +19,7 @@ from .route import Route
 from .track import Track
 from .track_segment import TrackSegment
 from .types import Latitude, Longitude
-from .utils import remove_encoding_from_string
+from .utils import extract_namespaces_from_string, remove_encoding_from_string
 from .waypoint import Waypoint
 
 #: KML namespace
@@ -33,7 +33,7 @@ def read_gpx(file_path: str | Path) -> GPX:
         file_path: Path to the GPX file.
 
     Returns:
-        A GPX object.
+        A GPX object with namespace prefixes preserved.
 
     Example:
         >>> from gpx import read_gpx
@@ -43,11 +43,19 @@ def read_gpx(file_path: str | Path) -> GPX:
     with Path(file_path).open(encoding="utf-8") as f:
         gpx_str = f.read()
 
+    # Extract namespace prefixes before parsing (ElementTree loses this info)
+    namespaces = extract_namespaces_from_string(gpx_str)
+
     # Remove encoding declaration if present
     gpx_str = remove_encoding_from_string(gpx_str)
 
     root = ET.fromstring(gpx_str)
-    return GPX.from_xml(root)
+    gpx = GPX.from_xml(root)
+
+    # Preserve the extracted namespace prefixes
+    gpx.nsmap = namespaces
+
+    return gpx
 
 
 def read_geojson(file_path: str | Path, *, creator: str | None = None) -> GPX:

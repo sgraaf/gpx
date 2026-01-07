@@ -15,6 +15,10 @@ The **third number** is for emergencies when we need to start branches for older
 - GPX Extensions support: Added `Extensions` class for handling GPX extension elements from any XML namespace (e.g., Garmin's `TrackPointExtension`). Extensions are now parsed, preserved, and serialized during round-trip processing, enabling lossless handling of vendor-specific data like heart rate, cadence, temperature, etc.
 - New `extensions` field on all models that support extensions per the GPX 1.1 spec: `GPX`, `Metadata`, `Waypoint`, `Track`, `TrackSegment`, and `Route`.
 
+### Fixed
+
+- Namespace prefix preservation: GPX files with extension namespaces now preserve their original namespace prefixes (e.g., `gpxtpx`) during round-trip read/write operations, instead of being rewritten with generic prefixes (e.g., `ns0`, `ns1`, `ns2`). This ensures lossless round-tripping of GPX files with extensions.
+
 ## [2026.1.0](https://github.com/sgraaf/gpx/compare/2025.1.0...2026.1.0) - 2026-01-07
 
 ### Added
