@@ -339,7 +339,7 @@ dev = [
     { name = "prek" },
     { name = "pyrefly" },
     { name = "pytest" },
-    { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "pytest-cov" },
     { name = "sphinx" },
     { name = "sphinx-autobuild" },
     { name = "sphinx-copybutton" },
@@ -357,7 +357,7 @@ docs = [
 ]
 tests = [
     { name = "pytest" },
-    { name = "pytest-cov", specifier = ">=7.0.0" },
+    { name = "pytest-cov" },
 ]
 typing = [
     { name = "mypy" },
