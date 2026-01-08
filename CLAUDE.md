@@ -7,7 +7,7 @@ This file provides guidance for AI assistants working with the *gpx* codebase.
 *gpx* is a zero-dependency, pure Python package for reading, manipulating, writing and converting GPX (GPS Exchange Format) files. It provides a fully-typed, dataclass-based interface for working with GPX 1.1 specification data.
 
 - **Package name**: `gpx` (on PyPI)
-- **Current version**: 2025.1.0
+- **Current version**: 2026.1.0
 - **Python support**: 3.11+ (including 3.14)
 - **License**: GPL-3.0+
 - **Documentation**: https://gpx.readthedocs.io/
@@ -18,6 +18,7 @@ This file provides guidance for AI assistants working with the *gpx* codebase.
 gpx/
 ├── src/gpx/              # Main source code (src layout)
 │   ├── __init__.py       # Package exports and version
+│   ├── __main__.py       # CLI entry point for `python -m gpx`
 │   ├── base.py           # GPXModel base class with from_xml/to_xml
 │   ├── gpx.py            # GPX root element model
 │   ├── waypoint.py       # Waypoint dataclass model
@@ -30,12 +31,18 @@ gpx/
 │   ├── person.py         # Person dataclass model
 │   ├── email.py          # Email dataclass model
 │   ├── copyright.py      # Copyright dataclass model
+│   ├── extensions.py     # Extensions dataclass model for GPX extensions
+│   ├── mixins.py         # Mixins for shared functionality (e.g., PointsMixin)
 │   ├── types.py          # Custom types: Latitude, Longitude, Degrees, Fix, DGPSStation
 │   ├── utils.py          # Utility functions for XML parsing and serialization
 │   ├── convert.py        # Conversion functions: from_geo_interface, from_wkb, from_wkt
 │   ├── io.py             # I/O functions: read_gpx, read_geojson, read_kml
+│   ├── cli.py            # Command-line interface implementation
 │   └── py.typed          # PEP 561 marker for type hints
 ├── docs/                 # Sphinx documentation (MyST Markdown)
+│   ├── api.md            # API reference documentation
+│   ├── cli.md            # CLI reference documentation (auto-generated with cog)
+│   └── ...
 ├── tests/                # Test suite
 │   ├── __init__.py       # Package marker
 │   ├── conftest.py       # Pytest configuration and fixtures
@@ -50,12 +57,15 @@ gpx/
 │   ├── test_utils.py     # Utilities tests
 │   ├── test_waypoint.py  # Waypoint model tests
 │   ├── test_io_convert.py # IO and conversion tests (read/write/convert)
+│   ├── test_cli.py       # CLI tests
+│   ├── test_main.py      # Main entry point tests
+│   ├── test_extensions.py # Extensions tests
 │   └── fixtures/         # GPX fixture files for testing
 │       ├── valid/        # Valid GPX files for parsing tests
 │       └── invalid/      # Invalid GPX files for error handling tests
 ├── pyproject.toml        # Project configuration and dependencies
 ├── uv.lock               # Dependency lock file (managed by uv)
-├── CHANGELOG.md          # Project changelog (needs updating)
+├── CHANGELOG.md          # Project changelog
 ├── CLAUDE.md             # AI assistant guidance (this file)
 ├── .pre-commit-config.yaml  # Pre-commit hooks configuration
 ├── .readthedocs.yaml     # ReadTheDocs configuration
@@ -141,7 +151,8 @@ GPXModel (base.py)
 ├── Link (link.py) - web link
 ├── Person (person.py) - person/author
 ├── Email (email.py) - email address
-└── Copyright (copyright.py) - copyright
+├── Copyright (copyright.py) - copyright
+└── Extensions (extensions.py) - GPX extensions from any namespace
 ```
 
 ### Design Patterns
@@ -178,6 +189,45 @@ GPXModel (base.py)
    - All geographic models (GPX, Waypoint, Track, Route) implement the `__geo_interface__` protocol
    - Provides GeoJSON-compatible geometry representation
    - GPX returns FeatureCollection, waypoints return Point, tracks return MultiLineString, routes return LineString
+
+1. **Mixins** (`mixins.py`):
+
+   - `PointsMixin`: Shared functionality for classes that contain point collections (Track, TrackSegment, Route)
+   - Reduces code duplication across models
+
+1. **Extensions Support** (`extensions.py`):
+
+   - `Extensions` class for handling GPX extension elements from any XML namespace
+   - Supports vendor-specific data (e.g., Garmin's `TrackPointExtension` with heart rate, cadence, temperature)
+   - Extensions are parsed, preserved, and serialized during round-trip processing
+   - Available on: `GPX`, `Metadata`, `Waypoint`, `Track`, `TrackSegment`, and `Route`
+
+### Command-Line Interface
+
+The package provides a CLI for common GPX operations:
+
+```bash
+# Validate a GPX file
+gpx validate path/to/file.gpx
+
+# Show information and statistics
+gpx info path/to/file.gpx
+gpx info --json path/to/file.gpx  # Output as JSON
+
+# Edit a GPX file
+gpx edit input.gpx -o output.gpx --reverse  # Reverse tracks and routes
+gpx edit input.gpx -o output.gpx --min-lat 52.0 --max-lat 53.0  # Crop to bounds
+gpx edit input.gpx -o output.gpx --strip-all-metadata  # Remove metadata
+
+# Merge multiple GPX files
+gpx merge file1.gpx file2.gpx file3.gpx -o merged.gpx
+
+# Convert between formats
+gpx convert input.gpx -o output.geojson
+gpx convert input.kml -o output.gpx
+```
+
+For full CLI documentation, see `docs/cli.md`.
 
 ### Entry Points
 
@@ -408,7 +458,7 @@ mypy src/
 
 ## Pre-commit Hooks
 
-The project uses these pre-commit hooks:
+The project uses **prek**, a faster Rust-based reimplementation of pre-commit that is fully compatible with pre-commit configurations. The hooks include:
 
 - `check-json`, `check-toml`, `check-xml`, `check-yaml`
 - `end-of-file-fixer`, `trailing-whitespace`
@@ -419,11 +469,17 @@ The project uses these pre-commit hooks:
 - `mypy`
 - `codespell`
 
-Run pre-commit manually:
+Run hooks manually with prek (or pre-commit if prek is not installed):
 
 ```bash
+# Using prek (recommended - faster)
+prek run --all-files
+
+# Or using pre-commit
 pre-commit run --all-files
 ```
+
+**Note**: `prek` is included in the `dev` dependency group. It's a drop-in replacement for pre-commit with better performance and parallel execution.
 
 ## Testing
 
@@ -492,13 +548,13 @@ The project uses pre-commit.ci for automated checks on pull requests. Configurat
 ### Typical Development Cycle
 
 1. **Make changes** to the codebase
-1. **Run pre-commit** to check formatting and linting:
+1. **Run prek** to check formatting and linting:
    ```bash
-   pre-commit run --all-files
+   uv run prek run --all-files
    ```
 1. **Run tests** to ensure nothing breaks:
    ```bash
-   pytest
+   uv run pytest
    ```
 1. **Run type checks**:
    ```bash
@@ -531,9 +587,9 @@ The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (
 
 ### 2. Pre-commit Hooks
 
-- **All pre-commit checks must pass**: Run pre-commit hooks and fix any issues:
+- **All pre-commit checks must pass**: Run prek hooks and fix any issues:
   ```bash
-  uv run pre-commit run --all-files
+  uv run prek run --all-files
   ```
 - This includes:
   - Code formatting (Ruff)
@@ -559,7 +615,17 @@ The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (
   ```
 - Place new module documentation in alphabetical order or logical grouping with related modules
 
-### 4. Changelog
+### 4. CLI Reference Documentation
+
+- **Add new CLI sub-commands to CLI docs**: If you add a new CLI sub-command in `src/gpx/cli.py`, add it to the CLI reference in `docs/cli.md`
+- The CLI documentation uses [cog](https://nedbatchelder.com/code/cog/) to auto-generate help output
+- Follow the existing format with cog blocks to generate help text automatically
+- After adding a new sub-command, regenerate the CLI docs:
+  ```bash
+  uv run cog -r docs/cli.md
+  ```
+
+### 5. Changelog
 
 - **Add entry to CHANGELOG.md**: All changes must be documented in the changelog under the `[Unreleased]` section
 - Follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format with these categories:
@@ -572,7 +638,7 @@ The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (
 - Write clear, user-focused descriptions of changes
 - Include examples or migration notes for breaking changes
 
-### 5. README Updates
+### 6. README Updates
 
 - **Update README.md for user-facing changes**: If your change affects how users interact with the package, update `README.md`
 - This includes:
@@ -589,8 +655,9 @@ The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (
 Before considering your work complete, verify:
 
 - [ ] All tests pass (`uv run pytest`)
-- [ ] All pre-commit hooks pass (`uv run pre-commit run --all-files`)
+- [ ] All pre-commit hooks pass (`uv run prek run --all-files`)
 - [ ] New modules are documented in `docs/api.md`
+- [ ] New CLI sub-commands are documented in `docs/cli.md` (regenerate with `uv run cog -r docs/cli.md`)
 - [ ] Changes are documented in `CHANGELOG.md` under `[Unreleased]`
 - [ ] User-facing changes are reflected in `README.md`
 
@@ -678,9 +745,11 @@ Distance calculations use Haversine formula (spherical earth model).
 ## Important Notes
 
 - **Pure Python**: No external dependencies required for core functionality
-- **GPX 1.1 Specification**: Fully compatible with GPX 1.1 (except extensions)
-- **GPX extensions** from other schemas (e.g., Garmin) are not supported and are ignored
-- **XML validation** is not currently implemented (no XSD validation)
+- **GPX 1.1 Specification**: Fully compatible with GPX 1.1 (including extensions)
+- **GPX extensions**: Extensions from any XML namespace (e.g., Garmin) are now supported via the `Extensions` class
+  - Extensions are parsed, preserved, and serialized during round-trip processing
+  - Available on: `GPX`, `Metadata`, `Waypoint`, `Track`, `TrackSegment`, and `Route`
+- **XML validation**: Not currently implemented (no XSD validation)
 - **XML parsing**: Uses built-in `xml.etree.ElementTree` module (replaced lxml in v2025.1.0)
 - **Coordinates**: Use WGS84 datum
 - **Elevations**: In meters
@@ -688,3 +757,4 @@ Distance calculations use Haversine formula (spherical earth model).
 - **Field names**: Use exact GPX tag names (e.g., `trkpt`, `trkseg`, `wpt`, `rte`, `trk`) with property aliases for convenience (e.g., `points`, `segments`, `waypoints`, `routes`, `tracks`)
 - **Keyword-only arguments**: Models with all-optional fields use `kw_only=True` for clarity
 - **GeoJSON compatibility**: All geographic models implement `__geo_interface__` for GeoJSON interoperability
+- **Command-line interface**: Provides CLI for validation, inspection, editing, merging, and conversion
