@@ -43,7 +43,6 @@ gpx = read_gpx("path/to/file.gpx")
 
 # Access basic properties
 print(f"Creator: {gpx.creator}")
-print(f"Bounds: {gpx.bounds}")
 print(f"Number of waypoints: {len(gpx.wpt)}")
 print(f"Number of tracks: {len(gpx.trk)}")
 print(f"Number of routes: {len(gpx.rte)}")
@@ -52,28 +51,37 @@ print(f"Number of routes: {len(gpx.rte)}")
 ### Working with waypoints
 
 ```python
-from gpx import Waypoint
+from gpx import Latitude, Longitude, Waypoint, read_gpx
 from decimal import Decimal
+
+# Read GPX data from file
+gpx = read_gpx("path/to/file.gpx")
 
 # Create a new waypoint
 waypoint = Waypoint(
-    lat=Decimal("52.3676"),
-    lon=Decimal("4.9041"),
+    lat=Latitude("52.3676"),
+    lon=Longitude("4.9041"),
     name="Amsterdam",
     desc="Capital of the Netherlands",
     ele=Decimal("2.0"),
 )
 
+# Add waypoint to GPX data
 gpx.wpt.append(waypoint)
 
 # Iterate over waypoints
-for wpt in gpx.wpt:
-    print(f"{wpt.name}: ({wpt.lat}, {wpt.lon})")
+for idx, wpt in enumerate(gpx.wpt):
+    print(f"{idx}: ({wpt.lat}, {wpt.lon})")
 ```
 
 ### Working with tracks and statistics
 
 ```python
+from gpx import read_gpx
+
+# Read GPX data from file
+gpx = read_gpx("path/to/file.gpx")
+
 # Access track data
 for track in gpx.trk:
     print(f"Track: {track.name}")
@@ -86,33 +94,43 @@ for track in gpx.trk:
     print(f"  Total ascent: {track.total_ascent} meters")
 
     # Iterate over track segments and points
-    for segment in track.segments:
-        print(f"  Segment with {len(segment.points)} points")
-        for point in segment.points:
-            print(f"    Point: ({point.lat}, {point.lon}) at {point.time}")
+    for track_segment in track.trkseg:
+        print(f"  Segment with {len(track_segment.trkpt)} points")
+        for track_point in track_segment.trkpt:
+            print(
+                f"    Point: ({track_point.lat}, {track_point.lon}) at {track_point.time}"
+            )
 ```
 
 ### Creating a GPX from scratch
 
 ```python
-from gpx import GPX, Metadata, Track, TrackSegment, Waypoint
+from gpx import (
+    GPX,
+    Latitude,
+    Longitude,
+    Metadata,
+    Track,
+    TrackSegment,
+    Waypoint,
+)
 from datetime import datetime, timezone
 from decimal import Decimal
 
 # Create track points
-points = []
+track_points = []
 for i in range(5):
     point = Waypoint(
-        lat=Decimal("52.0") + Decimal(i) * Decimal("0.01"),
-        lon=Decimal("4.0") + Decimal(i) * Decimal("0.01"),
+        lat=Latitude(Decimal("52.0") + i * Decimal("0.01")),
+        lon=Longitude(Decimal("4.0") + i * Decimal("0.01")),
         ele=Decimal("10.0") + Decimal(i) * Decimal("2.0"),
         time=datetime.now(timezone.utc),
     )
-    points.append(point)
+    track_points.append(point)
 
 # Create a track with segments
-segment = TrackSegment(trkpt=points)
-track = Track(name="Morning Run", trkseg=[segment])
+track_segment = TrackSegment(trkpt=track_points)
+track = Track(name="Morning Run", trkseg=[track_segment])
 
 # Create metadata
 metadata = Metadata(
@@ -148,23 +166,23 @@ gpx = from_string(gpx_string)
 ### Working with routes
 
 ```python
-from gpx import Route
+from gpx import Latitude, Longitude, Route, Waypoint
 
 # Create route points (waypoints)
-point1 = Waypoint(
-    lat=Decimal("52.3676"),
-    lon=Decimal("4.9041"),
+route_point_1 = Waypoint(
+    lat=Latitude("52.3676"),
+    lon=Longitude("4.9041"),
     name="Start: Amsterdam Centraal",
 )
 
-point2 = Waypoint(
-    lat=Decimal("52.3731"),
-    lon=Decimal("4.8922"),
+route_point_2 = Waypoint(
+    lat=Latitude("52.3731"),
+    lon=Longitude("4.8922"),
     name="Dam Square",
 )
 
 # Create a route
-route = Route(name="City Tour", rtept=[point1, point2])
+route = Route(name="City Tour", rtept=[route_point_1, route_point_2])
 gpx.rte.append(route)
 
 # Access route statistics
@@ -186,14 +204,12 @@ gpx = read_gpx("activity.gpx")
 
 # Access extension data from track points
 for track in gpx.trk:
-    for segment in track.trkseg:
-        for point in segment.trkpt:
-            if point.extensions:
-                # Get heart rate, cadence, temperature
-                hr = point.extensions.get_int("hr", namespace=GARMIN_TPX)
-                cad = point.extensions.get_int("cad", namespace=GARMIN_TPX)
-                temp = point.extensions.get_float("atemp", namespace=GARMIN_TPX)
-                if hr:
+    for track_segment in track.trkseg:
+        for track_point in track_segment.trkpt:
+            if track_point.extensions:
+                if (
+                    hr := track_point.extensions.get_int("hr", namespace=GARMIN_TPX)
+                ) is not None:
                     print(f"Heart rate: {hr} bpm")
 ```
 
@@ -201,7 +217,15 @@ Creating GPX files with extensions:
 
 ```python
 import xml.etree.ElementTree as ET
-from gpx import GPX, Waypoint, Track, TrackSegment, Extensions
+from gpx import (
+    Extensions,
+    GPX,
+    Latitude,
+    Longitude,
+    Track,
+    TrackSegment,
+    Waypoint,
+)
 from decimal import Decimal
 
 # Register namespace prefix for cleaner XML output
@@ -215,8 +239,8 @@ hr.text = "145"
 
 # Create waypoint with extensions
 point = Waypoint(
-    lat=Decimal("52.0"),
-    lon=Decimal("4.0"),
+    lat=Latitude("52.0"),
+    lon=Longitude("4.0"),
     extensions=Extensions(elements=[tpx]),
 )
 
@@ -247,7 +271,7 @@ wkb_bytes = gpx.to_wkb()  # Well-Known Binary
 geojson_dict = gpx.__geo_interface__
 ```
 
-### Reading from other formats
+### Reading from other file formats
 
 *gpx* can read data from various file formats:
 
