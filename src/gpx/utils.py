@@ -213,7 +213,74 @@ def has_to_xml(obj: Any) -> bool:  # noqa: ANN401
     return hasattr(obj, "to_xml") and callable(obj.to_xml)
 
 
-def parse_from_xml(cls: type[Any], element: ET.Element) -> dict[str, Any]:  # noqa: C901, PLR0912
+def _parse_list_elements(
+    element: ET.Element,
+    field_name: str,
+    item_type: type,
+) -> list[Any]:
+    """Parse a list of child elements from XML.
+
+    Args:
+        element: The parent XML element.
+        field_name: The name of the child elements to find.
+        item_type: The type of items in the list.
+
+    Returns:
+        A list of parsed items.
+
+    """
+    items = []
+    for child in element.findall(_ns_tag(field_name, element)):
+        if has_from_xml(item_type):
+            items.append(item_type.from_xml(child))  # type: ignore[attr-defined]
+        else:
+            items.append(item_type(child.text) if child.text else None)
+    return items
+
+
+def _parse_single_value(text: str, value_type: type) -> Any:  # noqa: ANN401
+    """Parse a single value from text.
+
+    Args:
+        text: The text to parse.
+        value_type: The type to convert to.
+
+    Returns:
+        The parsed value.
+
+    """
+    if value_type is dt.datetime:
+        return from_isoformat(text)
+    return value_type(text)
+
+
+def _parse_single_element(
+    element: ET.Element,
+    field_name: str,
+    value_type: type,
+) -> Any:  # noqa: ANN401
+    """Parse a single optional child element from XML.
+
+    Args:
+        element: The parent XML element.
+        field_name: The name of the child element to find.
+        value_type: The type of the element value.
+
+    Returns:
+        The parsed value, or None if the element is not found.
+
+    """
+    child = element.find(_ns_tag(field_name, element))  # type: ignore[assignment]
+    if child is None:
+        return None
+    if has_from_xml(value_type):
+        return value_type.from_xml(child)  # type: ignore[attr-defined]
+    if child.text is None:
+        return None
+    return _parse_single_value(child.text, value_type)
+
+
+def parse_from_xml(cls: type[Any], element: ET.Element) -> dict[str, Any]:
     """Parse XML element into dictionary by auto-detecting attributes vs elements.
 
     Uses the GPX specification pattern:
@@ -250,13 +317,7 @@ def parse_from_xml(cls: type[Any], element: ET.Element) -> dict[str, Any]:  # no
         # Lists are always treated as optional child elements (even without | None)
         if is_list_type(field_type):
             item_type = get_list_item_type(field_type)
-            items = []
-            for child in element.findall(_ns_tag(field.name, element)):
-                if has_from_xml(item_type):
-                    items.append(item_type.from_xml(child))  # type: ignore[attr-defined]
-                else:
-                    items.append(item_type(child.text) if child.text else None)
-            result[field.name] = items
+            result[field.name] = _parse_list_elements(element, field.name, item_type)
         elif is_optional(field_type):
             # Optional field → parse as XML child element
             inner_type = get_inner_type(field_type)
@@ -264,28 +325,14 @@ def parse_from_xml(cls: type[Any], element: ET.Element) -> dict[str, Any]:  # no
             # Check if it's a list of models (Optional[list[T]])
             if is_list_type(inner_type):
                 item_type = get_list_item_type(inner_type)
-                items = []
-                for child in element.findall(_ns_tag(field.name, element)):
-                    if has_from_xml(item_type):
-                        items.append(item_type.from_xml(child))  # type: ignore[attr-defined]
-                    else:
-                        items.append(item_type(child.text) if child.text else None)
-                result[field.name] = items
+                result[field.name] = _parse_list_elements(
+                    element, field.name, item_type
+                )
             else:
                 # Single optional element
-                child = element.find(_ns_tag(field.name, element))  # type: ignore[assignment]
-                if child is None:
-                    result[field.name] = None
-                elif has_from_xml(inner_type):
-                    # Nested model
-                    result[field.name] = inner_type.from_xml(child)  # type: ignore[attr-defined]
-                elif child.text is None:
-                    result[field.name] = None
-                # Simple type - handle datetime specially
-                elif inner_type is dt.datetime:
-                    result[field.name] = from_isoformat(child.text)
-                else:
-                    result[field.name] = inner_type(child.text)
+                result[field.name] = _parse_single_element(
+                    element, field.name, inner_type
+                )
         else:
             # Required field → parse as XML attribute
             value = element.get(field.name)
