@@ -35,7 +35,8 @@ docs = [
     "sphinxext-opengraph",
 ]
 tests = [
-    "pytest"
+    "pytest",
+    "pytest-cov>=7.0.0",
 ]
 typing = [
     "mypy",

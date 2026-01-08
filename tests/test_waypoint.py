@@ -296,6 +296,43 @@ class TestWaypointCalculations:
         # Small elevation change over ~130m should be small slope
         assert -10 < slope < 10
 
+    def test_speed_to_zero_duration(self) -> None:
+        """Test speed_to with zero duration (same timestamps)."""
+        # Create two waypoints with same timestamp
+        time = dt.datetime(2023, 6, 15, 10, 30, 0, tzinfo=dt.UTC)
+        wpt1 = Waypoint(
+            lat=Latitude("52.5200"),
+            lon=Longitude("13.4050"),
+            time=time,
+        )
+        wpt2 = Waypoint(
+            lat=Latitude("52.5201"),
+            lon=Longitude("13.4051"),
+            time=time,
+        )
+
+        # Should raise ZeroDivisionError when duration is zero
+        with pytest.raises(ZeroDivisionError):
+            wpt1.speed_to(wpt2)
+
+    def test_slope_to_zero_distance(self) -> None:
+        """Test slope_to with zero distance (same location)."""
+        # Create two waypoints at same location with different elevations
+        wpt1 = Waypoint(
+            lat=Latitude("52.5200"),
+            lon=Longitude("13.4050"),
+            ele=Decimal("34.0"),
+        )
+        wpt2 = Waypoint(
+            lat=Latitude("52.5200"),
+            lon=Longitude("13.4050"),
+            ele=Decimal("50.0"),
+        )
+
+        # Should raise ZeroDivisionError when distance is zero
+        with pytest.raises(ZeroDivisionError):
+            wpt1.slope_to(wpt2)
+
 
 class TestWaypointCreation:
     """Tests for creating waypoints programmatically."""

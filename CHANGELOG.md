@@ -14,6 +14,14 @@ The **third number** is for emergencies when we need to start branches for older
 
 - GPX Extensions support: Added `Extensions` class for handling GPX extension elements from any XML namespace (e.g., Garmin's `TrackPointExtension`). Extensions are now parsed, preserved, and serialized during round-trip processing, enabling lossless handling of vendor-specific data like heart rate, cadence, temperature, etc.
 - New `extensions` field on all models that support extensions per the GPX 1.1 spec: `GPX`, `Metadata`, `Waypoint`, `Track`, `TrackSegment`, and `Route`.
+- Edge case tests for `speed_to()` with zero duration (same timestamps).
+- Edge case tests for `slope_to()` with zero distance (same location).
+- Edge case tests for empty track segments in statistics calculations.
+- Edge case tests for EWKB (Extended Well-Known Binary) format with Z coordinates.
+
+### Fixed
+
+- EWKB format parsing now correctly handles Z coordinates by checking the EWKB flag before the ISO WKB flag.
 
 ## [2026.1.0](https://github.com/sgraaf/gpx/compare/2025.1.0...2026.1.0) - 2026-01-07
 
