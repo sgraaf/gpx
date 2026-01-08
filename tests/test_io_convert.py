@@ -704,3 +704,210 @@ class TestErrorHandling:
         wkb = b"\x01"  # Only byte order, no geometry type
         with pytest.raises((ValueError, struct.error)):  # pyrefly: ignore
             from_wkb(wkb)
+
+    def test_from_wkt_unsupported_geometry_type(self) -> None:
+        """Test that unsupported WKT geometry types raise ValueError."""
+        with pytest.raises(ValueError, match="Unsupported WKT geometry type"):
+            from_wkt("CIRCULARSTRING (0 0, 1 1, 2 0)")
+
+    def test_from_wkb_unsupported_geometry_type(self) -> None:
+        """Test that unsupported WKB geometry types raise ValueError."""
+        # Build WKB with unsupported geometry type (e.g., type 99)
+        wkb = b"\x01"  # Little endian
+        wkb += struct.pack("<I", 99)  # Unsupported type
+        with pytest.raises(ValueError, match="Unsupported WKB geometry type"):
+            from_wkb(wkb)
+
+
+# =============================================================================
+# Additional GeoJSON conversion tests for missing coverage
+# =============================================================================
+
+
+class TestGeoJSONEdgeCases:
+    """Tests for edge cases in GeoJSON conversion."""
+
+    def test_from_geo_interface_with_geo_interface_protocol(self) -> None:
+        """Test converting object with __geo_interface__ protocol."""
+
+        class MockGeometry:
+            """Mock geometry object with __geo_interface__."""
+
+            @property
+            def __geo_interface__(self) -> dict[str, Any]:
+                """Return GeoJSON representation."""
+                return {"type": "Point", "coordinates": [13.405, 52.52]}
+
+        mock_geom = MockGeometry()
+        gpx = from_geo_interface(mock_geom)  # type: ignore[arg-type]
+        assert len(gpx.wpt) == 1
+
+    def test_from_geo_interface_feature(self) -> None:
+        """Test converting single GeoJSON Feature to GPX."""
+        feature = {
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [13.405, 52.52, 34.5]},
+            "properties": {"name": "Test Point", "desc": "A test point"},
+        }
+        gpx = from_geo_interface(feature)
+        assert len(gpx.wpt) == 1
+        assert gpx.wpt[0].name == "Test Point"
+        assert gpx.wpt[0].desc == "A test point"
+
+    def test_from_geo_interface_geometry_collection(self) -> None:
+        """Test converting GeoJSON GeometryCollection to GPX."""
+        gc = {
+            "type": "GeometryCollection",
+            "geometries": [
+                {"type": "Point", "coordinates": [13.405, 52.52]},
+                {
+                    "type": "LineString",
+                    "coordinates": [[13.405, 52.52], [13.415, 52.53]],
+                },
+                {
+                    "type": "MultiPoint",
+                    "coordinates": [[13.405, 52.52], [13.415, 52.53]],
+                },
+            ],
+        }
+        gpx = from_geo_interface(gc)
+        assert len(gpx.wpt) == 3  # 1 Point + 2 from MultiPoint
+        assert len(gpx.rte) == 1
+
+    def test_from_geo_interface_nested_geometry_collection(self) -> None:
+        """Test converting nested GeometryCollection."""
+        gc = {
+            "type": "GeometryCollection",
+            "geometries": [
+                {"type": "Point", "coordinates": [13.405, 52.52]},
+                {
+                    "type": "GeometryCollection",
+                    "geometries": [
+                        {"type": "Point", "coordinates": [13.415, 52.53]},
+                    ],
+                },
+            ],
+        }
+        gpx = from_geo_interface(gc)
+        assert len(gpx.wpt) == 2
+
+    def test_from_geo_interface_with_properties(self) -> None:
+        """Test GeoJSON with all property types (name, desc, cmt, sym, type)."""
+        feature = {
+            "type": "Feature",
+            "geometry": {"type": "Point", "coordinates": [13.405, 52.52, 34.5]},
+            "properties": {
+                "name": "Test",
+                "desc": "Description",
+                "cmt": "Comment",
+                "sym": "Symbol",
+                "type": "TypeValue",
+            },
+        }
+        gpx = from_geo_interface(feature)
+        assert gpx.wpt[0].name == "Test"
+        assert gpx.wpt[0].desc == "Description"
+        assert gpx.wpt[0].cmt == "Comment"
+        assert gpx.wpt[0].sym == "Symbol"
+        assert gpx.wpt[0].type == "TypeValue"
+
+    def test_from_geo_interface_route_with_properties(self) -> None:
+        """Test GeoJSON LineString with properties for route."""
+        feature = {
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [[13.405, 52.52], [13.415, 52.53]],
+            },
+            "properties": {
+                "name": "Route Name",
+                "desc": "Route Description",
+                "cmt": "Route Comment",
+                "type": "Route Type",
+            },
+        }
+        gpx = from_geo_interface(feature)
+        assert gpx.rte[0].name == "Route Name"
+        assert gpx.rte[0].desc == "Route Description"
+        assert gpx.rte[0].cmt == "Route Comment"
+        assert gpx.rte[0].type == "Route Type"
+
+    def test_from_geo_interface_track_with_properties(self) -> None:
+        """Test GeoJSON MultiLineString with properties for track."""
+        feature = {
+            "type": "Feature",
+            "geometry": {
+                "type": "MultiLineString",
+                "coordinates": [[[13.405, 52.52], [13.406, 52.521]]],
+            },
+            "properties": {
+                "name": "Track Name",
+                "desc": "Track Description",
+                "cmt": "Track Comment",
+                "type": "Track Type",
+            },
+        }
+        gpx = from_geo_interface(feature)
+        assert gpx.trk[0].name == "Track Name"
+        assert gpx.trk[0].desc == "Track Description"
+        assert gpx.trk[0].cmt == "Track Comment"
+        assert gpx.trk[0].type == "Track Type"
+
+
+# =============================================================================
+# WKB edge cases for missing coverage
+# =============================================================================
+
+
+class TestWKBEdgeCases:
+    """Tests for edge cases in WKB conversion."""
+
+    def test_from_wkb_geometrycollection(self) -> None:
+        """Test parsing WKB GeometryCollection."""
+        wkb = b"\x01"  # Little endian
+        wkb += struct.pack("<I", 7)  # GeometryCollection type
+        wkb += struct.pack("<I", 2)  # Number of geometries
+
+        # First geometry: Point
+        wkb += b"\x01"
+        wkb += struct.pack("<I", 1)  # Point type
+        wkb += struct.pack("<dd", 13.405, 52.52)
+
+        # Second geometry: LineString
+        wkb += b"\x01"
+        wkb += struct.pack("<I", 2)  # LineString type
+        wkb += struct.pack("<I", 2)  # Number of points
+        wkb += struct.pack("<dd", 13.405, 52.52)
+        wkb += struct.pack("<dd", 13.415, 52.53)
+
+        gpx = from_wkb(wkb)
+        assert len(gpx.wpt) == 1
+        assert len(gpx.rte) == 1
+
+
+# =============================================================================
+# WKT edge cases for missing coverage
+# =============================================================================
+
+
+class TestWKTEdgeCases:
+    """Tests for edge cases in WKT conversion."""
+
+    def test_from_wkt_multipoint_nested_format(self) -> None:
+        """Test WKT MULTIPOINT with nested parentheses format."""
+        wkt = "MULTIPOINT ((13.405 52.52), (13.415 52.53))"
+        gpx = from_wkt(wkt)
+        assert len(gpx.wpt) == 2
+
+    def test_from_wkt_multipoint_simple_format(self) -> None:
+        """Test WKT MULTIPOINT with simple format (no nested parens)."""
+        wkt = "MULTIPOINT (13.405 52.52, 13.415 52.53)"
+        gpx = from_wkt(wkt)
+        assert len(gpx.wpt) == 2
+
+    def test_from_wkt_geometrycollection_complex(self) -> None:
+        """Test WKT GEOMETRYCOLLECTION with multiple geometries."""
+        wkt = "GEOMETRYCOLLECTION (POINT (13.405 52.52), LINESTRING (13.405 52.52, 13.415 52.53))"
+        gpx = from_wkt(wkt)
+        assert len(gpx.wpt) == 1
+        assert len(gpx.rte) == 1

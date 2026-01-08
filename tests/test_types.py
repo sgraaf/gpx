@@ -259,3 +259,13 @@ class TestDGPSStation:
         """Test that DGPSStation is an int subclass."""
         station = DGPSStation(100)
         assert isinstance(station, int)
+
+    def test_invalid_dgps_station_non_numeric_string(self) -> None:
+        """Test that non-numeric string raises ValueError with specific message."""
+        with pytest.raises(ValueError, match="Invalid DGPS station value"):
+            DGPSStation("invalid")
+
+    def test_invalid_dgps_station_none(self) -> None:
+        """Test that None raises ValueError."""
+        with pytest.raises(ValueError, match="Invalid DGPS station value"):
+            DGPSStation(None)  # type: ignore[arg-type]

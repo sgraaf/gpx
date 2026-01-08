@@ -370,6 +370,11 @@ class TestEmailCreation:
         assert email.id == "john"
         assert email.domain == "example.com"
 
+    def test_email_str(self) -> None:
+        """Test Email __str__ method returns formatted email address."""
+        email = Email(id="john", domain="example.com")
+        assert str(email) == "john@example.com"
+
 
 class TestCopyrightParsing:
     """Tests for parsing copyright from XML."""
