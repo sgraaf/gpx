@@ -90,6 +90,9 @@ pydocstyle.convention = "google"
     "PLR2004",   # magic-value-comparison (Pylint)
     "S101",   # assert (flake8-bandit)
 ]
+"tests/test_main.py" = [
+    "S603",  # subprocess-without-shell-equals-true (flake8-bandit)
+]
 "tests/conftest.py" = [
     "D401",  # non-imperative-mood (pydocstyle)
 ]
