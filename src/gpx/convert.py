@@ -368,18 +368,19 @@ def _parse_wkb_geometry(wkb: bytes, offset: int) -> tuple[dict[str, Any], int]:
     (geom_type,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
     offset += 4
 
-    # Check for Z flag (ISO or EWKB style)
+    # Check for Z flag (EWKB or ISO style)
+    # Check EWKB first since EWKB values (with high bit set) are always >= 1000
     has_z = False
     base_type = geom_type
 
-    if geom_type >= WKB_Z_FLAG:
-        # ISO style: type + 1000 for Z
-        has_z = True
-        base_type = geom_type - WKB_Z_FLAG
-    elif geom_type & EWKB_Z_FLAG:
+    if geom_type & EWKB_Z_FLAG:
         # EWKB style: high bit set for Z
         has_z = True
         base_type = geom_type & 0x0FFFFFFF
+    elif geom_type >= WKB_Z_FLAG:
+        # ISO style: type + 1000 for Z
+        has_z = True
+        base_type = geom_type - WKB_Z_FLAG
 
     # Remove M flag if present (type + 2000 or 0x40000000)
     if base_type >= 2000:  # noqa: PLR2004

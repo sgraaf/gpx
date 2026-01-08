@@ -513,3 +513,85 @@ class TestRoundtripEdgeCases:
 
         for i, wpt in enumerate(gpx2.wpt):
             assert wpt.ele == gpx1.wpt[i].ele
+
+
+class TestEmptyTrackStatisticsEdgeCases:
+    """Tests for statistics calculations with empty track segments."""
+
+    def test_empty_track_bounds_raises_error(self, empty_track_gpx_string: str) -> None:
+        """Test that bounds calculation on empty track raises error."""
+        gpx = from_string(empty_track_gpx_string)
+        trk = gpx.trk[0]
+        # Empty track (no segments) should raise ValueError
+        with pytest.raises(ValueError, match=r"min.*empty"):
+            _ = trk.bounds
+
+    def test_empty_track_max_speed_raises_error(
+        self, empty_track_gpx_string: str
+    ) -> None:
+        """Test that max_speed calculation on empty track raises error."""
+        gpx = from_string(empty_track_gpx_string)
+        trk = gpx.trk[0]
+        # Empty track (no segments) should raise ValueError
+        with pytest.raises(ValueError, match=r"max.*empty"):
+            _ = trk.max_speed
+
+    def test_empty_track_min_speed_raises_error(
+        self, empty_track_gpx_string: str
+    ) -> None:
+        """Test that min_speed calculation on empty track raises error."""
+        gpx = from_string(empty_track_gpx_string)
+        trk = gpx.trk[0]
+        # Empty track (no segments) should raise ValueError
+        with pytest.raises(ValueError, match=r"min.*empty"):
+            _ = trk.min_speed
+
+    def test_empty_track_avg_elevation_raises_error(
+        self, empty_track_gpx_string: str
+    ) -> None:
+        """Test that avg_elevation calculation on empty track raises error."""
+        gpx = from_string(empty_track_gpx_string)
+        trk = gpx.trk[0]
+        # Empty track (no segments) should raise InvalidOperation (Decimal division by zero)
+        with pytest.raises(InvalidOperation):
+            _ = trk.avg_elevation
+
+    def test_empty_track_max_elevation_raises_error(
+        self, empty_track_gpx_string: str
+    ) -> None:
+        """Test that max_elevation calculation on empty track raises error."""
+        gpx = from_string(empty_track_gpx_string)
+        trk = gpx.trk[0]
+        # Empty track (no segments) should raise ValueError
+        with pytest.raises(ValueError, match=r"max.*empty"):
+            _ = trk.max_elevation
+
+    def test_empty_track_min_elevation_raises_error(
+        self, empty_track_gpx_string: str
+    ) -> None:
+        """Test that min_elevation calculation on empty track raises error."""
+        gpx = from_string(empty_track_gpx_string)
+        trk = gpx.trk[0]
+        # Empty track (no segments) should raise ValueError
+        with pytest.raises(ValueError, match=r"min.*empty"):
+            _ = trk.min_elevation
+
+    def test_track_with_empty_segment_bounds(
+        self, empty_track_segment_gpx_string: str
+    ) -> None:
+        """Test that bounds calculation works with mixed empty/non-empty segments."""
+        gpx = from_string(empty_track_segment_gpx_string)
+        trk = gpx.trk[0]
+        # Should compute bounds from non-empty segments only
+        bounds = trk.bounds
+        assert len(bounds) == 4
+
+    def test_track_with_empty_segment_total_distance(
+        self, empty_track_segment_gpx_string: str
+    ) -> None:
+        """Test that total_distance calculation works with mixed empty/non-empty segments."""
+        gpx = from_string(empty_track_segment_gpx_string)
+        trk = gpx.trk[0]
+        # Should compute distance from non-empty segments only
+        distance = trk.total_distance
+        assert distance >= 0

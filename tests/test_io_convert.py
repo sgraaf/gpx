@@ -550,6 +550,32 @@ class TestWKBConversion:
         assert len(gpx.wpt) == 1
         assert gpx.wpt[0].ele == Decimal("34.5")
 
+    def test_from_ewkb_point_z(self) -> None:
+        """Test converting EWKB POINT Z to GPX."""
+        # Build EWKB Point Z: byte order (1) + type (1 | 0x80000000) + x + y + z
+        wkb = b"\x01"  # Little endian
+        wkb += struct.pack("<I", 1 | 0x80000000)  # EWKB Point Z type
+        wkb += struct.pack("<ddd", 13.405, 52.52, 34.5)  # lon, lat, ele
+        gpx = from_wkb(wkb)
+        assert len(gpx.wpt) == 1
+        assert float(gpx.wpt[0].lon) == pytest.approx(13.405, rel=1e-3)
+        assert float(gpx.wpt[0].lat) == pytest.approx(52.52, rel=1e-3)
+        assert gpx.wpt[0].ele == Decimal("34.5")
+
+    def test_from_ewkb_linestring_z(self) -> None:
+        """Test converting EWKB LINESTRING Z to GPX."""
+        # Build EWKB LineString Z: byte order (1) + type (2 | 0x80000000) + points
+        wkb = b"\x01"  # Little endian
+        wkb += struct.pack("<I", 2 | 0x80000000)  # EWKB LineString Z type
+        wkb += struct.pack("<I", 2)  # Number of points
+        wkb += struct.pack("<ddd", 13.405, 52.52, 34.5)  # lon, lat, ele
+        wkb += struct.pack("<ddd", 13.415, 52.53, 38.0)  # lon, lat, ele
+        gpx = from_wkb(wkb)
+        assert len(gpx.rte) == 1
+        assert len(gpx.rte[0].rtept) == 2
+        assert gpx.rte[0].rtept[0].ele == Decimal("34.5")
+        assert gpx.rte[0].rtept[1].ele == Decimal("38.0")
+
     def test_from_wkb_linestring(self) -> None:
         """Test converting WKB LINESTRING to GPX."""
         wkb = b"\x01"  # Little endian
