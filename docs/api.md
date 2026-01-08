@@ -5,6 +5,7 @@
 ```{eval-rst}
 .. automodule:: gpx.gpx
     :members:
+    :special-members: __geo_interface__
 ```
 
 ## `gpx.metadata` Module
@@ -19,6 +20,7 @@
 ```{eval-rst}
 .. automodule:: gpx.waypoint
     :members:
+    :special-members: __geo_interface__
 ```
 
 ## `gpx.route` Module
@@ -33,6 +35,7 @@
 ```{eval-rst}
 .. automodule:: gpx.track
     :members:
+    :special-members: __geo_interface__
 ```
 
 ## `gpx.extensions` Module
@@ -82,6 +85,7 @@
 ```{eval-rst}
 .. automodule:: gpx.bounds
     :members:
+    :special-members: __geo_interface__
 ```
 
 ## `gpx.types` Module
@@ -96,6 +100,14 @@
 ```{eval-rst}
 .. automodule:: gpx.base
     :members:
+```
+
+## `gpx.mixins` Module
+
+```{eval-rst}
+.. automodule:: gpx.mixins
+    :members:
+    :special-members: __geo_interface__
 ```
 
 ## `gpx.convert` Module
