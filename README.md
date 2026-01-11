@@ -27,7 +27,7 @@ uv add gpx
 
 ## Documentation
 
-Check out the [*gpx* documentation](https://gpx.readthedocs.io/en/stable/) for the [User's Guide](https://gpx.readthedocs.io/en/stable/usage.html) and [API Reference](https://gpx.readthedocs.io/en/stable/api.html).
+Check out the [*gpx* documentation](https://gpx.readthedocs.io/en/stable/) for the [User's Guide](https://gpx.readthedocs.io/en/stable/usage.html), [API Reference](https://gpx.readthedocs.io/en/stable/api.html) and [CLI Reference](https://gpx.readthedocs.io/en/stable/cli.html).
 
 ## Usage
 
