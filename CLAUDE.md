@@ -99,11 +99,13 @@ The project uses **uv** as its build backend and package manager.
 pip install uv
 uv sync
 
-# Install with dev dependencies
+# Install with all dev dependencies (includes docs, tests, typing, prek)
 uv sync --dev
 
-# Install with test dependencies
-uv sync --group tests
+# Install with specific dependency groups
+uv sync --group tests   # pytest, pytest-cov
+uv sync --group docs    # sphinx, furo, myst-parser, etc.
+uv sync --group typing  # mypy, pyrefly, ty
 
 # Or install with pip (traditional method)
 pip install -e ".[dev]"
@@ -402,7 +404,7 @@ geo = point1.__geo_interface__  # {"type": "Point", "coordinates": [4.0, 52.0, 1
 
 - **Formatter**: Ruff (`ruff format`)
 - **Linter**: Ruff (`ruff check`)
-- **Type checker**: mypy
+- **Type checkers**: mypy, pyrefly, ty (all three are used in pre-commit)
 - **Indentation**: 4 spaces (2 for YAML)
 - **Line endings**: LF
 - **Max line length**: Not enforced (E501 ignored)
@@ -419,8 +421,10 @@ ruff check --fix .
 # Lint with unsafe fixes
 ruff check --fix --unsafe-fixes .
 
-# Type check
+# Type check (any of the following)
 mypy src/
+uv run pyrefly check src/
+uv run ty check
 ```
 
 ### Ruff Rules Enabled
@@ -432,9 +436,10 @@ mypy src/
   - `E501`: line-too-long (handled by formatter)
   - `PLC2401`: non-ascii-name
   - `S101`: assert (for non-test files)
+  - `S314`: suspicious-xml-element-tree-usage (the project safely uses ElementTree for GPX parsing)
   - `SLF001`: private-member-access
 - Google-style docstrings required
-- Per-file ignores for `__init__.py`, `docs/conf.py`, and test files
+- Per-file ignores for `__init__.py`, `docs/conf.py`, `cli.py`, and test files
 
 ### Type Annotations
 
@@ -466,8 +471,13 @@ The project uses **prek**, a faster Rust-based reimplementation of pre-commit th
 - `check-github-workflows`, `check-readthedocs`
 - `ruff-check` (with auto-fix, unsafe fixes, and show fixes)
 - `ruff-format` (replaces black)
-- `mypy`
-- `codespell`
+- `mypy` (type checking)
+- `pyrefly-check` (Python type checking with Pyrefly)
+- `ty-check` (local hook for fast ty type checking)
+- `codespell` (spell checking)
+- `cog` (auto-generates CLI documentation in `docs/cli.md`)
+- `mdformat` (markdown formatting with MyST and Ruff support)
+- `prettier` (YAML formatting)
 
 Run hooks manually with prek (or pre-commit if prek is not installed):
 
@@ -548,19 +558,16 @@ The project uses pre-commit.ci for automated checks on pull requests. Configurat
 ### Typical Development Cycle
 
 1. **Make changes** to the codebase
-1. **Run prek** to check formatting and linting:
+1. **Run prek** to check formatting, linting, and type checking:
    ```bash
    uv run prek run --all-files
    ```
+   This runs all pre-commit hooks including Ruff, mypy, pyrefly, ty, and cog.
 1. **Run tests** to ensure nothing breaks:
    ```bash
    uv run pytest
    ```
-1. **Run type checks**:
-   ```bash
-   mypy src/
-   ```
-1. **Build and test** the package locally:
+1. **Build and test** the package locally (optional):
    ```bash
    uv build
    uv run --isolated --no-project --with dist/*.whl tests/smoke_test.py
@@ -592,12 +599,13 @@ The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (
   uv run prek run --all-files
   ```
 - This includes:
-  - Code formatting (Ruff)
+  - Code formatting (Ruff, mdformat, prettier)
   - Linting (Ruff)
-  - Type checking (mypy)
-  - YAML/TOML/JSON validation
+  - Type checking (mypy, pyrefly, ty)
+  - YAML/TOML/JSON/XML validation
   - Trailing whitespace and end-of-file fixes
   - Codespell checks
+  - CLI documentation generation (cog)
 - Do not skip hooks or commit with `--no-verify` unless absolutely necessary and explicitly requested
 
 ### 3. API Reference Documentation
