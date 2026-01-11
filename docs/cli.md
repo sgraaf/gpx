@@ -17,7 +17,8 @@ def help_output(args):
     )
     output = result.stdout or result.stderr
     cog.out(f"\nRunning `gpx {' '.join(args)}` or `python -m gpx {' '.join(args)}` shows a list of all of the available options and arguments:\n")
-    cog.out(f"\n```\n{output}```\n")
+    cog.out(f"\n```sh\n{output}```\n\n")
+cog.outl()
 ]]]-->
 
 <!--[[[end]]]-->
@@ -30,7 +31,7 @@ help_output(["--help"])
 
 Running `gpx --help` or `python -m gpx --help` shows a list of all of the available options and arguments:
 
-```
+```sh
 usage: gpx [-h] [--version] {validate,info,edit,merge,convert} ...
 
 A command-line tool for working with GPX files.
@@ -62,7 +63,7 @@ help_output(["validate", "--help"])
 
 Running `gpx validate --help` or `python -m gpx validate --help` shows a list of all of the available options and arguments:
 
-```
+```sh
 usage: gpx validate [-h] <INPUT_FILE>
 
 Validate a GPX file by attempting to parse it.
@@ -86,7 +87,7 @@ help_output(["info", "--help"])
 
 Running `gpx info --help` or `python -m gpx info --help` shows a list of all of the available options and arguments:
 
-```
+```sh
 usage: gpx info [-h] [--json] <INPUT_FILE>
 
 Display detailed information and statistics about a GPX file.
@@ -111,7 +112,7 @@ help_output(["edit", "--help"])
 
 Running `gpx edit --help` or `python -m gpx edit --help` shows a list of all of the available options and arguments:
 
-```
+```sh
 usage: gpx edit [-h] -o <OUTPUT_FILE> [--min-lat LATITUDE]
                 [--max-lat LATITUDE] [--min-lon LONGITUDE]
                 [--max-lon LONGITUDE] [--start DATETIME] [--end DATETIME]
@@ -189,7 +190,7 @@ help_output(["merge", "--help"])
 
 Running `gpx merge --help` or `python -m gpx merge --help` shows a list of all of the available options and arguments:
 
-```
+```sh
 usage: gpx merge [-h] -o <OUTPUT_FILE> <INPUT_FILE> [<INPUT_FILE> ...]
 
 Merge multiple GPX files into a single GPX file.
@@ -215,7 +216,7 @@ help_output(["convert", "--help"])
 
 Running `gpx convert --help` or `python -m gpx convert --help` shows a list of all of the available options and arguments:
 
-```
+```sh
 usage: gpx convert [-h] -o <OUTPUT_FILE> [-f {gpx,geojson,kml}]
                    [-t {gpx,geojson,kml}]
                    <INPUT_FILE>
