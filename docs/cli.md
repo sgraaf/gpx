@@ -131,7 +131,7 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -o <OUTPUT_FILE>, --output-file <OUTPUT_FILE>
+  -o, --output-file <OUTPUT_FILE>
                         Path to the output file
 
 crop options:
@@ -200,7 +200,7 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -o <OUTPUT_FILE>, --output-file <OUTPUT_FILE>
+  -o, --output-file <OUTPUT_FILE>
                         Path to the output file
 ```
 
@@ -228,12 +228,12 @@ positional arguments:
 
 options:
   -h, --help            show this help message and exit
-  -o <OUTPUT_FILE>, --output-file <OUTPUT_FILE>
+  -o, --output-file <OUTPUT_FILE>
                         Path to the output file
-  -f {gpx,geojson,kml}, --from-format {gpx,geojson,kml}
+  -f, --from-format {gpx,geojson,kml}
                         Input format (default: auto-detect from file
                         extension)
-  -t {gpx,geojson,kml}, --to-format {gpx,geojson,kml}
+  -t, --to-format {gpx,geojson,kml}
                         Output format (default: auto-detect from file
                         extension)
 ```
