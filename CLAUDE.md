@@ -238,6 +238,7 @@ For full CLI documentation, see `docs/cli.md`.
 ```python
 from gpx import from_string, read_gpx
 
+
 # Read from file
 gpx = read_gpx("path/to/file.gpx")
 
@@ -257,6 +258,7 @@ print(len(gpx.rte))  # or gpx.rte
 ```python
 from gpx import read_geojson, read_kml
 
+
 # Read GeoJSON file
 gpx = read_geojson("path/to/file.geojson")
 
@@ -268,6 +270,7 @@ gpx = read_kml("path/to/file.kml")
 
 ```python
 from gpx import from_geo_interface, from_wkb, from_wkt
+
 
 # Convert from WKT (Well-Known Text)
 gpx = from_wkt("POINT (4.0 52.0)")
@@ -311,9 +314,11 @@ gpx.write_gpx("output.gpx", pretty_print=True)
 **Creating GPX data:**
 
 ```python
-from gpx import GPX, Waypoint, Track, TrackSegment, Metadata
+import datetime as dt
 from decimal import Decimal
-from datetime import datetime, timezone
+
+from gpx import GPX, Waypoint, Track, TrackSegment, Metadata
+
 
 # Create waypoints
 waypoint = Waypoint(
@@ -327,7 +332,7 @@ waypoint = Waypoint(
 metadata = Metadata(
     name="My Track",
     desc="A sample track",
-    time=datetime.now(timezone.utc),
+    time=dt.datetime.now(dt.UTC),
 )
 
 # Create track with segments
@@ -336,7 +341,7 @@ segment = TrackSegment(
         Waypoint(
             lat=Decimal("52.0"),
             lon=Decimal("4.0"),
-            time=datetime.now(timezone.utc),
+            time=dt.datetime.now(dt.UTC),
         )
     ]
 )
@@ -369,22 +374,24 @@ speed_profile = track.speed_profile
 **Using waypoint calculation methods:**
 
 ```python
-from gpx import Waypoint
+import datetime as dt
 from decimal import Decimal
-from datetime import datetime, timezone, timedelta
+
+from gpx import Waypoint
+
 
 point1 = Waypoint(
     lat=Decimal("52.0"),
     lon=Decimal("4.0"),
     ele=Decimal("10.0"),
-    time=datetime.now(timezone.utc),
+    time=dt.datetime.now(dt.UTC),
 )
 
 point2 = Waypoint(
     lat=Decimal("52.01"),
     lon=Decimal("4.01"),
     ele=Decimal("15.0"),
-    time=datetime.now(timezone.utc) + timedelta(minutes=5),
+    time=dt.datetime.now(dt.UTC) + dt.timedelta(minutes=5),
 )
 
 # Calculate distance, duration, speed, gain, slope

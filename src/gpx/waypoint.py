@@ -28,7 +28,7 @@ class Waypoint(GPXModel):
         lat: Latitude of the point in decimal degrees, WGS84 datum.
         lon: Longitude of the point in decimal degrees, WGS84 datum.
         ele: Elevation (in meters) of the point. Defaults to None.
-        time: Creation/modification timestamp for element (dt.UTC). Defaults to None.
+        time: Creation/modification timestamp for element (UTC). Defaults to None.
         magvar: Magnetic variation (in degrees) at the point. Defaults to None.
         geoidheight: Height (in meters) of geoid (mean sea level) above WGS84
             earth ellipsoid. Defaults to None.

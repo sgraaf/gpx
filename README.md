@@ -38,6 +38,7 @@ Check out the [*gpx* documentation](https://gpx.readthedocs.io/en/stable/) for t
 ```python
 from gpx import read_gpx
 
+
 # Read GPX data from file
 gpx = read_gpx("path/to/file.gpx")
 
@@ -51,8 +52,10 @@ print(f"Number of routes: {len(gpx.rte)}")
 ### Working with waypoints
 
 ```python
-from gpx import Latitude, Longitude, Waypoint, read_gpx
 from decimal import Decimal
+
+from gpx import Latitude, Longitude, Waypoint, read_gpx
+
 
 # Read GPX data from file
 gpx = read_gpx("path/to/file.gpx")
@@ -78,6 +81,7 @@ for idx, wpt in enumerate(gpx.wpt):
 
 ```python
 from gpx import read_gpx
+
 
 # Read GPX data from file
 gpx = read_gpx("path/to/file.gpx")
@@ -105,6 +109,9 @@ for track in gpx.trk:
 ### Creating a GPX from scratch
 
 ```python
+import datetime as dt
+from decimal import Decimal
+
 from gpx import (
     GPX,
     Latitude,
@@ -114,8 +121,7 @@ from gpx import (
     TrackSegment,
     Waypoint,
 )
-from datetime import datetime, timezone
-from decimal import Decimal
+
 
 # Create track points
 track_points = []
@@ -124,7 +130,7 @@ for i in range(5):
         lat=Latitude(Decimal("52.0") + i * Decimal("0.01")),
         lon=Longitude(Decimal("4.0") + i * Decimal("0.01")),
         ele=Decimal("10.0") + Decimal(i) * Decimal("2.0"),
-        time=datetime.now(timezone.utc),
+        time=dt.datetime.now(dt.UTC),
     )
     track_points.append(point)
 
@@ -136,7 +142,7 @@ track = Track(name="Morning Run", trkseg=[track_segment])
 metadata = Metadata(
     name="My GPS Track",
     desc="A sample track",
-    time=datetime.now(timezone.utc),
+    time=dt.datetime.now(dt.UTC),
 )
 
 # Create GPX object (creator defaults to "*gpx*")
@@ -151,6 +157,7 @@ gpx = GPX(
 
 ```python
 from gpx import from_string
+
 
 # Write GPX data to file
 gpx.write_gpx("output.gpx")
@@ -167,6 +174,7 @@ gpx = from_string(gpx_string)
 
 ```python
 from gpx import Latitude, Longitude, Route, Waypoint
+
 
 # Create route points (waypoints)
 route_point_1 = Waypoint(
@@ -196,6 +204,7 @@ print(f"Route distance: {route.total_distance:.2f} meters")
 ```python
 from gpx import read_gpx
 
+
 # Define extension namespace
 GARMIN_TPX = "http://www.garmin.com/xmlschemas/TrackPointExtension/v2"
 
@@ -217,6 +226,8 @@ Creating GPX files with extensions:
 
 ```python
 import xml.etree.ElementTree as ET
+from decimal import Decimal
+
 from gpx import (
     Extensions,
     GPX,
@@ -226,7 +237,7 @@ from gpx import (
     TrackSegment,
     Waypoint,
 )
-from decimal import Decimal
+
 
 # Register namespace prefix for cleaner XML output
 GARMIN_TPX = "http://www.garmin.com/xmlschemas/TrackPointExtension/v2"
@@ -256,6 +267,7 @@ gpx.write_gpx("with_extensions.gpx")
 ```python
 from gpx import GPX, read_gpx
 
+
 gpx = read_gpx("path/to/file.gpx")
 
 # Write to file formats
@@ -278,6 +290,7 @@ geojson_dict = gpx.__geo_interface__
 ```python
 from gpx import read_gpx, read_geojson, read_kml
 
+
 # Read from files
 gpx = read_gpx("path/to/file.gpx")
 gpx = read_geojson("path/to/file.geojson")
@@ -290,6 +303,7 @@ gpx = read_kml("path/to/file.kml")
 
 ```python
 from gpx import from_geo_interface, from_wkt, from_wkb
+
 
 # Convert from WKT (Well-Known Text)
 gpx = from_wkt("POINT (4.9041 52.3676)")
