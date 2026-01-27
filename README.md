@@ -7,7 +7,7 @@
 [![CI](https://github.com/sgraaf/gpx/actions/workflows/ci.yml/badge.svg)](https://github.com/sgraaf/gpx/actions/workflows/ci.yml)
 [![Test](https://github.com/sgraaf/gpx/actions/workflows/test.yml/badge.svg)](https://github.com/sgraaf/gpx/actions/workflows/test.yml)
 [![Documentation Status](https://readthedocs.org/projects/gpx/badge/?version=latest)](https://gpx.readthedocs.io/en/latest/?badge=latest)
-[![PyPI - License](https://img.shields.io/pypi/l/gpx)](https://img.shields.io/pypi/l/gpx)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/11839/badge)](https://www.bestpractices.dev/projects/11839)
 
 *gpx* is a zero-dependency, pure Python package for reading, manipulating, writing and converting GPX (GPS Exchange Format) files.
 
@@ -19,7 +19,7 @@
 
 *gpx* is available on [PyPI](https://pypi.org/project/gpx/). Install with [uv](https://docs.astral.sh/uv/) or your package manager of choice:
 
-```sh
+```shell
 uv add gpx
 ```
 
@@ -330,7 +330,7 @@ gpx = from_geo_interface(geojson)
 
 *gpx* provides a command-line interface (CLI) for common GPX operations:
 
-```sh
+```shell
 # Validate a GPX file
 gpx validate path/to/file.gpx
 

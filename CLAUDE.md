@@ -94,7 +94,7 @@ gpx/
 
 The project uses **uv** as its build backend and package manager.
 
-```bash
+```shell
 # Install from source with uv
 pip install uv
 uv sync
@@ -124,7 +124,7 @@ build-backend = "uv_build"
 
 Building the package:
 
-```bash
+```shell
 # Build wheel and source distribution
 uv build
 
@@ -208,7 +208,7 @@ GPXModel (base.py)
 
 The package provides a CLI for common GPX operations:
 
-```bash
+```shell
 # Validate a GPX file
 gpx validate path/to/file.gpx
 
@@ -418,7 +418,7 @@ geo = point1.__geo_interface__  # {"type": "Point", "coordinates": [4.0, 52.0, 1
 
 Running formatting and linting:
 
-```bash
+```shell
 # Format code
 ruff format .
 
@@ -488,7 +488,7 @@ The project uses **prek**, a faster Rust-based reimplementation of pre-commit th
 
 Run hooks manually with prek (or pre-commit if prek is not installed):
 
-```bash
+```shell
 # Using prek (recommended - faster)
 prek run --all-files
 
@@ -500,7 +500,7 @@ pre-commit run --all-files
 
 ## Testing
 
-```bash
+```shell
 # Run tests with pytest
 pytest
 
@@ -524,7 +524,7 @@ The test suite includes:
 
 ## Building Documentation
 
-```bash
+```shell
 # Install docs dependencies
 pip install -e ".[docs]"
 # Or with uv
@@ -566,16 +566,16 @@ The project uses pre-commit.ci for automated checks on pull requests. Configurat
 
 1. **Make changes** to the codebase
 1. **Run prek** to check formatting, linting, and type checking:
-   ```bash
+   ```shell
    uv run prek run --all-files
    ```
    This runs all pre-commit hooks including Ruff, mypy, pyrefly, ty, and cog.
 1. **Run tests** to ensure nothing breaks:
-   ```bash
+   ```shell
    uv run pytest
    ```
 1. **Build and test** the package locally (optional):
-   ```bash
+   ```shell
    uv build
    uv run --isolated --no-project --with dist/*.whl tests/smoke_test.py
    ```
@@ -592,7 +592,7 @@ The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (
 
 - **Add missing tests**: If your change introduces new functionality or modifies existing behavior, add corresponding tests to the test suite
 - **All tests must pass**: Run the full test suite and ensure all tests pass:
-  ```bash
+  ```shell
   uv run pytest
   ```
 - Test files should be placed in `tests/` and follow the naming convention `test_*.py`
@@ -602,7 +602,7 @@ The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (
 ### 2. Pre-commit Hooks
 
 - **All pre-commit checks must pass**: Run prek hooks and fix any issues:
-  ```bash
+  ```shell
   uv run prek run --all-files
   ```
 - This includes:
@@ -636,7 +636,7 @@ The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (
 - The CLI documentation uses [cog](https://nedbatchelder.com/code/cog/) to auto-generate help output
 - Follow the existing format with cog blocks to generate help text automatically
 - After adding a new sub-command, regenerate the CLI docs:
-  ```bash
+  ```shell
   uv run cog -r docs/cli.md
   ```
 
