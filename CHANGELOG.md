@@ -14,6 +14,9 @@ The **third number** is for emergencies when we need to start branches for older
 
 - GPX Extensions support: Added `Extensions` class for handling GPX extension elements from any XML namespace (e.g., Garmin's `TrackPointExtension`). Extensions are now parsed, preserved, and serialized during round-trip processing, enabling lossless handling of vendor-specific data like heart rate, cadence, temperature, etc.
 - New `extensions` field on all models that support extensions per the GPX 1.1 spec: `GPX`, `Metadata`, `Waypoint`, `Track`, `TrackSegment`, and `Route`.
+- `.github/CODE_OF_CONDUCT.md` referring to the Python Software Foundation (PSF) Code of Conduct
+- `.github/CONTRIBUTING.md` with contribution guidelines and development setup
+- `.github/SECURITY.md` with vulnerability reporting policy
 
 ### Changed
 
