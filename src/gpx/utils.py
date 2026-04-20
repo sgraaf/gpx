@@ -103,7 +103,7 @@ def remove_encoding_from_string(s: str) -> str:
         The string with any encoding declarations removed.
 
     """
-    return re.sub(r"(encoding=[\"\'].+[\"\'])", "", s)
+    return re.sub(r"(encoding=[\"\'][^\"\']+[\"\'])", "", s)
 
 
 def from_isoformat(dt_str: str) -> dt.datetime:
