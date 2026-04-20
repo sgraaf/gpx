@@ -58,7 +58,8 @@ def from_string(gpx_str: str) -> GPX:
     namespaces = extract_namespaces_from_string(gpx_str)
 
     # ET.fromstring() does not support encoding declarations in the string
-    gpx_str = remove_encoding_from_string(gpx_str)
+    # - it seems to support them now!
+    # gpx_str = remove_encoding_from_string(gpx_str)
     element = ET.fromstring(gpx_str)
 
     gpx = GPX.from_xml(element)
