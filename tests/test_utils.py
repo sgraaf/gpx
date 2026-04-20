@@ -76,6 +76,21 @@ class TestRemoveEncodingFromString:
         assert '<wpt lat="52.5" lon="13.4"/>' in result
         assert 'encoding="UTF-8"' not in result
 
+    def test_preserves_rest_of_xml_in_single_line(self) -> None:
+        input_str = """<?xml version="1.0" encoding="UTF-8"?>
+    <gpx xmlns="http://www.topografix.com/GPX/1/1">
+      <wpt lat="52.5" lon="13.4"/>
+    </gpx>
+    """
+        input_str_one_line = input_str.replace('\n', '')
+        actual = remove_encoding_from_string(input_str_one_line)
+        actual_in_multiple_lines = actual.replace('>', '>\n')
+        assert actual_in_multiple_lines == """<?xml version="1.0" ?>
+    <gpx xmlns="http://www.topografix.com/GPX/1/1">
+      <wpt lat="52.5" lon="13.4"/>
+    </gpx>
+    """
+
     def test_handles_encoding_with_spaces(self) -> None:
         """Test handling of encoding with extra spaces."""
         input_str = '<?xml version="1.0"  encoding="UTF-8" ?>'
