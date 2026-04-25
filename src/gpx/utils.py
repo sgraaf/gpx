@@ -93,19 +93,6 @@ def _ns_tag(tag: str, element: ET.Element) -> str:
     return tag
 
 
-def remove_encoding_from_string(s: str) -> str:
-    """Remove encoding declarations (e.g. encoding="utf-8") from the string, if any.
-
-    Args:
-        s: The string.
-
-    Returns:
-        The string with any encoding declarations removed.
-
-    """
-    return re.sub(r"(encoding=[\"\'].+[\"\'])", "", s)
-
-
 def from_isoformat(dt_str: str) -> dt.datetime:
     """Convert a string in ISO 8601 format to a `datetime` object."""
     return dt.datetime.fromisoformat(dt_str)
