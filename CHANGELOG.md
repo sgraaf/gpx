@@ -22,6 +22,10 @@ The **third number** is for emergencies when we need to start branches for older
 
 - Refactored `parse_from_xml()` function in `utils.py` for improved clarity and maintainability by extracting repetitive logic into focused helper functions (`_parse_list_elements`, `_parse_single_value`, `_parse_single_element`). This reduces code complexity while maintaining identical behavior.
 
+### Removed
+
+- Removed obsolete `remove_encoding_from_string` function.
+
 ### Fixed
 
 - EWKB format parsing now correctly handles Z coordinates by checking the EWKB flag before the ISO WKB flag.
