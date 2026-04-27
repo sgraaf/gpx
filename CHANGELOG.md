@@ -26,6 +26,7 @@ The **third number** is for emergencies when we need to start branches for older
 - `Track` now inherits from `PointsMixin` and reuses its bounds and elevation aggregations (`bounds`, `_points_with_ele`, `_eles`, `avg_elevation`, `min_elevation`, `max_elevation`, `diff_elevation`, `avg_speed`, `avg_moving_speed`), eliminating duplication between `Track` and the segment/route mixin. Per-segment semantics are preserved for distance, duration, speed extremes, ascent/descent and the elevation profile by overriding only those properties.
 - `int` and `bool` fields in `__geo_interface__` properties (e.g. `Waypoint.sat`, `Track.number`, `Route.number`) now keep their JSON-native types: an `int` value `42` renders as JSON `42` and `True` renders as JSON `true`. Previously both were silently coerced to floats (`42.0`, `1.0`) because the `_convert_value_to_json` branch order matched `SupportsFloat` before `int`/`bool`.
 - `PointsMixin` properties that walk consecutive point pairs (`total_distance`, `_speeds`, `speed_profile`, `_gains`, `moving_duration`) and `bounds` now bind `self._points` / `self._points_with_ele` to a local once instead of recomputing them on each iteration.
+- Refactored `gpx.write_kml()` and `gpx.to_wkt()` / `gpx.to_wkb()` to use small format-specific coordinate helper functions (`_kml_set_coords`, `_wkt_coord`, `_wkt_type`, `_wkb_pack_point`, `_wkb_linestring_body`).
 
 ### Removed
 

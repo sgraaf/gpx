@@ -28,6 +28,71 @@ GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
 XSI_NAMESPACE = "http://www.w3.org/2001/XMLSchema-instance"
 
 
+def _kml_add_name_desc(
+    parent: ET.Element, ns: str, name: str | None, desc: str | None
+) -> None:
+    """Append optional <name> / <description> children in the KML namespace."""
+    if name:
+        ET.SubElement(parent, f"{{{ns}}}name").text = name
+    if desc:
+        ET.SubElement(parent, f"{{{ns}}}description").text = desc
+
+
+def _kml_set_coords(parent: ET.Element, ns: str, points: list[Waypoint]) -> None:
+    """Append a <coordinates> child rendering ``points`` as KML coordinate text.
+
+    Each point becomes ``"lon,lat"`` or ``"lon,lat,ele"``; multiple points are
+    space-separated (KML's expected format).
+    """
+    coords = ET.SubElement(parent, f"{{{ns}}}coordinates")
+    coords.text = " ".join(
+        f"{p.lon},{p.lat},{p.ele}" if p.ele is not None else f"{p.lon},{p.lat}"
+        for p in points
+    )
+
+
+def _wkt_type(base: str, has_z: bool) -> str:  # noqa: FBT001
+    """Append the ``Z`` dimension suffix to a WKT type name when needed."""
+    return f"{base} Z" if has_z else base
+
+
+def _wkt_coord(point: Waypoint, *, has_z: bool) -> str:
+    """Render a single waypoint as a WKT coordinate (``"lon lat"`` or ``"lon lat ele"``).
+
+    When ``has_z`` is True and the point has no elevation, ``0`` is emitted
+    so all coordinates in a geometry have matching dimensionality.
+    """
+    if has_z:
+        ele = point.ele if point.ele is not None else 0
+        return f"{point.lon} {point.lat} {ele}"
+    return f"{point.lon} {point.lat}"
+
+
+def _wkb_pack_point(endian: str, point: Waypoint, *, has_z: bool) -> bytes:
+    """Pack a single waypoint's coordinates as little/big-endian doubles.
+
+    When ``has_z`` is True and the point has no elevation, ``0.0`` is packed
+    so all coordinates in a geometry share the same dimensionality.
+    """
+    if has_z:
+        ele = float(point.ele) if point.ele is not None else 0.0
+        return struct.pack(f"{endian}ddd", float(point.lon), float(point.lat), ele)
+    return struct.pack(f"{endian}dd", float(point.lon), float(point.lat))
+
+
+def _wkb_linestring_body(endian: str, points: list[Waypoint], *, has_z: bool) -> bytes:
+    """Build a WKB LINESTRING body (type code + count + packed points).
+
+    The leading byte-order marker is left to the caller, since LineStrings
+    appear both as standalone geometries and as members of MultiLineStrings.
+    """
+    body = struct.pack(f"{endian}I", 1002 if has_z else 2)
+    body += struct.pack(f"{endian}I", len(points))
+    for point in points:
+        body += _wkb_pack_point(endian, point, has_z=has_z)
+    return body
+
+
 @dataclass(slots=True)
 class GPX(GPXModel):
     """The root GPX document.
@@ -266,9 +331,7 @@ class GPX(GPXModel):
     # KML file methods
     # =========================================================================
 
-    def write_kml(  # noqa: C901, PLR0912, PLR0915
-        self, file_path: str | Path, *, pretty_print: bool = True
-    ) -> None:
+    def write_kml(self, file_path: str | Path, *, pretty_print: bool = True) -> None:
         """Write the GPX to a KML file.
 
         Args:
@@ -288,83 +351,33 @@ class GPX(GPXModel):
         root = ET.Element(f"{{{kml_ns}}}kml")
         doc = ET.SubElement(root, f"{{{kml_ns}}}Document")
 
-        # Add document name from metadata if present
-        if self.metadata and self.metadata.name:
-            name_elem = ET.SubElement(doc, f"{{{kml_ns}}}name")
-            name_elem.text = self.metadata.name
-        if self.metadata and self.metadata.desc:
-            desc_elem = ET.SubElement(doc, f"{{{kml_ns}}}description")
-            desc_elem.text = self.metadata.desc
+        if self.metadata:
+            _kml_add_name_desc(doc, kml_ns, self.metadata.name, self.metadata.desc)
 
-        # Add waypoints as Point placemarks
         for waypoint in self.wpt:
             placemark = ET.SubElement(doc, f"{{{kml_ns}}}Placemark")
-            if waypoint.name:
-                name_elem = ET.SubElement(placemark, f"{{{kml_ns}}}name")
-                name_elem.text = waypoint.name
-            if waypoint.desc:
-                desc_elem = ET.SubElement(placemark, f"{{{kml_ns}}}description")
-                desc_elem.text = waypoint.desc
+            _kml_add_name_desc(placemark, kml_ns, waypoint.name, waypoint.desc)
             point = ET.SubElement(placemark, f"{{{kml_ns}}}Point")
-            coords = ET.SubElement(point, f"{{{kml_ns}}}coordinates")
-            if waypoint.ele is not None:
-                coords.text = f"{waypoint.lon},{waypoint.lat},{waypoint.ele}"
-            else:
-                coords.text = f"{waypoint.lon},{waypoint.lat}"
+            _kml_set_coords(point, kml_ns, [waypoint])
 
-        # Add routes as LineString placemarks
         for route in self.rte:
             placemark = ET.SubElement(doc, f"{{{kml_ns}}}Placemark")
-            if route.name:
-                name_elem = ET.SubElement(placemark, f"{{{kml_ns}}}name")
-                name_elem.text = route.name
-            if route.desc:
-                desc_elem = ET.SubElement(placemark, f"{{{kml_ns}}}description")
-                desc_elem.text = route.desc
+            _kml_add_name_desc(placemark, kml_ns, route.name, route.desc)
             linestring = ET.SubElement(placemark, f"{{{kml_ns}}}LineString")
-            coords = ET.SubElement(linestring, f"{{{kml_ns}}}coordinates")
-            coord_strs: list[str] = []
-            for rtept in route.rtept:
-                if rtept.ele is not None:
-                    coord_strs.append(f"{rtept.lon},{rtept.lat},{rtept.ele}")
-                else:
-                    coord_strs.append(f"{rtept.lon},{rtept.lat}")
-            coords.text = " ".join(coord_strs)
+            _kml_set_coords(linestring, kml_ns, route.rtept)
 
-        # Add tracks as MultiGeometry with LineStrings
         for track in self.trk:
             placemark = ET.SubElement(doc, f"{{{kml_ns}}}Placemark")
-            if track.name:
-                name_elem = ET.SubElement(placemark, f"{{{kml_ns}}}name")
-                name_elem.text = track.name
-            if track.desc:
-                desc_elem = ET.SubElement(placemark, f"{{{kml_ns}}}description")
-                desc_elem.text = track.desc
+            _kml_add_name_desc(placemark, kml_ns, track.name, track.desc)
 
             if len(track.trkseg) == 1:
-                # Single segment: use LineString directly
                 linestring = ET.SubElement(placemark, f"{{{kml_ns}}}LineString")
-                coords = ET.SubElement(linestring, f"{{{kml_ns}}}coordinates")
-                coord_strs = []
-                for trkpt in track.trkseg[0].trkpt:
-                    if trkpt.ele is not None:
-                        coord_strs.append(f"{trkpt.lon},{trkpt.lat},{trkpt.ele}")
-                    else:
-                        coord_strs.append(f"{trkpt.lon},{trkpt.lat}")
-                coords.text = " ".join(coord_strs)
+                _kml_set_coords(linestring, kml_ns, track.trkseg[0].trkpt)
             else:
-                # Multiple segments: use MultiGeometry
                 multigeom = ET.SubElement(placemark, f"{{{kml_ns}}}MultiGeometry")
                 for trkseg in track.trkseg:
                     linestring = ET.SubElement(multigeom, f"{{{kml_ns}}}LineString")
-                    coords = ET.SubElement(linestring, f"{{{kml_ns}}}coordinates")
-                    coord_strs = []
-                    for trkpt in trkseg.trkpt:
-                        if trkpt.ele is not None:
-                            coord_strs.append(f"{trkpt.lon},{trkpt.lat},{trkpt.ele}")
-                        else:
-                            coord_strs.append(f"{trkpt.lon},{trkpt.lat}")
-                    coords.text = " ".join(coord_strs)
+                    _kml_set_coords(linestring, kml_ns, trkseg.trkpt)
 
         if pretty_print:
             ET.indent(root, space="  ")
@@ -377,7 +390,7 @@ class GPX(GPXModel):
     # WKT conversion methods
     # =========================================================================
 
-    def to_wkt(self) -> str:  # noqa: C901, PLR0912
+    def to_wkt(self) -> str:
         """Convert the GPX to a WKT (Well-Known Text) string.
 
         Returns a GeometryCollection containing all waypoints, routes, and tracks.
@@ -393,53 +406,26 @@ class GPX(GPXModel):
             GEOMETRYCOLLECTION (POINT (4.0 52.0))
 
         """
-        geometries = []
+        geometries: list[str] = []
 
-        # Add waypoints as POINTs
         for waypoint in self.wpt:
-            if waypoint.ele is not None:
-                geometries.append(
-                    f"POINT Z ({waypoint.lon} {waypoint.lat} {waypoint.ele})"
-                )
-            else:
-                geometries.append(f"POINT ({waypoint.lon} {waypoint.lat})")
-
-        # Add routes as LINESTRINGs
-        for route in self.rte:
-            coords: list[str] = []
-            has_z = any(rtept.ele is not None for rtept in route.rtept)
-            for rtept in route.rtept:
-                if has_z:
-                    ele = rtept.ele if rtept.ele is not None else 0
-                    coords.append(f"{rtept.lon} {rtept.lat} {ele}")
-                else:
-                    coords.append(f"{rtept.lon} {rtept.lat}")
-            if has_z:
-                geometries.append(f"LINESTRING Z ({', '.join(coords)})")
-            else:
-                geometries.append(f"LINESTRING ({', '.join(coords)})")
-
-        # Add tracks as MULTILINESTRINGs
-        for track in self.trk:
-            lines: list[str] = []
-            has_z = any(
-                trkpt.ele is not None
-                for trkseg in track.trkseg
-                for trkpt in trkseg.trkpt
+            has_z = waypoint.ele is not None
+            geometries.append(
+                f"{_wkt_type('POINT', has_z)} ({_wkt_coord(waypoint, has_z=has_z)})"
             )
-            for trkseg in track.trkseg:
-                coords = []
-                for trkpt in trkseg.trkpt:
-                    if has_z:
-                        ele = trkpt.ele if trkpt.ele is not None else 0
-                        coords.append(f"{trkpt.lon} {trkpt.lat} {ele}")
-                    else:
-                        coords.append(f"{trkpt.lon} {trkpt.lat}")
-                lines.append(f"({', '.join(coords)})")
-            if has_z:
-                geometries.append(f"MULTILINESTRING Z ({', '.join(lines)})")
-            else:
-                geometries.append(f"MULTILINESTRING ({', '.join(lines)})")
+
+        for route in self.rte:
+            has_z = any(p.ele is not None for p in route.rtept)
+            coords = ", ".join(_wkt_coord(p, has_z=has_z) for p in route.rtept)
+            geometries.append(f"{_wkt_type('LINESTRING', has_z)} ({coords})")
+
+        for track in self.trk:
+            has_z = any(p.ele is not None for seg in track.trkseg for p in seg.trkpt)
+            lines = ", ".join(
+                f"({', '.join(_wkt_coord(p, has_z=has_z) for p in seg.trkpt)})"
+                for seg in track.trkseg
+            )
+            geometries.append(f"{_wkt_type('MULTILINESTRING', has_z)} ({lines})")
 
         if len(geometries) == 1:
             return geometries[0]
@@ -505,78 +491,33 @@ class GPX(GPXModel):
     ) -> bytes:
         """Convert a waypoint to WKB POINT."""
         has_z = waypoint.ele is not None
-        wkb = byte_order_marker
-
-        if has_z:
-            wkb += struct.pack(f"{endian}I", 1001)  # Point Z
-            wkb += struct.pack(
-                f"{endian}ddd",
-                float(waypoint.lon),
-                float(waypoint.lat),
-                float(waypoint.ele),  # type: ignore[arg-type]
-            )
-        else:
-            wkb += struct.pack(f"{endian}I", 1)  # Point
-            wkb += struct.pack(f"{endian}dd", float(waypoint.lon), float(waypoint.lat))
-
-        return wkb
+        return (
+            byte_order_marker
+            + struct.pack(f"{endian}I", 1001 if has_z else 1)
+            + _wkb_pack_point(endian, waypoint, has_z=has_z)
+        )
 
     def _route_to_wkb(
         self, route: Route, endian: str, byte_order_marker: bytes
     ) -> bytes:
         """Convert a route to WKB LINESTRING."""
-        has_z = any(rtept.ele is not None for rtept in route.rtept)
-        wkb = byte_order_marker
-
-        if has_z:
-            wkb += struct.pack(f"{endian}I", 1002)  # LineString Z
-            wkb += struct.pack(f"{endian}I", len(route.rtept))
-            for rtept in route.rtept:
-                ele = float(rtept.ele) if rtept.ele is not None else 0.0
-                wkb += struct.pack(
-                    f"{endian}ddd", float(rtept.lon), float(rtept.lat), ele
-                )
-        else:
-            wkb += struct.pack(f"{endian}I", 2)  # LineString
-            wkb += struct.pack(f"{endian}I", len(route.rtept))
-            for rtept in route.rtept:
-                wkb += struct.pack(f"{endian}dd", float(rtept.lon), float(rtept.lat))
-
-        return wkb
+        has_z = any(p.ele is not None for p in route.rtept)
+        return byte_order_marker + _wkb_linestring_body(
+            endian, route.rtept, has_z=has_z
+        )
 
     def _track_to_wkb(
         self, track: Track, endian: str, byte_order_marker: bytes
     ) -> bytes:
         """Convert a track to WKB MULTILINESTRING."""
-        has_z = any(
-            trkpt.ele is not None for trkseg in track.trkseg for trkpt in trkseg.trkpt
+        has_z = any(p.ele is not None for seg in track.trkseg for p in seg.trkpt)
+        wkb = (
+            byte_order_marker
+            + struct.pack(f"{endian}I", 1005 if has_z else 5)
+            + struct.pack(f"{endian}I", len(track.trkseg))
         )
-        wkb = byte_order_marker
-
-        if has_z:
-            wkb += struct.pack(f"{endian}I", 1005)  # MultiLineString Z
-        else:
-            wkb += struct.pack(f"{endian}I", 5)  # MultiLineString
-
-        wkb += struct.pack(f"{endian}I", len(track.trkseg))
-
         for trkseg in track.trkseg:
-            # Each LineString in the MultiLineString
-            wkb += byte_order_marker
-            if has_z:
-                wkb += struct.pack(f"{endian}I", 1002)  # LineString Z
-                wkb += struct.pack(f"{endian}I", len(trkseg.trkpt))
-                for trkpt in trkseg.trkpt:
-                    ele = float(trkpt.ele) if trkpt.ele is not None else 0.0
-                    wkb += struct.pack(
-                        f"{endian}ddd", float(trkpt.lon), float(trkpt.lat), ele
-                    )
-            else:
-                wkb += struct.pack(f"{endian}I", 2)  # LineString
-                wkb += struct.pack(f"{endian}I", len(trkseg.trkpt))
-                for trkpt in trkseg.trkpt:
-                    wkb += struct.pack(
-                        f"{endian}dd", float(trkpt.lon), float(trkpt.lat)
-                    )
-
+            wkb += byte_order_marker + _wkb_linestring_body(
+                endian, trkseg.trkpt, has_z=has_z
+            )
         return wkb
