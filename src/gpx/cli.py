@@ -11,6 +11,7 @@ import contextlib
 import datetime as dt
 import json
 import sys
+from dataclasses import replace
 from decimal import Decimal
 from importlib import metadata
 from pathlib import Path
@@ -18,15 +19,14 @@ from typing import TYPE_CHECKING
 
 from .gpx import GPX
 from .io import read_geojson, read_gpx, read_kml
-from .metadata import Metadata
-from .route import Route
-from .track import Track
-from .track_segment import TrackSegment
 from .types import Latitude, Longitude
-from .waypoint import Waypoint
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
+
+    from .route import Route
+    from .track import Track
+    from .waypoint import Waypoint
 
 
 def cli(argv: Sequence[str] | None = None) -> int:
@@ -600,14 +600,7 @@ def _cmd_edit(args: argparse.Namespace) -> int:
 
     # Apply strip metadata
     if args.strip_all_metadata:
-        gpx = GPX(
-            creator=gpx.creator,
-            wpt=gpx.wpt,
-            rte=gpx.rte,
-            trk=gpx.trk,
-            extensions=gpx.extensions,
-            nsmap=gpx.nsmap,
-        )
+        gpx = replace(gpx, metadata=None)
     elif gpx.metadata:
         gpx = _apply_strip_metadata(gpx, args)
 
@@ -628,91 +621,20 @@ def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
         return gpx
 
     if args.strip_name:
-        metadata = Metadata(
-            desc=metadata.desc,
-            author=metadata.author,
-            copyright=metadata.copyright,
-            link=metadata.link,
-            time=metadata.time,
-            keywords=metadata.keywords,
-            bounds=metadata.bounds,
-            extensions=metadata.extensions,
-        )
+        metadata = replace(metadata, name=None)
     if args.strip_desc:
-        metadata = Metadata(
-            name=metadata.name,
-            author=metadata.author,
-            copyright=metadata.copyright,
-            link=metadata.link,
-            time=metadata.time,
-            keywords=metadata.keywords,
-            bounds=metadata.bounds,
-            extensions=metadata.extensions,
-        )
+        metadata = replace(metadata, desc=None)
     if args.strip_author:
-        metadata = Metadata(
-            name=metadata.name,
-            desc=metadata.desc,
-            copyright=metadata.copyright,
-            link=metadata.link,
-            time=metadata.time,
-            keywords=metadata.keywords,
-            bounds=metadata.bounds,
-            extensions=metadata.extensions,
-        )
+        metadata = replace(metadata, author=None)
     if args.strip_copyright:
-        metadata = Metadata(
-            name=metadata.name,
-            desc=metadata.desc,
-            author=metadata.author,
-            link=metadata.link,
-            time=metadata.time,
-            keywords=metadata.keywords,
-            bounds=metadata.bounds,
-            extensions=metadata.extensions,
-        )
+        metadata = replace(metadata, copyright=None)
     if args.strip_time:
-        metadata = Metadata(
-            name=metadata.name,
-            desc=metadata.desc,
-            author=metadata.author,
-            copyright=metadata.copyright,
-            link=metadata.link,
-            keywords=metadata.keywords,
-            bounds=metadata.bounds,
-            extensions=metadata.extensions,
-        )
+        metadata = replace(metadata, time=None)
     if args.strip_keywords:
-        metadata = Metadata(
-            name=metadata.name,
-            desc=metadata.desc,
-            author=metadata.author,
-            copyright=metadata.copyright,
-            link=metadata.link,
-            time=metadata.time,
-            bounds=metadata.bounds,
-            extensions=metadata.extensions,
-        )
+        metadata = replace(metadata, keywords=None)
     if args.strip_links:
-        metadata = Metadata(
-            name=metadata.name,
-            desc=metadata.desc,
-            author=metadata.author,
-            copyright=metadata.copyright,
-            time=metadata.time,
-            keywords=metadata.keywords,
-            bounds=metadata.bounds,
-            extensions=metadata.extensions,
-        )
-    return GPX(
-        creator=gpx.creator,
-        metadata=metadata,
-        wpt=gpx.wpt,
-        rte=gpx.rte,
-        trk=gpx.trk,
-        extensions=gpx.extensions,
-        nsmap=gpx.nsmap,
-    )
+        metadata = replace(metadata, link=[])
+    return replace(gpx, metadata=metadata)
 
 
 def _parse_datetime(dt_str: str) -> dt.datetime:
@@ -743,7 +665,33 @@ def _parse_datetime(dt_str: str) -> dt.datetime:
     raise ValueError(msg)
 
 
-def _apply_crop(  # noqa: C901
+def _filter_points(gpx: GPX, predicate: Callable[[Waypoint], bool]) -> GPX:
+    """Return a new GPX with each point list filtered by ``predicate``.
+
+    Routes / segments / tracks that end up empty are dropped.
+    """
+    new_wpt = [w for w in gpx.wpt if predicate(w)]
+
+    new_rte: list[Route] = []
+    for route in gpx.rte:
+        kept = [p for p in route.rtept if predicate(p)]
+        if kept:
+            new_rte.append(replace(route, rtept=kept))
+
+    new_trk: list[Track] = []
+    for track in gpx.trk:
+        new_trkseg = [
+            replace(segment, trkpt=kept)
+            for segment in track.trkseg
+            if (kept := [p for p in segment.trkpt if predicate(p)])
+        ]
+        if new_trkseg:
+            new_trk.append(replace(track, trkseg=new_trkseg))
+
+    return replace(gpx, wpt=new_wpt, rte=new_rte, trk=new_trk)
+
+
+def _apply_crop(
     gpx: GPX,
     min_lat: float | None,
     max_lat: float | None,
@@ -762,62 +710,7 @@ def _apply_crop(  # noqa: C901
             return False
         return not (max_lon is not None and lon > max_lon)
 
-    # Filter waypoints
-    new_wpt = [w for w in gpx.wpt if is_in_bounds(w)]
-
-    # Filter routes
-    new_rte = []
-    for route in gpx.rte:
-        new_rtept = [p for p in route.rtept if is_in_bounds(p)]
-        if new_rtept:
-            new_rte.append(
-                Route(
-                    name=route.name,
-                    cmt=route.cmt,
-                    desc=route.desc,
-                    src=route.src,
-                    link=route.link,
-                    number=route.number,
-                    type=route.type,
-                    rtept=new_rtept,
-                    extensions=route.extensions,
-                )
-            )
-
-    # Filter tracks
-    new_trk = []
-    for track in gpx.trk:
-        new_trkseg = []
-        for segment in track.trkseg:
-            new_trkpt = [p for p in segment.trkpt if is_in_bounds(p)]
-            if new_trkpt:
-                new_trkseg.append(
-                    TrackSegment(trkpt=new_trkpt, extensions=segment.extensions)
-                )
-        if new_trkseg:
-            new_trk.append(
-                Track(
-                    name=track.name,
-                    cmt=track.cmt,
-                    desc=track.desc,
-                    src=track.src,
-                    link=track.link,
-                    number=track.number,
-                    type=track.type,
-                    trkseg=new_trkseg,
-                    extensions=track.extensions,
-                )
-            )
-
-    return GPX(
-        creator=gpx.creator,
-        metadata=gpx.metadata,
-        wpt=new_wpt,
-        rte=new_rte,
-        trk=new_trk,
-        extensions=gpx.extensions,
-        nsmap=gpx.nsmap,
-    )
+    return _filter_points(gpx, is_in_bounds)
 
 
 def _apply_trim(
@@ -834,62 +727,7 @@ def _apply_trim(
             return False
         return not (end_dt is not None and point.time > end_dt)
 
-    # Filter waypoints
-    new_wpt = [w for w in gpx.wpt if is_in_time_range(w)]
-
-    # Filter routes (routes usually don't have timestamps, but check anyway)
-    new_rte = []
-    for route in gpx.rte:
-        new_rtept = [p for p in route.rtept if is_in_time_range(p)]
-        if new_rtept:
-            new_rte.append(
-                Route(
-                    name=route.name,
-                    cmt=route.cmt,
-                    desc=route.desc,
-                    src=route.src,
-                    link=route.link,
-                    number=route.number,
-                    type=route.type,
-                    rtept=new_rtept,
-                    extensions=route.extensions,
-                )
-            )
-
-    # Filter tracks
-    new_trk = []
-    for track in gpx.trk:
-        new_trkseg = []
-        for segment in track.trkseg:
-            new_trkpt = [p for p in segment.trkpt if is_in_time_range(p)]
-            if new_trkpt:
-                new_trkseg.append(
-                    TrackSegment(trkpt=new_trkpt, extensions=segment.extensions)
-                )
-        if new_trkseg:
-            new_trk.append(
-                Track(
-                    name=track.name,
-                    cmt=track.cmt,
-                    desc=track.desc,
-                    src=track.src,
-                    link=track.link,
-                    number=track.number,
-                    type=track.type,
-                    trkseg=new_trkseg,
-                    extensions=track.extensions,
-                )
-            )
-
-    return GPX(
-        creator=gpx.creator,
-        metadata=gpx.metadata,
-        wpt=new_wpt,
-        rte=new_rte,
-        trk=new_trk,
-        extensions=gpx.extensions,
-        nsmap=gpx.nsmap,
-    )
+    return _filter_points(gpx, is_in_time_range)
 
 
 def _apply_reverse(
@@ -904,52 +742,22 @@ def _apply_reverse(
 
     if reverse_routes:
         new_rte = [
-            Route(
-                name=route.name,
-                cmt=route.cmt,
-                desc=route.desc,
-                src=route.src,
-                link=route.link,
-                number=route.number,
-                type=route.type,
-                rtept=list(reversed(route.rtept)),
-                extensions=route.extensions,
-            )
-            for route in gpx.rte
+            replace(route, rtept=list(reversed(route.rtept))) for route in gpx.rte
         ]
 
     if reverse_tracks:
-        new_trk = []
-        for track in gpx.trk:
-            new_trkseg = [
-                TrackSegment(
-                    trkpt=list(reversed(segment.trkpt)), extensions=segment.extensions
-                )
-                for segment in reversed(track.trkseg)
-            ]
-            new_trk.append(
-                Track(
-                    name=track.name,
-                    cmt=track.cmt,
-                    desc=track.desc,
-                    src=track.src,
-                    link=track.link,
-                    number=track.number,
-                    type=track.type,
-                    trkseg=new_trkseg,
-                    extensions=track.extensions,
-                )
+        new_trk = [
+            replace(
+                track,
+                trkseg=[
+                    replace(segment, trkpt=list(reversed(segment.trkpt)))
+                    for segment in reversed(track.trkseg)
+                ],
             )
+            for track in gpx.trk
+        ]
 
-    return GPX(
-        creator=gpx.creator,
-        metadata=gpx.metadata,
-        wpt=gpx.wpt,
-        rte=new_rte,
-        trk=new_trk,
-        extensions=gpx.extensions,
-        nsmap=gpx.nsmap,
-    )
+    return replace(gpx, rte=new_rte, trk=new_trk)
 
 
 def _apply_precision(
@@ -960,93 +768,41 @@ def _apply_precision(
     """Apply precision reduction to coordinates and elevations."""
 
     def round_point(point: Waypoint) -> Waypoint:
-        lat = point.lat
-        lon = point.lon
-        ele = point.ele
-
-        if coord_precision is not None:
-            lat = Latitude(str(round(float(lat), coord_precision)))
-            lon = Longitude(str(round(float(lon), coord_precision)))
-
-        if elevation_precision is not None and ele is not None:
-            ele = Decimal(str(round(float(ele), elevation_precision)))
-
-        return Waypoint(
-            lat=lat,
-            lon=lon,
-            ele=ele,
-            time=point.time,
-            magvar=point.magvar,
-            geoidheight=point.geoidheight,
-            name=point.name,
-            cmt=point.cmt,
-            desc=point.desc,
-            src=point.src,
-            link=point.link,
-            sym=point.sym,
-            type=point.type,
-            fix=point.fix,
-            sat=point.sat,
-            hdop=point.hdop,
-            vdop=point.vdop,
-            pdop=point.pdop,
-            ageofdgpsdata=point.ageofdgpsdata,
-            dgpsid=point.dgpsid,
-            extensions=point.extensions,
+        if coord_precision is None and elevation_precision is None:
+            return point
+        new_lat = (
+            Latitude(str(round(float(point.lat), coord_precision)))
+            if coord_precision is not None
+            else point.lat
         )
+        new_lon = (
+            Longitude(str(round(float(point.lon), coord_precision)))
+            if coord_precision is not None
+            else point.lon
+        )
+        new_ele = (
+            Decimal(str(round(float(point.ele), elevation_precision)))
+            if elevation_precision is not None and point.ele is not None
+            else point.ele
+        )
+        return replace(point, lat=new_lat, lon=new_lon, ele=new_ele)
 
-    # Round waypoints
     new_wpt = [round_point(w) for w in gpx.wpt]
-
-    # Round routes
     new_rte = [
-        Route(
-            name=route.name,
-            cmt=route.cmt,
-            desc=route.desc,
-            src=route.src,
-            link=route.link,
-            number=route.number,
-            type=route.type,
-            rtept=[round_point(p) for p in route.rtept],
-            extensions=route.extensions,
+        replace(route, rtept=[round_point(p) for p in route.rtept]) for route in gpx.rte
+    ]
+    new_trk = [
+        replace(
+            track,
+            trkseg=[
+                replace(segment, trkpt=[round_point(p) for p in segment.trkpt])
+                for segment in track.trkseg
+            ],
         )
-        for route in gpx.rte
+        for track in gpx.trk
     ]
 
-    # Round tracks
-    new_trk = []
-    for track in gpx.trk:
-        new_trkseg = [
-            TrackSegment(
-                trkpt=[round_point(p) for p in segment.trkpt],
-                extensions=segment.extensions,
-            )
-            for segment in track.trkseg
-        ]
-        new_trk.append(
-            Track(
-                name=track.name,
-                cmt=track.cmt,
-                desc=track.desc,
-                src=track.src,
-                link=track.link,
-                number=track.number,
-                type=track.type,
-                trkseg=new_trkseg,
-                extensions=track.extensions,
-            )
-        )
-
-    return GPX(
-        creator=gpx.creator,
-        metadata=gpx.metadata,
-        wpt=new_wpt,
-        rte=new_rte,
-        trk=new_trk,
-        extensions=gpx.extensions,
-        nsmap=gpx.nsmap,
-    )
+    return replace(gpx, wpt=new_wpt, rte=new_rte, trk=new_trk)
 
 
 # =============================================================================

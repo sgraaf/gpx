@@ -21,6 +21,7 @@ The **third number** is for emergencies when we need to start branches for older
 ### Changed
 
 - Refactored `parse_from_xml()` function in `utils.py` for improved clarity and maintainability by extracting repetitive logic into focused helper functions (`_parse_list_elements`, `_parse_single_value`, `_parse_single_element`). This reduces code complexity while maintaining identical behavior.
+- `_apply_*` helper functions (`_apply_crop`, `_apply_trim`, `_apply_reverse`, `_apply_precision`, `_apply_strip_metadata`) in `cli.py` now use `dataclasses.replace` instead of manually re-listing every field on each rebuild.
 
 ### Removed
 
