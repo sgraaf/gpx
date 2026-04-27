@@ -139,7 +139,7 @@ def waypoint_geo_interface() -> dict[str, Any]:
             "sym": "City",
             "type": "City",
             "fix": "3d",
-            "sat": 8.0,
+            "sat": 8,
             "hdop": 1.2,
             "vdop": 1.5,
             "pdop": 1.8,
@@ -165,7 +165,7 @@ def track_geo_interface() -> dict[str, Any]:
             "cmt": "Good weather",
             "desc": "A morning run through the park",
             "src": "Garmin",
-            "number": 1.0,
+            "number": 1,
             "type": "Running",
         },
     }
@@ -204,7 +204,7 @@ def route_geo_interface() -> dict[str, Any]:
             "cmt": "Best route",
             "desc": "A tour of the city",
             "src": "Planned",
-            "number": 1.0,
+            "number": 1,
             "type": "Tourism",
         },
     }

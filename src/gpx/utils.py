@@ -521,11 +521,15 @@ def _convert_value_to_json(value: Any) -> Any:  # noqa: ANN401
         The JSON-serializable value.
 
     """
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int):
+        return value
     if isinstance(value, dt.datetime):
         return to_isoformat(value)
-    if isinstance(value, SupportsFloat):  # Decimal and similar
+    if isinstance(value, SupportsFloat):  # Decimal, Latitude, etc.
         return float(value)
-    if isinstance(value, SupportsInt) and not isinstance(value, bool):
+    if isinstance(value, SupportsInt):
         return int(value)
     return str(value)
 

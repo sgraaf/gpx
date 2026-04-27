@@ -24,6 +24,7 @@ The **third number** is for emergencies when we need to start branches for older
 - `_apply_*` helper functions (`_apply_crop`, `_apply_trim`, `_apply_reverse`, `_apply_precision`, `_apply_strip_metadata`) in `cli.py` now use `dataclasses.replace` instead of manually re-listing every field on each rebuild.
 - `read_kml()` in `io.py` now uses `xml.etree.ElementTree.parse` directly instead of manually stripping the XML declaration before parsing, which handles encoding declarations natively.
 - `Track` now inherits from `PointsMixin` and reuses its bounds and elevation aggregations (`bounds`, `_points_with_ele`, `_eles`, `avg_elevation`, `min_elevation`, `max_elevation`, `diff_elevation`, `avg_speed`, `avg_moving_speed`), eliminating duplication between `Track` and the segment/route mixin. Per-segment semantics are preserved for distance, duration, speed extremes, ascent/descent and the elevation profile by overriding only those properties.
+- `int` and `bool` fields in `__geo_interface__` properties (e.g. `Waypoint.sat`, `Track.number`, `Route.number`) now keep their JSON-native types: an `int` value `42` renders as JSON `42` and `True` renders as JSON `true`. Previously both were silently coerced to floats (`42.0`, `1.0`) because the `_convert_value_to_json` branch order matched `SupportsFloat` before `int`/`bool`.
 
 ### Removed
 

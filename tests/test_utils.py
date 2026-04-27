@@ -297,7 +297,7 @@ class TestGeoProperties:
         assert isinstance(props["value"], float)
 
     def test_build_geo_properties_with_int(self) -> None:
-        """Test build_geo_properties converts int-like values to float for JSON."""
+        """build_geo_properties keeps int values as ints (not floats)."""
 
         @dataclass
         class TestModel:
@@ -307,12 +307,12 @@ class TestGeoProperties:
 
         obj = TestModel(count=42)
         props = build_geo_properties(obj)
-        # Integers are converted to float for consistent JSON serialization
-        assert props["count"] == 42.0
-        assert isinstance(props["count"], float)
+        assert props["count"] == 42
+        assert isinstance(props["count"], int)
+        assert not isinstance(props["count"], bool)
 
     def test_build_geo_properties_with_bool(self) -> None:
-        """Test build_geo_properties converts bool to float."""
+        """build_geo_properties keeps bool values as bools (not floats)."""
 
         @dataclass
         class TestModel:
@@ -322,6 +322,4 @@ class TestGeoProperties:
 
         obj = TestModel(flag=True)
         props = build_geo_properties(obj)
-        # Booleans are converted to float (1.0/0.0) per SupportsFloat behavior
-        assert props["flag"] == 1.0
-        assert isinstance(props["flag"], float)
+        assert props["flag"] is True
