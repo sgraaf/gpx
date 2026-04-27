@@ -71,27 +71,26 @@ class PointsMixin:
     @property
     def bounds(self) -> tuple[Latitude, Longitude, Latitude, Longitude]:
         """The bounds of the route/track segment."""
+        points = self._points
         return (
-            min(point.lat for point in self._points),
-            min(point.lon for point in self._points),
-            max(point.lat for point in self._points),
-            max(point.lon for point in self._points),
+            min(point.lat for point in points),
+            min(point.lon for point in points),
+            max(point.lat for point in points),
+            max(point.lon for point in points),
         )
 
     @property
     def total_distance(self) -> float:
         """The total distance (in metres)."""
-        return sum(
-            point.distance_to(self._points[i + 1])
-            for i, point in enumerate(self._points[:-1])
-        )
+        return sum(prev.distance_to(point) for prev, point in pairwise(self._points))
 
     @property
     def total_duration(self) -> dt.timedelta:
         """The total duration."""
-        if len(self._points) < 2:  # noqa: PLR2004
+        points = self._points
+        if len(points) < 2:  # noqa: PLR2004
             return dt.timedelta()
-        return self._points[0].duration_to(self._points[-1])
+        return points[0].duration_to(points[-1])
 
     @property
     def moving_duration(self) -> dt.timedelta:
@@ -101,9 +100,9 @@ class PointsMixin:
         speed greater than 0.5 km/h.
         """
         duration = dt.timedelta()
-        for i, point in enumerate(self._points[:-1]):
-            if point.speed_to(self._points[i + 1]) > 0.5 / 3.6:  # 0.5 km/h
-                duration += point.duration_to(self._points[i + 1])
+        for prev, point in pairwise(self._points):
+            if prev.speed_to(point) > 0.5 / 3.6:  # 0.5 km/h
+                duration += prev.duration_to(point)
         return duration
 
     @property
@@ -126,10 +125,7 @@ class PointsMixin:
 
     @property
     def _speeds(self) -> list[float]:
-        return [
-            point.speed_to(self._points[i + 1])
-            for i, point in enumerate(self._points[:-1])
-        ]
+        return [prev.speed_to(point) for prev, point in pairwise(self._points)]
 
     @property
     def max_speed(self) -> float:
@@ -148,9 +144,9 @@ class PointsMixin:
         The speed profile is a list of (timestamp, speed) tuples.
         """
         return [
-            (point.time, point.speed_to(self._points[i + 1]))
-            for i, point in enumerate(self._points[:-1])
-            if point.time is not None
+            (prev.time, prev.speed_to(point))
+            for prev, point in pairwise(self._points)
+            if prev.time is not None
         ]
 
     @property
@@ -183,10 +179,7 @@ class PointsMixin:
 
     @property
     def _gains(self) -> list[Decimal]:
-        return [
-            point.gain_to(self._points_with_ele[i + 1])
-            for i, point in enumerate(self._points_with_ele[:-1])
-        ]
+        return [prev.gain_to(point) for prev, point in pairwise(self._points_with_ele)]
 
     @property
     def total_ascent(self) -> Decimal:
@@ -196,7 +189,7 @@ class PointsMixin:
     @property
     def total_descent(self) -> Decimal:
         """The total descent (in metres)."""
-        return abs(sum((gain for gain in self._gains if gain < 0), Decimal(0)))
+        return -sum((gain for gain in self._gains if gain < 0), Decimal(0))
 
     @property
     def elevation_profile(self) -> list[tuple[float, Decimal]]:
