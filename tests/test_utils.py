@@ -50,7 +50,7 @@ class TestTypeIntrospection:
 
     def test_is_optional_with_optional_type(self) -> None:
         """Test is_optional with Optional type."""
-        assert is_optional(int | None) is True  # type: ignore[arg-type]
+        assert is_optional(int | None) is True  # type: ignore[arg-type, ty:invalid-argument-type]
 
     def test_is_optional_with_required_type(self) -> None:
         """Test is_optional with required type."""
@@ -58,17 +58,17 @@ class TestTypeIntrospection:
 
     def test_is_optional_with_union_containing_none(self) -> None:
         """Test is_optional with Union containing None."""
-        assert is_optional(str | int | None) is True  # type: ignore[arg-type]
+        assert is_optional(str | int | None) is True  # type: ignore[arg-type, ty:invalid-argument-type]
 
     def test_get_inner_type_with_optional(self) -> None:
         """Test get_inner_type with Optional."""
-        inner = get_inner_type(str | None)  # type: ignore[arg-type]
+        inner = get_inner_type(str | None)  # type: ignore[arg-type, ty:invalid-argument-type]
         assert inner is str
 
     def test_get_inner_type_with_union_multiple_non_none(self) -> None:
         """Test get_inner_type with Union of multiple non-None types."""
         union_type = str | int | None  # type: ignore[assignment]
-        result = get_inner_type(union_type)  # type: ignore[arg-type]
+        result = get_inner_type(union_type)  # type: ignore[arg-type, ty:invalid-argument-type]
         # Should keep the union when there are multiple non-None types
         assert result == union_type
 

@@ -219,7 +219,7 @@ def _parse_list_elements(
     items = []
     for child in element.findall(_ns_tag(field_name, element)):
         if has_from_xml(item_type):
-            items.append(item_type.from_xml(child))  # type: ignore[attr-defined]
+            items.append(item_type.from_xml(child))  # type: ignore[attr-defined, ty:unresolved-attribute]
         else:
             items.append(item_type(child.text) if child.text else None)
     return items
@@ -261,7 +261,7 @@ def _parse_single_element(
     if child is None:
         return None
     if has_from_xml(value_type):
-        return value_type.from_xml(child)  # type: ignore[attr-defined]
+        return value_type.from_xml(child)  # type: ignore[attr-defined, ty:unresolved-attribute]
     if child.text is None:
         return None
     return _parse_single_value(child.text, value_type)

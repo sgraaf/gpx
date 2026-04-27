@@ -268,4 +268,4 @@ class TestDGPSStation:
     def test_invalid_dgps_station_none(self) -> None:
         """Test that None raises ValueError."""
         with pytest.raises(ValueError, match="Invalid DGPS station value"):
-            DGPSStation(None)  # type: ignore[arg-type]
+            DGPSStation(None)  # type: ignore[arg-type, ty:invalid-argument-type]
