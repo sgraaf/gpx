@@ -18,6 +18,18 @@ if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
+def _matches_tag(elem_tag: str, tag: str, ns_tag: str | None) -> bool:
+    """Match an XML element tag.
+
+    If ``ns_tag`` is given (Clark-notation ``{namespace}tag``), require an
+    exact match. Otherwise match either the bare local name or any
+    namespace-qualified form (``{anything}tag``).
+    """
+    if ns_tag is not None:
+        return elem_tag == ns_tag
+    return elem_tag.endswith(f"}}{tag}") or elem_tag == tag
+
+
 @dataclass(slots=True)
 class Extensions:
     """Container for GPX extension elements from any namespace.
@@ -213,21 +225,9 @@ class Extensions:
         ns_tag = f"{{{namespace}}}{tag}" if namespace else None
 
         for elem in self.elements:
-            # Check the element itself
-            if ns_tag:
-                if elem.tag == ns_tag:
-                    return elem.text if elem.text else default
-            elif elem.tag.endswith(f"}}{tag}") or elem.tag == tag:
-                return elem.text if elem.text else default
-
-            # Search descendants
             for child in elem.iter():
-                if ns_tag:
-                    if child.tag == ns_tag:
-                        return child.text if child.text else default
-                elif child.tag.endswith(f"}}{tag}") or child.tag == tag:
+                if _matches_tag(child.tag, tag, ns_tag):
                     return child.text if child.text else default
-
         return default
 
     def get_int(
@@ -316,14 +316,8 @@ class Extensions:
         """
         ns_tag = f"{{{namespace}}}{tag}"
 
-        # Try to find and update existing element
+        # Try to find and update existing element.
         for elem in self.elements:
-            # Check the element itself
-            if elem.tag == ns_tag:
-                elem.text = value
-                return
-
-            # Search descendants
             for child in elem.iter():
                 if child.tag == ns_tag:
                     child.text = value
@@ -365,24 +359,16 @@ class Extensions:
         """
         ns_tag = f"{{{namespace}}}{tag}" if namespace else None
 
-        # Check top-level elements
+        # Check top-level elements (need to del from self.elements)
         for i, elem in enumerate(self.elements):
-            if ns_tag:
-                if elem.tag == ns_tag:
-                    del self.elements[i]
-                    return True
-            elif elem.tag.endswith(f"}}{tag}") or elem.tag == tag:
+            if _matches_tag(elem.tag, tag, ns_tag):
                 del self.elements[i]
                 return True
 
-        # Check descendants
+        # Check direct children (need parent reference for elem.remove(child))
         for elem in self.elements:
             for child in list(elem):
-                if ns_tag:
-                    if child.tag == ns_tag:
-                        elem.remove(child)
-                        return True
-                elif child.tag.endswith(f"}}{tag}") or child.tag == tag:
+                if _matches_tag(child.tag, tag, ns_tag):
                     elem.remove(child)
                     return True
 
