@@ -15,19 +15,18 @@ from typing import TYPE_CHECKING, Any, overload
 from .base import GPXModel
 from .extensions import Extensions  # noqa: TC001
 from .link import Link  # noqa: TC001
+from .mixins import PointsMixin
 from .track_segment import TrackSegment  # noqa: TC001
 from .utils import build_geo_feature
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
-    from gpx.types import Latitude, Longitude
-
     from .waypoint import Waypoint
 
 
 @dataclass(kw_only=True, slots=True)
-class Track(GPXModel):
+class Track(GPXModel, PointsMixin):
     """An ordered list of points describing a path.
 
     A track represents a GPS track consisting of track segments.
@@ -56,6 +55,11 @@ class Track(GPXModel):
     type: str | None = None
     extensions: Extensions | None = None
     trkseg: list[TrackSegment] = field(default_factory=list)
+
+    @property
+    def _points(self) -> list[Waypoint]:
+        """All track points across all segments, flattened."""
+        return [trkpt for trkseg in self.trkseg for trkpt in trkseg.trkpt]
 
     @property
     def __geo_interface__(self) -> dict[str, Any]:
@@ -117,16 +121,6 @@ class Track(GPXModel):
         yield from self.trkseg
 
     @property
-    def bounds(self) -> tuple[Latitude, Longitude, Latitude, Longitude]:
-        """The bounds of the track."""
-        return (
-            min(trkpt.lat for trkseg in self.trkseg for trkpt in trkseg),
-            min(trkpt.lon for trkseg in self.trkseg for trkpt in trkseg),
-            max(trkpt.lat for trkseg in self.trkseg for trkpt in trkseg),
-            max(trkpt.lon for trkseg in self.trkseg for trkpt in trkseg),
-        )
-
-    @property
     def total_distance(self) -> float:
         """The total distance of the track (in metres)."""
         return sum(trkseg.total_distance for trkseg in self.trkseg)
@@ -146,24 +140,6 @@ class Track(GPXModel):
         return sum((trkseg.moving_duration for trkseg in self.trkseg), dt.timedelta())
 
     @property
-    def avg_speed(self) -> float:
-        """The average speed of the track (in metres / second)."""
-        return (
-            self.total_distance / self.total_duration.total_seconds()
-            if self.total_duration
-            else 0.0
-        )
-
-    @property
-    def avg_moving_speed(self) -> float:
-        """The average moving speed of the track (in metres / second)."""
-        return (
-            self.total_distance / self.moving_duration.total_seconds()
-            if self.moving_duration
-            else 0.0
-        )
-
-    @property
     def max_speed(self) -> float:
         """The maximum speed of the track (in metres / second)."""
         return max(trkseg.max_speed for trkseg in self.trkseg)
@@ -179,48 +155,7 @@ class Track(GPXModel):
 
         The speed profile is a list of (timestamp, speed) tuples.
         """
-        profile = []
-        for trkseg in self.trkseg:
-            profile += trkseg.speed_profile
-        return profile
-
-    @property
-    def _points_with_ele(self) -> list[Waypoint]:
-        return [
-            trkpt
-            for trkseg in self.trkseg
-            for trkpt in trkseg.trkpt
-            if trkpt.ele is not None
-        ]
-
-    @property
-    def _eles(self) -> list[Decimal]:
-        return [
-            trkpt.ele
-            for trkseg in self.trkseg
-            for trkpt in trkseg.trkpt
-            if trkpt.ele is not None
-        ]
-
-    @property
-    def avg_elevation(self) -> Decimal:
-        """The average elevation (in metres)."""
-        return sum(self._eles, Decimal(0)) / len(self._eles)
-
-    @property
-    def max_elevation(self) -> Decimal:
-        """The maximum elevation of the track (in metres)."""
-        return max(self._eles)
-
-    @property
-    def min_elevation(self) -> Decimal:
-        """The minimum elevation of the track (in metres)."""
-        return min(self._eles)
-
-    @property
-    def diff_elevation(self) -> Decimal:
-        """The difference in elevation of the track (in metres)."""
-        return self.max_elevation - self.min_elevation
+        return [entry for trkseg in self.trkseg for entry in trkseg.speed_profile]
 
     @property
     def total_ascent(self) -> Decimal:
@@ -230,7 +165,7 @@ class Track(GPXModel):
     @property
     def total_descent(self) -> Decimal:
         """The total descent of the track (in metres)."""
-        return abs(sum((trkseg.total_descent for trkseg in self.trkseg), Decimal(0)))
+        return sum((trkseg.total_descent for trkseg in self.trkseg), Decimal(0))
 
     @property
     def elevation_profile(self) -> list[tuple[float, Decimal]]:

@@ -6,20 +6,25 @@ import datetime as dt
 from abc import abstractmethod
 from decimal import Decimal
 from itertools import pairwise
-from typing import TYPE_CHECKING, Any, overload
+from typing import TYPE_CHECKING, Any
 
 from .utils import build_geo_feature
 from .waypoint import Waypoint
 
 if TYPE_CHECKING:
-    from collections.abc import Iterator
-
     from .types import Latitude, Longitude
     from .waypoint import Waypoint
 
 
 class PointsMixin:
-    """A mixin class to provide various statistics to an object's `points`."""
+    """A mixin class to provide various statistics to an object's `points`.
+
+    Implementing classes must provide ``_points``, returning a flat list of
+    waypoints to aggregate over. The mixin intentionally does not define
+    ``__iter__``, ``__getitem__`` or ``__len__`` — those depend on the
+    semantics of the host class (e.g. ``Track`` iterates segments while
+    ``Route`` / ``TrackSegment`` iterate points) and belong on the host.
+    """
 
     @property
     @abstractmethod
@@ -62,24 +67,6 @@ class PointsMixin:
 
         # Exclude geometry fields from properties
         return build_geo_feature(geometry, self, exclude_fields={"rtept", "trkpt"})
-
-    @overload
-    def __getitem__(self, index: int) -> Waypoint: ...
-
-    @overload
-    def __getitem__(self, index: slice) -> list[Waypoint]: ...
-
-    def __getitem__(self, index: int | slice) -> Waypoint | list[Waypoint]:
-        """Get a route/track segment point by index or slice."""
-        return self._points[index]
-
-    def __len__(self) -> int:
-        """Return the number of route/track segment points."""
-        return len(self._points)
-
-    def __iter__(self) -> Iterator[Waypoint]:
-        """Iterate over route/track segment points."""
-        yield from self._points
 
     @property
     def bounds(self) -> tuple[Latitude, Longitude, Latitude, Longitude]:

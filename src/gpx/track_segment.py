@@ -7,11 +7,15 @@ which are logically connected in order, following the GPX 1.1 specification.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, overload
 
 from .base import GPXModel
 from .extensions import Extensions  # noqa: TC001
 from .mixins import PointsMixin
 from .waypoint import Waypoint  # noqa: TC001
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 @dataclass(kw_only=True, slots=True)
@@ -37,3 +41,21 @@ class TrackSegment(GPXModel, PointsMixin):
     @property
     def _points(self) -> list[Waypoint]:
         return self.trkpt
+
+    @overload
+    def __getitem__(self, index: int) -> Waypoint: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[Waypoint]: ...
+
+    def __getitem__(self, index: int | slice) -> Waypoint | list[Waypoint]:
+        """Get a track point by index or slice."""
+        return self.trkpt[index]
+
+    def __len__(self) -> int:
+        """Return the number of track points."""
+        return len(self.trkpt)
+
+    def __iter__(self) -> Iterator[Waypoint]:
+        """Iterate over track points."""
+        yield from self.trkpt

@@ -8,12 +8,16 @@ GPX 1.1 specification.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, overload
 
 from .base import GPXModel
 from .extensions import Extensions  # noqa: TC001
 from .link import Link  # noqa: TC001
 from .mixins import PointsMixin
 from .waypoint import Waypoint  # noqa: TC001
+
+if TYPE_CHECKING:
+    from collections.abc import Iterator
 
 
 @dataclass(kw_only=True, slots=True)
@@ -51,3 +55,21 @@ class Route(GPXModel, PointsMixin):
     @property
     def _points(self) -> list[Waypoint]:
         return self.rtept
+
+    @overload
+    def __getitem__(self, index: int) -> Waypoint: ...
+
+    @overload
+    def __getitem__(self, index: slice) -> list[Waypoint]: ...
+
+    def __getitem__(self, index: int | slice) -> Waypoint | list[Waypoint]:
+        """Get a route point by index or slice."""
+        return self.rtept[index]
+
+    def __len__(self) -> int:
+        """Return the number of route points."""
+        return len(self.rtept)
+
+    def __iter__(self) -> Iterator[Waypoint]:
+        """Iterate over route points."""
+        yield from self.rtept
