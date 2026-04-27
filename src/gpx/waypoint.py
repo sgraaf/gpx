@@ -149,10 +149,15 @@ class Waypoint(GPXModel):
             other: The other waypoint.
 
         Returns:
-            The speed to the other waypoint (in metres per second).
+            The speed to the other waypoint (in metres per second). Returns
+            ``0.0`` if either waypoint lacks a timestamp or both share the
+            same timestamp (i.e. duration is zero).
 
         """
-        return self.distance_to(other) / self.duration_to(other).total_seconds()
+        seconds = self.duration_to(other).total_seconds()
+        if seconds == 0:
+            return 0.0
+        return self.distance_to(other) / seconds
 
     def gain_to(self, other: Waypoint) -> Decimal:
         """Return the elevation gain to another waypoint.
@@ -176,7 +181,11 @@ class Waypoint(GPXModel):
             other: The other waypoint.
 
         Returns:
-            The slope to the other waypoint (in percent).
+            The slope to the other waypoint (in percent). Returns ``0`` if the
+            two waypoints share the same coordinates (i.e. distance is zero).
 
         """
-        return self.gain_to(other) / Decimal(self.distance_to(other)) * 100
+        distance = Decimal(self.distance_to(other))
+        if distance == 0:
+            return Decimal(0)
+        return self.gain_to(other) / distance * 100

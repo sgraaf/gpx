@@ -34,6 +34,8 @@ The **third number** is for emergencies when we need to start branches for older
 - `gpx edit` no longer drops custom XML namespace prefixes (e.g. `gpxtpx`, `gpxx`) from the source file. All edit transformations (crop, trim, reverse, precision, strip metadata) now propagate `nsmap` so round-trips preserve the original prefixes.
 - `gpx edit --min-lat 0` (and the other crop bounds) is no longer silently ignored. The truthiness check that gated the crop treated `0` as "not set"; it now checks for `None` explicitly.
 - `Track.elevation_profile` no longer skips the first elevation-bearing point of segments after the first, and no longer raises `IndexError` for tracks with no segments or no points with elevation. `PointsMixin.elevation_profile` (used by `Route` and `TrackSegment`) similarly returns `[]` for empty inputs instead of crashing.
+- `Waypoint.speed_to` no longer raises `ZeroDivisionError` when two waypoints share a timestamp (or either lacks one); it returns `0.0` instead. This also fixes downstream crashes in `PointsMixin._speeds`, `max_speed`, `min_speed`, `moving_duration`, and `speed_profile` for tracks containing consecutive points with identical timestamps.
+- `Waypoint.slope_to` similarly returns `Decimal(0)` instead of raising `ZeroDivisionError` when two waypoints share coordinates.
 
 ## [2026.1.0](https://github.com/sgraaf/gpx/compare/2025.1.0...2026.1.0) - 2026-01-07
 

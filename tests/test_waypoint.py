@@ -297,8 +297,7 @@ class TestWaypointCalculations:
         assert -10 < slope < 10
 
     def test_speed_to_zero_duration(self) -> None:
-        """Test speed_to with zero duration (same timestamps)."""
-        # Create two waypoints with same timestamp
+        """speed_to returns 0.0 when two waypoints share a timestamp."""
         time = dt.datetime(2023, 6, 15, 10, 30, 0, tzinfo=dt.UTC)
         wpt1 = Waypoint(
             lat=Latitude("52.5200"),
@@ -310,14 +309,16 @@ class TestWaypointCalculations:
             lon=Longitude("13.4051"),
             time=time,
         )
+        assert wpt1.speed_to(wpt2) == 0.0
 
-        # Should raise ZeroDivisionError when duration is zero
-        with pytest.raises(ZeroDivisionError):
-            wpt1.speed_to(wpt2)
+    def test_speed_to_missing_time(self) -> None:
+        """speed_to returns 0.0 when either waypoint has no timestamp."""
+        wpt1 = Waypoint(lat=Latitude("52.5200"), lon=Longitude("13.4050"))
+        wpt2 = Waypoint(lat=Latitude("52.5201"), lon=Longitude("13.4051"))
+        assert wpt1.speed_to(wpt2) == 0.0
 
     def test_slope_to_zero_distance(self) -> None:
-        """Test slope_to with zero distance (same location)."""
-        # Create two waypoints at same location with different elevations
+        """slope_to returns 0 when two waypoints share coordinates."""
         wpt1 = Waypoint(
             lat=Latitude("52.5200"),
             lon=Longitude("13.4050"),
@@ -328,10 +329,7 @@ class TestWaypointCalculations:
             lon=Longitude("13.4050"),
             ele=Decimal("50.0"),
         )
-
-        # Should raise ZeroDivisionError when distance is zero
-        with pytest.raises(ZeroDivisionError):
-            wpt1.slope_to(wpt2)
+        assert wpt1.slope_to(wpt2) == Decimal(0)
 
 
 class TestWaypointCreation:
