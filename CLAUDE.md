@@ -642,7 +642,7 @@ The project uses calendar versioning (CalVer) in the format `YYYY.MINOR.MICRO` (
 
 ### 5. Changelog
 
-- **Add entry to CHANGELOG.md**: All changes must be documented in the changelog under the `[Unreleased]` section
+- **Add entry to CHANGELOG.md**: All **user-facing** changes must be documented in the changelog under the `[Unreleased]` section
 - Follow the [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) format with these categories:
   - `Added`: New features
   - `Changed`: Changes in existing functionality
@@ -673,7 +673,7 @@ Before considering your work complete, verify:
 - [ ] All pre-commit hooks pass (`uv run prek run --all-files`)
 - [ ] New modules are documented in `docs/api.md`
 - [ ] New CLI sub-commands are documented in `docs/cli.md` (regenerate with `uv run cog -r docs/cli.md`)
-- [ ] Changes are documented in `CHANGELOG.md` under `[Unreleased]`
+- [ ] User-facing changes are documented in `CHANGELOG.md` under `[Unreleased]`
 - [ ] User-facing changes are reflected in `README.md`
 
 **If any of these conditions are not met, the change is NOT complete.**

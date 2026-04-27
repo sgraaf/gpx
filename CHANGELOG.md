@@ -14,20 +14,11 @@ The **third number** is for emergencies when we need to start branches for older
 
 - GPX Extensions support: Added `Extensions` class for handling GPX extension elements from any XML namespace (e.g., Garmin's `TrackPointExtension`). Extensions are now parsed, preserved, and serialized during round-trip processing, enabling lossless handling of vendor-specific data like heart rate, cadence, temperature, etc.
 - New `extensions` field on all models that support extensions per the GPX 1.1 spec: `GPX`, `Metadata`, `Waypoint`, `Track`, `TrackSegment`, and `Route`.
-- `.github/CODE_OF_CONDUCT.md` referring to the Python Software Foundation (PSF) Code of Conduct
-- `.github/CONTRIBUTING.md` with contribution guidelines and development setup
-- `.github/SECURITY.md` with vulnerability reporting policy
 
 ### Changed
 
-- Refactored `parse_from_xml()` function in `utils.py` for improved clarity and maintainability by extracting repetitive logic into focused helper functions (`_parse_list_elements`, `_parse_single_value`, `_parse_single_element`). This reduces code complexity while maintaining identical behavior.
-- `_apply_*` helper functions (`_apply_crop`, `_apply_trim`, `_apply_reverse`, `_apply_precision`, `_apply_strip_metadata`) in `cli.py` now use `dataclasses.replace` instead of manually re-listing every field on each rebuild.
-- `read_kml()` in `io.py` now uses `xml.etree.ElementTree.parse` directly instead of manually stripping the XML declaration before parsing, which handles encoding declarations natively.
 - `Track` now inherits from `PointsMixin` and reuses its bounds and elevation aggregations (`bounds`, `_points_with_ele`, `_eles`, `avg_elevation`, `min_elevation`, `max_elevation`, `diff_elevation`, `avg_speed`, `avg_moving_speed`), eliminating duplication between `Track` and the segment/route mixin. Per-segment semantics are preserved for distance, duration, speed extremes, ascent/descent and the elevation profile by overriding only those properties.
-- `int` and `bool` fields in `__geo_interface__` properties (e.g. `Waypoint.sat`, `Track.number`, `Route.number`) now keep their JSON-native types: an `int` value `42` renders as JSON `42` and `True` renders as JSON `true`. Previously both were silently coerced to floats (`42.0`, `1.0`) because the `_convert_value_to_json` branch order matched `SupportsFloat` before `int`/`bool`.
-- `PointsMixin` properties that walk consecutive point pairs (`total_distance`, `_speeds`, `speed_profile`, `_gains`, `moving_duration`) and `bounds` now bind `self._points` / `self._points_with_ele` to a local once instead of recomputing them on each iteration.
-- Refactored `gpx.write_kml()` and `gpx.to_wkt()` / `gpx.to_wkb()` to use small format-specific coordinate helper functions (`_kml_set_coords`, `_wkt_coord`, `_wkt_type`, `_wkb_pack_point`, `_wkb_linestring_body`).
-- Refactored `Extensions.get_text()`, `Extensions.set_text()` and `Extensions.remove()` to use a small `_matches_tag` helper function.
+- `int` and `bool` fields in `__geo_interface__` properties (e.g. `Waypoint.sat`, `Track.number`, `Route.number`) now keep their JSON-native types.
 
 ### Removed
 
@@ -37,7 +28,7 @@ The **third number** is for emergencies when we need to start branches for older
 
 - EWKB format parsing now correctly handles Z coordinates by checking the EWKB flag before the ISO WKB flag.
 - `gpx edit` no longer drops custom XML namespace prefixes (e.g. `gpxtpx`, `gpxx`) from the source file. All edit transformations (crop, trim, reverse, precision, strip metadata) now propagate `nsmap` so round-trips preserve the original prefixes.
-- `gpx edit --min-lat 0` (and the other crop bounds) is no longer silently ignored. The truthiness check that gated the crop treated `0` as "not set"; it now checks for `None` explicitly.
+- `gpx edit --min-lat 0` (and the other crop bounds) is no longer silently ignored.
 - `Track.elevation_profile` no longer skips the first elevation-bearing point of segments after the first, and no longer raises `IndexError` for tracks with no segments or no points with elevation. `PointsMixin.elevation_profile` (used by `Route` and `TrackSegment`) similarly returns `[]` for empty inputs instead of crashing.
 - `Waypoint.speed_to` no longer raises `ZeroDivisionError` when two waypoints share a timestamp (or either lacks one); it returns `0.0` instead. This also fixes downstream crashes in `PointsMixin._speeds`, `max_speed`, `min_speed`, `moving_duration`, and `speed_profile` for tracks containing consecutive points with identical timestamps.
 - `Waypoint.slope_to` similarly returns `Decimal(0)` instead of raising `ZeroDivisionError` when two waypoints share coordinates.
