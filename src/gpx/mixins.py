@@ -5,6 +5,7 @@ from __future__ import annotations
 import datetime as dt
 from abc import abstractmethod
 from decimal import Decimal
+from itertools import pairwise
 from typing import TYPE_CHECKING, Any, overload
 
 from .utils import build_geo_feature
@@ -216,12 +217,15 @@ class PointsMixin:
 
         The elevation profile is a list of (distance, elevation) tuples.
         """
+        points = self._points_with_ele
+        if not points:
+            return []
+        profile: list[tuple[float, Decimal]] = []
         distance = 0.0
-        profile = []
-        if self._points_with_ele[0].ele is not None:
-            profile.append((distance, self._points_with_ele[0].ele))
-        for i, point in enumerate(self._points_with_ele[1:], 1):
+        if points[0].ele is not None:
+            profile.append((distance, points[0].ele))
+        for prev, point in pairwise(points):
             if point.ele is not None:
-                distance += self._points_with_ele[i - 1].distance_to(point)
+                distance += prev.distance_to(point)
                 profile.append((distance, point.ele))
         return profile

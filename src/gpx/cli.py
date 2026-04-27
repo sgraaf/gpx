@@ -578,7 +578,9 @@ def _cmd_edit(args: argparse.Namespace) -> int:
     gpx = read_gpx(input_path)
 
     # Apply crop
-    if any([args.min_lat, args.max_lat, args.min_lon, args.max_lon]):
+    if any(
+        v is not None for v in (args.min_lat, args.max_lat, args.min_lon, args.max_lon)
+    ):
         gpx = _apply_crop(gpx, args.min_lat, args.max_lat, args.min_lon, args.max_lon)
 
     # Apply trim
@@ -604,6 +606,7 @@ def _cmd_edit(args: argparse.Namespace) -> int:
             rte=gpx.rte,
             trk=gpx.trk,
             extensions=gpx.extensions,
+            nsmap=gpx.nsmap,
         )
     elif gpx.metadata:
         gpx = _apply_strip_metadata(gpx, args)
@@ -708,6 +711,7 @@ def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
         rte=gpx.rte,
         trk=gpx.trk,
         extensions=gpx.extensions,
+        nsmap=gpx.nsmap,
     )
 
 
@@ -812,6 +816,7 @@ def _apply_crop(  # noqa: C901
         rte=new_rte,
         trk=new_trk,
         extensions=gpx.extensions,
+        nsmap=gpx.nsmap,
     )
 
 
@@ -883,6 +888,7 @@ def _apply_trim(
         rte=new_rte,
         trk=new_trk,
         extensions=gpx.extensions,
+        nsmap=gpx.nsmap,
     )
 
 
@@ -942,6 +948,7 @@ def _apply_reverse(
         rte=new_rte,
         trk=new_trk,
         extensions=gpx.extensions,
+        nsmap=gpx.nsmap,
     )
 
 
@@ -1038,6 +1045,7 @@ def _apply_precision(
         rte=new_rte,
         trk=new_trk,
         extensions=gpx.extensions,
+        nsmap=gpx.nsmap,
     )
 
 

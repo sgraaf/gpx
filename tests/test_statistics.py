@@ -5,14 +5,10 @@ from __future__ import annotations
 import datetime as dt
 from decimal import Decimal
 from pathlib import Path
-from typing import TYPE_CHECKING
 
 import pytest
 
-from gpx import GPX, from_string
-
-if TYPE_CHECKING:
-    from gpx.track_segment import TrackSegment
+from gpx import GPX, Track, TrackSegment, from_string
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 VALID_FIXTURES_DIR = FIXTURES_DIR / "valid"
@@ -195,6 +191,43 @@ class TestTrackStatistics:
         assert track.max_elevation == Decimal(50)
         assert track.min_elevation == Decimal(34)
 
+    def test_multi_segment_track_elevation_profile(
+        self, multi_segment_gpx: GPX
+    ) -> None:
+        """Profile must include the first point of every segment.
+
+        Regression test: previously only the first point of segment 0 was
+        emitted, so points[0] of segments 1+ were silently dropped.
+        """
+        track = multi_segment_gpx.trk[0]
+        profile = track.elevation_profile
+        # 2 points per segment * 2 segments = 4 entries
+        assert len(profile) == 4
+        elevations = [ele for _, ele in profile]
+        assert elevations == [
+            Decimal("34.0"),
+            Decimal("40.0"),
+            Decimal("45.0"),
+            Decimal("50.0"),
+        ]
+        # Distance is monotonically non-decreasing (segment boundary is a flat step).
+        distances = [d for d, _ in profile]
+        assert distances == sorted(distances)
+        # Inter-segment gap is not included in distance: the third entry's
+        # distance equals the second entry's distance (start of segment 2 sits
+        # at the cumulative distance reached at the end of segment 1).
+        assert distances[2] == distances[1]
+
+    def test_empty_track_elevation_profile(self) -> None:
+        """elevation_profile on a track with no segments returns []."""
+        track = Track()
+        assert track.elevation_profile == []
+
+    def test_track_with_empty_segments_elevation_profile(self) -> None:
+        """elevation_profile skips segments with no points-with-elevation."""
+        track = Track(trkseg=[TrackSegment(), TrackSegment()])
+        assert track.elevation_profile == []
+
 
 class TestTrackSegmentStatistics:
     """Tests for TrackSegment statistics properties."""
@@ -285,6 +318,10 @@ class TestTrackSegmentStatistics:
         assert len(profile) == 4
         assert profile[0][0] == 0.0
         assert profile[0][1] == Decimal(34)
+
+    def test_empty_segment_elevation_profile(self) -> None:
+        """elevation_profile on a segment without elevation points returns []."""
+        assert TrackSegment().elevation_profile == []
 
     def test_segment_bounds(self, segment: TrackSegment) -> None:
         """Test segment bounds calculation."""

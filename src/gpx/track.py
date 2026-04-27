@@ -7,6 +7,7 @@ describing a path, following the GPX 1.1 specification.
 from __future__ import annotations
 
 import datetime as dt
+import itertools
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, overload
@@ -236,14 +237,19 @@ class Track(GPXModel):
         """The elevation profile of the track.
 
         The elevation profile is a list of (distance, elevation) tuples.
+        Distance accumulates within each segment but does not include the gap
+        between consecutive segments.
         """
+        profile: list[tuple[float, Decimal]] = []
         distance = 0.0
-        profile = []
-        if self.trkseg[0]._points_with_ele[0].ele is not None:
-            profile.append((distance, self.trkseg[0]._points_with_ele[0].ele))
         for trkseg in self.trkseg:
-            for i, point in enumerate(trkseg._points_with_ele[1:], 1):
+            points = trkseg._points_with_ele
+            if not points:
+                continue
+            if points[0].ele is not None:
+                profile.append((distance, points[0].ele))
+            for prev, point in itertools.pairwise(points):
                 if point.ele is not None:
-                    distance += trkseg._points_with_ele[i - 1].distance_to(point)
+                    distance += prev.distance_to(point)
                     profile.append((distance, point.ele))
         return profile

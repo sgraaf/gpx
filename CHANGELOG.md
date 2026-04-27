@@ -29,6 +29,9 @@ The **third number** is for emergencies when we need to start branches for older
 ### Fixed
 
 - EWKB format parsing now correctly handles Z coordinates by checking the EWKB flag before the ISO WKB flag.
+- `gpx edit` no longer drops custom XML namespace prefixes (e.g. `gpxtpx`, `gpxx`) from the source file. All edit transformations (crop, trim, reverse, precision, strip metadata) now propagate `nsmap` so round-trips preserve the original prefixes.
+- `gpx edit --min-lat 0` (and the other crop bounds) is no longer silently ignored. The truthiness check that gated the crop treated `0` as "not set"; it now checks for `None` explicitly.
+- `Track.elevation_profile` no longer skips the first elevation-bearing point of segments after the first, and no longer raises `IndexError` for tracks with no segments or no points with elevation. `PointsMixin.elevation_profile` (used by `Route` and `TrackSegment`) similarly returns `[]` for empty inputs instead of crashing.
 
 ## [2026.1.0](https://github.com/sgraaf/gpx/compare/2025.1.0...2026.1.0) - 2026-01-07
 

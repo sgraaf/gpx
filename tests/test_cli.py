@@ -482,6 +482,44 @@ class TestApplyFunctions:
         assert len(cropped.rte) == 0
         assert len(cropped.trk) == 0
 
+    def test_edit_crop_with_zero_bound(
+        self, sample_gpx_file: Path, tmp_path: Path
+    ) -> None:
+        """A bound of 0 must trigger the crop (regression: any() treated 0 as falsy).
+
+        sample_gpx points are all near (52.5, 13.4); a min-lat of 0 must keep
+        them while a min-lat of 53 must drop them.
+        """
+        out_keep = tmp_path / "keep.gpx"
+        result = cli(
+            [
+                "edit",
+                str(sample_gpx_file),
+                "-o",
+                str(out_keep),
+                "--min-lat",
+                "0",
+            ]
+        )
+        assert result == 0
+        kept = read_gpx(out_keep)
+        assert len(kept.wpt) == 1
+
+        out_drop = tmp_path / "drop.gpx"
+        result = cli(
+            [
+                "edit",
+                str(sample_gpx_file),
+                "-o",
+                str(out_drop),
+                "--min-lat",
+                "53",
+            ]
+        )
+        assert result == 0
+        dropped = read_gpx(out_drop)
+        assert len(dropped.wpt) == 0
+
     def test_apply_trim(self, sample_gpx: GPX) -> None:
         """Test applying time trim to GPX data."""
         start = dt.datetime(2024, 1, 15, 10, 0, 30, tzinfo=dt.UTC)
@@ -548,6 +586,76 @@ class TestApplyFunctions:
         reduced = _apply_precision(gpx, coord_precision=3, elevation_precision=None)
         lat_str = str(reduced.wpt[0].lat)
         assert lat_str == "52.52"
+
+    def test_apply_helpers_preserve_nsmap(self, sample_gpx: GPX) -> None:
+        """All edit transforms must propagate gpx.nsmap so prefixes survive a round-trip.
+
+        Regression test: previously _apply_crop / _apply_trim / _apply_reverse /
+        _apply_precision / _apply_strip_metadata silently dropped nsmap, which
+        meant `gpx edit` on a file with custom prefixes (e.g. gpxtpx) emitted
+        auto-generated ns0/ns1 prefixes instead.
+        """
+        sample_gpx.nsmap = {
+            "": "http://www.topografix.com/GPX/1/1",
+            "gpxtpx": GARMIN_TPX_NS,
+        }
+
+        cropped = _apply_crop(
+            sample_gpx, min_lat=0.0, max_lat=90.0, min_lon=0.0, max_lon=90.0
+        )
+        assert cropped.nsmap == sample_gpx.nsmap
+
+        trimmed = _apply_trim(sample_gpx, None, None)
+        assert trimmed.nsmap == sample_gpx.nsmap
+
+        reversed_gpx = _apply_reverse(
+            sample_gpx, reverse_routes=True, reverse_tracks=True
+        )
+        assert reversed_gpx.nsmap == sample_gpx.nsmap
+
+        precised = _apply_precision(
+            sample_gpx, coord_precision=3, elevation_precision=1
+        )
+        assert precised.nsmap == sample_gpx.nsmap
+
+    def test_edit_strip_all_metadata_preserves_nsmap(self, tmp_path: Path) -> None:
+        """`gpx edit --strip-all-metadata` must keep custom namespace prefixes.
+
+        The prefix must survive an actual file round-trip, which means an
+        element using that namespace has to be present (ElementTree drops
+        unused xmlns declarations).
+        """
+        src = tmp_path / "with_ext.gpx"
+        src.write_text(
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" '
+            f'xmlns:gpxtpx="{GARMIN_TPX_NS}" '
+            'version="1.1" creator="TestApp">\n'
+            "  <metadata><name>x</name></metadata>\n"
+            '  <wpt lat="52.5" lon="13.4">\n'
+            "    <extensions>\n"
+            "      <gpxtpx:TrackPointExtension>\n"
+            "        <gpxtpx:hr>120</gpxtpx:hr>\n"
+            "      </gpxtpx:TrackPointExtension>\n"
+            "    </extensions>\n"
+            "  </wpt>\n"
+            "</gpx>\n",
+            encoding="utf-8",
+        )
+
+        out = tmp_path / "stripped.gpx"
+        result = cli(
+            [
+                "edit",
+                str(src),
+                "-o",
+                str(out),
+                "--strip-all-metadata",
+            ]
+        )
+        assert result == 0
+        # Original prefix must survive the round-trip through `gpx edit`.
+        assert f'xmlns:gpxtpx="{GARMIN_TPX_NS}"' in out.read_text(encoding="utf-8")
 
 
 # =============================================================================
