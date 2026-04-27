@@ -77,19 +77,8 @@ def read_kml(file_path: str | Path, *, creator: str | None = None) -> GPX:
         >>> gpx = read_kml("path/to/file.kml")
 
     """
-    with Path(file_path).open(encoding="utf-8") as f:
-        kml_str = f.read()
-
-    # Remove encoding declaration if present (ET.fromstring doesn't support it)
-    if kml_str.startswith("<?xml"):
-        end_decl = kml_str.find("?>")
-        if end_decl != -1:
-            # Check if there's encoding in declaration
-            decl = kml_str[: end_decl + 2]
-            if "encoding" in decl.lower():
-                kml_str = kml_str[end_decl + 2 :].lstrip()
-
-    root = ET.fromstring(kml_str)
+    # ET.parse handles XML declarations (including encoding) natively.
+    root = ET.parse(file_path).getroot()
 
     gpx_kwargs: dict[str, Any] = {}
     if creator:
