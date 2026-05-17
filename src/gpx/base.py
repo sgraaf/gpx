@@ -7,7 +7,8 @@ implementing common XML parsing and serialization logic.
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from typing import ClassVar, Self
+from abc import ABC, abstractmethod
+from typing import Any, ClassVar, Self
 
 from .utils import build_to_xml, parse_from_xml
 
@@ -70,3 +71,17 @@ class GPXModel:
         build_to_xml(self, element, nsmap=nsmap)
 
         return element
+
+
+class GeoGPXModel(GPXModel, ABC):
+    """Base class for GPX dataclass models that carry geometric data.
+
+    Subclasses must implement ``__geo_interface__`` to expose their geometry
+    as a GeoJSON-compatible mapping. Inheriting from this class makes "this
+    GPX model has geometry" expressible via ``isinstance()`` and type hints.
+    """
+
+    @property
+    @abstractmethod
+    def __geo_interface__(self) -> dict[str, Any]:
+        """Return a GeoJSON-compatible representation of this model."""

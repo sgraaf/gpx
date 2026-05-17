@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import TYPE_CHECKING, Any, overload
 
-from .base import GPXModel
+from .base import GeoGPXModel
 from .extensions import Extensions  # noqa: TC001
 from .link import Link  # noqa: TC001
 from .mixins import PointsMixin
@@ -26,7 +26,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(kw_only=True, slots=True)
-class Track(GPXModel, PointsMixin):
+class Track(PointsMixin, GeoGPXModel):
     """An ordered list of points describing a path.
 
     A track represents a GPS track consisting of track segments.

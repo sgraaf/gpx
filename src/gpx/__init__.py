@@ -1,6 +1,6 @@
 """gpx is a zero-dependency, pure Python package for reading, manipulating, writing and converting GPX files."""
 
-from .base import GPXModel
+from .base import GeoGPXModel, GPXModel
 from .bounds import Bounds
 from .convert import from_geo_interface, from_string, from_wkb, from_wkt
 from .copyright import Copyright
@@ -27,6 +27,7 @@ __all__ = [
     "Extensions",
     "Fix",
     "GPXModel",
+    "GeoGPXModel",
     "Latitude",
     "Link",
     "Longitude",

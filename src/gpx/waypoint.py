@@ -14,14 +14,14 @@ from typing import Any
 
 from gpx.types import Degrees, DGPSStation, Fix, Latitude, Longitude  # noqa: TC001
 
-from .base import GPXModel
+from .base import GeoGPXModel
 from .extensions import Extensions  # noqa: TC001
 from .link import Link  # noqa: TC001
 from .utils import build_geo_feature
 
 
 @dataclass(slots=True)
-class Waypoint(GPXModel):
+class Waypoint(GeoGPXModel):
     """A waypoint, point of interest, or named feature on a map.
 
     Args:
