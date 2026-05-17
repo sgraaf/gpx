@@ -10,7 +10,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, overload
 
-from .base import GPXModel
+from .base import GeoGPXModel
 from .extensions import Extensions  # noqa: TC001
 from .link import Link  # noqa: TC001
 from .mixins import PointsMixin
@@ -21,7 +21,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(kw_only=True, slots=True)
-class Route(GPXModel, PointsMixin):
+class Route(PointsMixin, GeoGPXModel):
     """An ordered list of waypoints representing a series of turn points.
 
     A route represents waypoints leading to a destination.

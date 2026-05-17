@@ -14,7 +14,7 @@ from dataclasses import KW_ONLY, dataclass, field
 from pathlib import Path
 from typing import Any
 
-from .base import GPXModel
+from .base import GeoGPXModel
 from .extensions import Extensions  # noqa: TC001
 from .metadata import Metadata  # noqa: TC001
 from .route import Route  # noqa: TC001
@@ -94,7 +94,7 @@ def _wkb_linestring_body(endian: str, points: list[Waypoint], *, has_z: bool) ->
 
 
 @dataclass(slots=True)
-class GPX(GPXModel):
+class GPX(GeoGPXModel):
     """The root GPX document.
 
     GPX documents contain a metadata header, followed by waypoints, routes, and
@@ -138,52 +138,15 @@ class GPX(GPXModel):
             all waypoints, routes, and tracks.
 
         """
-        features = []
-
-        # Add waypoints
-        for waypoint in self.wpt:
-            geo = waypoint.__geo_interface__
-            # If waypoint returned a pure geometry, wrap it in a Feature
-            if geo.get("type") == "Point":
-                features.append(
-                    {
-                        "type": "Feature",
-                        "geometry": geo,
-                    }
-                )
-            else:
-                # Already a Feature
-                features.append(geo)
-
-        # Add routes
-        for route in self.rte:
-            geo = route.__geo_interface__
-            # If route returned a pure geometry, wrap it in a Feature
-            if geo.get("type") == "LineString":
-                features.append(
-                    {
-                        "type": "Feature",
-                        "geometry": geo,
-                    }
-                )
-            else:
-                # Already a Feature
-                features.append(geo)
-
-        # Add tracks
-        for track in self.trk:
-            geo = track.__geo_interface__
-            # If track returned a pure geometry, wrap it in a Feature
-            if geo.get("type") == "MultiLineString":
-                features.append(
-                    {
-                        "type": "Feature",
-                        "geometry": geo,
-                    }
-                )
-            else:
-                # Already a Feature
-                features.append(geo)
+        features: list[dict[str, Any]] = []
+        for child in (*self.wpt, *self.rte, *self.trk):
+            if not isinstance(child, GeoGPXModel):
+                continue
+            geo = child.__geo_interface__
+            # Wrap pure geometries in a Feature; pass Features through as-is.
+            if geo.get("type") != "Feature":
+                geo = {"type": "Feature", "geometry": geo}
+            features.append(geo)
 
         return {
             "type": "FeatureCollection",

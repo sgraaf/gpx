@@ -11,14 +11,14 @@ from typing import TYPE_CHECKING, Any
 
 from gpx.types import Latitude, Longitude  # noqa: TC001
 
-from .base import GPXModel
+from .base import GeoGPXModel
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
 
 
 @dataclass(slots=True)
-class Bounds(GPXModel):
+class Bounds(GeoGPXModel):
     """Two lat/lon pairs defining the extent of an element.
 
     Args:

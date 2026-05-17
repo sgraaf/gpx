@@ -9,7 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, overload
 
-from .base import GPXModel
+from .base import GeoGPXModel
 from .extensions import Extensions  # noqa: TC001
 from .mixins import PointsMixin
 from .waypoint import Waypoint  # noqa: TC001
@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 @dataclass(kw_only=True, slots=True)
-class TrackSegment(GPXModel, PointsMixin):
+class TrackSegment(PointsMixin, GeoGPXModel):
     """A track segment holding a list of logically connected track points.
 
     A Track Segment holds a list of Track Points which are logically connected

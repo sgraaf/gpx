@@ -10,6 +10,10 @@ The **third number** is for emergencies when we need to start branches for older
 
 ## [Unreleased](https://github.com/sgraaf/gpx/compare/2026.2.0...HEAD)
 
+### Added
+
+- New `GeoGPXModel` base class for GPX models that carry geometric data (`Waypoint`, `Route`, `TrackSegment`, `Track`, `Bounds`, `GPX`). Enables `isinstance()` checks and type-hinted handling of geometric models, and enforces that subclasses implement `__geo_interface__`.
+
 ## [2026.2.0](https://github.com/sgraaf/gpx/compare/2026.1.0...2026.2.0) - 2026-04-27
 
 ### Added
