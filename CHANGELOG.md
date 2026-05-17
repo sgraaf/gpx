@@ -8,13 +8,17 @@ The **first number** of the version is the year.
 The **second number** is incremented with each release, starting at 1 for each year.
 The **third number** is for emergencies when we need to start branches for older releases.
 
-## [Unreleased](https://github.com/sgraaf/gpx/compare/2026.2.0...HEAD)
+## [2026.3.0](https://github.com/sgraaf/gpx/compare/2026.2.0...2026.3.0) - 2026-05-17
+
+This third release in the year 2026 adds a new `GeoGPXModel` base class for GPX models that carry geometric data.
 
 ### Added
 
 - New `GeoGPXModel` base class for GPX models that carry geometric data (`Waypoint`, `Route`, `TrackSegment`, `Track`, `Bounds`, `GPX`). Enables `isinstance()` checks and type-hinted handling of geometric models, and enforces that subclasses implement `__geo_interface__`.
 
 ## [2026.2.0](https://github.com/sgraaf/gpx/compare/2026.1.0...2026.2.0) - 2026-04-27
+
+This second major release in the year 2026 adds support for [**GPX extensions**](https://www.topografix.com/GPX/1/1/#type_extensionsType), and includes a range of bug fixes and robustness improvements.
 
 ### Added
 
@@ -40,6 +44,8 @@ The **third number** is for emergencies when we need to start branches for older
 - `Waypoint.slope_to` similarly returns `Decimal(0)` instead of raising `ZeroDivisionError` when two waypoints share coordinates.
 
 ## [2026.1.0](https://github.com/sgraaf/gpx/compare/2025.1.0...2026.1.0) - 2026-01-07
+
+This first major release in the year 2026 adds two new features to the package: **file format conversion** (i.e. from GPX to GeoJSON, KML, WKT and/or WKB and vice versa) and a **command-line interface** (CLI).
 
 ### Added
 
