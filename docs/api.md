@@ -124,6 +124,13 @@
     :members:
 ```
 
+## `gpx.operations` Module
+
+```{eval-rst}
+.. automodule:: gpx.operations
+    :members:
+```
+
 ## `gpx.utils` Module
 
 ```{eval-rst}

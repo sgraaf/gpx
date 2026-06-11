@@ -246,10 +246,6 @@ class GPX(GeoGPXModel):
         xml_bytes = ET.tostring(element, encoding="utf-8", xml_declaration=True)
         return xml_bytes.decode("utf-8")
 
-    # =========================================================================
-    # GPX file methods
-    # =========================================================================
-
     def write_gpx(self, file_path: str | Path, *, pretty_print: bool = True) -> None:
         """Write the GPX to a file.
 
@@ -270,10 +266,6 @@ class GPX(GeoGPXModel):
         tree = ET.ElementTree(element)
         tree.write(str(file_path), xml_declaration=True, encoding="utf-8")
 
-    # =========================================================================
-    # GeoJSON file methods
-    # =========================================================================
-
     def write_geojson(self, file_path: str | Path, *, indent: int | None = 2) -> None:
         """Write the GPX to a GeoJSON file.
 
@@ -289,10 +281,6 @@ class GPX(GeoGPXModel):
         """
         with Path(file_path).open("w", encoding="utf-8") as f:
             json.dump(self.__geo_interface__, f, indent=indent)
-
-    # =========================================================================
-    # KML file methods
-    # =========================================================================
 
     def write_kml(self, file_path: str | Path, *, pretty_print: bool = True) -> None:
         """Write the GPX to a KML file.
@@ -349,10 +337,6 @@ class GPX(GeoGPXModel):
         with Path(file_path).open("w", encoding="utf-8") as f:
             f.write(kml_str)
 
-    # =========================================================================
-    # WKT conversion methods
-    # =========================================================================
-
     def to_wkt(self) -> str:
         """Convert the GPX to a WKT (Well-Known Text) string.
 
@@ -393,10 +377,6 @@ class GPX(GeoGPXModel):
         if len(geometries) == 1:
             return geometries[0]
         return f"GEOMETRYCOLLECTION ({', '.join(geometries)})"
-
-    # =========================================================================
-    # WKB conversion methods
-    # =========================================================================
 
     def to_wkb(self, *, byte_order: str = "little") -> bytes:
         """Convert the GPX to WKB (Well-Known Binary).

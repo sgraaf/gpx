@@ -100,5 +100,8 @@ pydocstyle.convention = "google"
     "PLR2004",   # magic-value-comparison (Pylint)
 ]
 
+[tool.pyrefly]
+search_path = ["src", "."]
+
 [tool.mypy]
 python_version = "3.11"

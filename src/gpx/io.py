@@ -1,7 +1,7 @@
-"""I/O functions for reading file formats into GPX.
+"""I/O functions for reading and converting file formats.
 
 This module provides functions for reading GPX, GeoJSON, and KML files from disk
-and returning GPX objects.
+and returning GPX objects, as well as for converting files between these formats.
 """
 
 from __future__ import annotations
@@ -112,9 +112,104 @@ def read_kml(file_path: str | Path, *, creator: str | None = None) -> GPX:
     return GPX(wpt=waypoints, rte=routes, trk=tracks, **gpx_kwargs)
 
 
-# =============================================================================
-# KML Helper Functions
-# =============================================================================
+def detect_format(file_path: str | Path) -> str | None:
+    """Detect the file format from a file path's extension.
+
+    Args:
+        file_path: The file path to detect the format of.
+
+    Returns:
+        The detected format ("gpx", "geojson" or "kml"), or None if the
+        extension is not recognized.
+
+    Example:
+        >>> from gpx import detect_format
+        >>> detect_format("route.kml")
+        'kml'
+
+    """
+    suffix = Path(file_path).suffix.lower()
+    format_map = {
+        ".gpx": "gpx",
+        ".geojson": "geojson",
+        ".json": "geojson",
+        ".kml": "kml",
+    }
+    return format_map.get(suffix)
+
+
+def convert_file(
+    input_file: str | Path,
+    output_file: str | Path,
+    *,
+    input_format: str | None = None,
+    output_format: str | None = None,
+) -> tuple[str, str]:
+    """Convert a file between the GPX, GeoJSON and KML file formats.
+
+    Args:
+        input_file: Path to the input file.
+        output_file: Path to the output file.
+        input_format: The input format ("gpx", "geojson" or "kml").
+            Defaults to None (auto-detect from the file extension).
+        output_format: The output format ("gpx", "geojson" or "kml").
+            Defaults to None (auto-detect from the file extension).
+
+    Returns:
+        A tuple of the input and output formats used.
+
+    Raises:
+        ValueError: If a format is not given and cannot be detected, or if
+            a format is not supported.
+
+    Example:
+        >>> from gpx import convert_file
+        >>> convert_file("input.gpx", "output.geojson")
+        ('gpx', 'geojson')
+
+    """
+    input_path = Path(input_file)
+    output_path = Path(output_file)
+
+    input_format = input_format or detect_format(input_path)
+    if not input_format:
+        msg = f"Could not detect input format for: {input_path}"
+        raise ValueError(msg)
+
+    output_format = output_format or detect_format(output_path)
+    if not output_format:
+        msg = f"Could not detect output format for: {output_path}"
+        raise ValueError(msg)
+
+    gpx = _read_file(input_path, input_format)
+    _write_file(gpx, output_path, output_format)
+
+    return input_format, output_format
+
+
+def _read_file(file_path: Path, file_format: str) -> GPX:
+    """Read a file in the given format and return a GPX object."""
+    if file_format == "gpx":
+        return read_gpx(file_path)
+    if file_format == "geojson":
+        return read_geojson(file_path)
+    if file_format == "kml":
+        return read_kml(file_path)
+    msg = f"Unsupported input format: {file_format}"
+    raise ValueError(msg)
+
+
+def _write_file(gpx: GPX, file_path: Path, file_format: str) -> None:
+    """Write a GPX object to a file in the given format."""
+    if file_format == "gpx":
+        gpx.write_gpx(file_path)
+    elif file_format == "geojson":
+        gpx.write_geojson(file_path)
+    elif file_format == "kml":
+        gpx.write_kml(file_path)
+    else:
+        msg = f"Unsupported output format: {file_format}"
+        raise ValueError(msg)
 
 
 def _find_kml_element(parent: ET.Element, tag: str) -> ET.Element | None:

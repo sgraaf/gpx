@@ -297,6 +297,22 @@ gpx = read_geojson("path/to/file.geojson")
 gpx = read_kml("path/to/file.kml")
 ```
 
+### Converting between file formats
+
+*gpx* can convert files between the GPX, GeoJSON and KML file formats directly:
+
+```python
+from gpx import convert_file
+
+
+# Formats are auto-detected from the file extensions...
+convert_file("input.gpx", "output.geojson")
+convert_file("input.kml", "output.gpx")
+
+# ... or can be given explicitly
+convert_file("input.json", "output.gpx", input_format="geojson")
+```
+
 ### Converting from data formats
 
 *gpx* can convert from data formats (strings, bytes, objects):
@@ -326,6 +342,70 @@ geojson = {"type": "Point", "coordinates": [4.9041, 52.3676]}
 gpx = from_geo_interface(geojson)
 ```
 
+### Editing and merging GPX data
+
+*gpx* provides operations for editing and merging GPX data. All operations are pure: they return a new `GPX` instance and never mutate the input:
+
+```python
+import datetime as dt
+
+from gpx import (
+    crop,
+    filter_points,
+    merge,
+    read_gpx,
+    reduce_precision,
+    reverse,
+    shift_time,
+    simplify,
+    smooth,
+    split,
+    strip_extensions,
+    strip_metadata,
+    trim,
+)
+
+
+gpx = read_gpx("path/to/file.gpx")
+
+# Crop to a geographic bounding box
+cropped = crop(gpx, min_lat=52.0, max_lat=53.0, min_lon=4.0, max_lon=5.0)
+
+# Trim to a date/time range
+trimmed = trim(gpx, start=dt.datetime(2024, 1, 1, 10, 0, 0, tzinfo=dt.UTC))
+
+# Reverse routes and/or tracks
+reversed_gpx = reverse(gpx)
+
+# Strip metadata (fields)
+anonymous = strip_metadata(gpx, author=True, copyright=True)
+bare = strip_metadata(gpx)  # removes all metadata
+
+# Reduce coordinate and/or elevation precision
+reduced = reduce_precision(gpx, coordinate_precision=6, elevation_precision=1)
+
+# Filter points with an arbitrary predicate
+with_elevation = filter_points(gpx, lambda point: point.ele is not None)
+
+# Split track segments at time and/or distance gaps
+split_gpx = split(gpx, time_gap=dt.timedelta(minutes=10))
+
+# Simplify tracks and routes (Ramer-Douglas-Peucker, tolerance in metres)
+simplified = simplify(gpx, tolerance=10.0)
+
+# Smooth track and route coordinates and elevations (moving average)
+smoothed = smooth(gpx, window=5)
+
+# Shift all point timestamps (e.g., to fix timezone mistakes or clock drift)
+shifted = shift_time(gpx, dt.timedelta(hours=-2))
+
+# Strip all extensions (e.g., heart rate, cadence, temperature)
+without_extensions = strip_extensions(gpx)
+
+# Merge multiple GPX instances into one
+merged = merge([read_gpx("one.gpx"), read_gpx("two.gpx")])
+```
+
 ### Command-Line Interface
 
 *gpx* provides a command-line interface (CLI) for common GPX operations:
@@ -344,6 +424,10 @@ gpx edit input.gpx -o output.gpx --min-lat 52.0 --max-lat 53.0
 gpx edit input.gpx -o output.gpx --start 2024-01-01T10:00:00 --end 2024-01-01T12:00:00
 gpx edit input.gpx -o output.gpx --precision 5 --elevation-precision 1
 gpx edit input.gpx -o output.gpx --strip-all-metadata
+gpx edit input.gpx -o output.gpx --split-time-gap 600
+gpx edit input.gpx -o output.gpx --simplify 10 --smooth 5
+gpx edit input.gpx -o output.gpx --shift-time -7200
+gpx edit input.gpx -o output.gpx --strip-extensions
 
 # Merge multiple GPX files
 gpx merge file1.gpx file2.gpx file3.gpx -o merged.gpx

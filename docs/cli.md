@@ -116,10 +116,13 @@ Running `gpx edit --help` or `python -m gpx edit --help` shows a list of all of 
 usage: gpx edit [-h] -o <OUTPUT_FILE> [--min-lat LATITUDE]
                 [--max-lat LATITUDE] [--min-lon LONGITUDE]
                 [--max-lon LONGITUDE] [--start DATETIME] [--end DATETIME]
-                [--reverse] [--reverse-routes] [--reverse-tracks]
-                [--strip-name] [--strip-desc] [--strip-author]
-                [--strip-copyright] [--strip-time] [--strip-keywords]
-                [--strip-links] [--strip-all-metadata] [--precision DIGITS]
+                [--split-time-gap SECONDS] [--split-distance-gap METERS]
+                [--simplify TOLERANCE] [--smooth WINDOW]
+                [--shift-time SECONDS] [--reverse] [--reverse-routes]
+                [--reverse-tracks] [--strip-name] [--strip-desc]
+                [--strip-author] [--strip-copyright] [--strip-time]
+                [--strip-keywords] [--strip-links] [--strip-all-metadata]
+                [--strip-extensions] [--precision DIGITS]
                 [--elevation-precision DIGITS]
                 <INPUT_FILE>
 
@@ -150,6 +153,35 @@ trim options:
   --end DATETIME        End datetime (ISO 8601 format, e.g.,
                         2024-01-01T12:00:00)
 
+split options:
+  Split track segments at gaps
+
+  --split-time-gap SECONDS
+                        Split track segments where the time between
+                        consecutive points exceeds this many seconds
+  --split-distance-gap METERS
+                        Split track segments where the distance between
+                        consecutive points exceeds this many metres
+
+simplify options:
+  Simplify tracks and routes
+
+  --simplify TOLERANCE  Simplify tracks and routes with the Ramer-Douglas-
+                        Peucker algorithm using this tolerance (in metres)
+
+smooth options:
+  Smooth tracks and routes
+
+  --smooth WINDOW       Smooth track and route coordinates and elevations with
+                        a moving average over this many points (an odd integer
+                        of at least 3)
+
+time shift options:
+  Shift timestamps
+
+  --shift-time SECONDS  Shift all point timestamps by this many seconds (may
+                        be negative)
+
 reverse options:
   Reverse routes and/or tracks
 
@@ -168,6 +200,7 @@ strip options:
   --strip-keywords      Strip metadata keywords
   --strip-links         Strip metadata links
   --strip-all-metadata  Strip all metadata
+  --strip-extensions    Strip all extensions
 
 precision options:
   Reduce coordinate precision

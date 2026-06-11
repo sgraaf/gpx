@@ -7,9 +7,23 @@ from .copyright import Copyright
 from .email import Email
 from .extensions import Extensions
 from .gpx import GPX
-from .io import read_geojson, read_gpx, read_kml
+from .io import convert_file, detect_format, read_geojson, read_gpx, read_kml
 from .link import Link
 from .metadata import Metadata
+from .operations import (
+    crop,
+    filter_points,
+    merge,
+    reduce_precision,
+    reverse,
+    shift_time,
+    simplify,
+    smooth,
+    split,
+    strip_extensions,
+    strip_metadata,
+    trim,
+)
 from .person import Person
 from .route import Route
 from .track import Track
@@ -37,11 +51,25 @@ __all__ = [
     "Track",
     "TrackSegment",
     "Waypoint",
+    "convert_file",
+    "crop",
+    "detect_format",
+    "filter_points",
     "from_geo_interface",
     "from_string",
     "from_wkb",
     "from_wkt",
+    "merge",
     "read_geojson",
     "read_gpx",
     "read_kml",
+    "reduce_precision",
+    "reverse",
+    "shift_time",
+    "simplify",
+    "smooth",
+    "split",
+    "strip_extensions",
+    "strip_metadata",
+    "trim",
 ]

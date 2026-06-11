@@ -70,7 +70,7 @@ def extract_namespaces_from_string(xml_string: str) -> dict[str, str]:
         uri = match.group(2)
 
         # Use empty string for default namespace (xmlns="...")
-        key = prefix if prefix else ""
+        key = prefix or ""
         namespaces[key] = uri
 
     return namespaces

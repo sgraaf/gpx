@@ -11,19 +11,29 @@ import contextlib
 import datetime as dt
 import json
 import sys
-from dataclasses import replace
-from decimal import Decimal
 from importlib import metadata
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from .gpx import GPX
-from .io import read_geojson, read_gpx, read_kml
-from .types import Latitude, Longitude
+from .io import convert_file, read_gpx
+from .operations import (
+    crop,
+    reduce_precision,
+    reverse,
+    shift_time,
+    simplify,
+    smooth,
+    split,
+    strip_extensions,
+    strip_metadata,
+    trim,
+)
+from .operations import merge as merge_op
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Sequence
 
+    from .gpx import GPX
     from .route import Route
     from .track import Track
     from .waypoint import Waypoint
@@ -89,30 +99,25 @@ def _create_parser() -> argparse.ArgumentParser:
     return parser
 
 
-# =============================================================================
-# Validate command
-# =============================================================================
-
-
 def _add_validate_parser(
     subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
 ) -> None:
     """Add the validate subcommand parser."""
-    parser = subparsers.add_parser(
+    validate_parser = subparsers.add_parser(
         "validate",
         help="Validate a GPX file",
         description="Validate a GPX file by attempting to parse it.",
     )
-    parser.add_argument(
+    validate_parser.add_argument(
         "input_file",
         type=Path,
         help="Path to the input GPX file",
         metavar="<INPUT_FILE>",
     )
-    parser.set_defaults(func=_cmd_validate)
+    validate_parser.set_defaults(func=validate)
 
 
-def _cmd_validate(args: argparse.Namespace) -> int:
+def validate(args: argparse.Namespace) -> int:
     """Execute the validate command."""
     file_path: Path = args.input_file
 
@@ -135,35 +140,30 @@ def _cmd_validate(args: argparse.Namespace) -> int:
     return 0
 
 
-# =============================================================================
-# Info command
-# =============================================================================
-
-
 def _add_info_parser(
     subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
 ) -> None:
     """Add the info subcommand parser."""
-    parser = subparsers.add_parser(
+    info_parser = subparsers.add_parser(
         "info",
         help="Show information and statistics about a GPX file",
         description="Display detailed information and statistics about a GPX file.",
     )
-    parser.add_argument(
+    info_parser.add_argument(
         "input_file",
         type=Path,
         help="Path to the input GPX file",
         metavar="<INPUT_FILE>",
     )
-    parser.add_argument(
+    info_parser.add_argument(
         "--json",
         action="store_true",
         help="Output information in JSON format",
     )
-    parser.set_defaults(func=_cmd_info)
+    info_parser.set_defaults(func=info)
 
 
-def _cmd_info(args: argparse.Namespace) -> int:
+def info(args: argparse.Namespace) -> int:
     """Execute the info command."""
     file_path: Path = args.input_file
 
@@ -408,28 +408,23 @@ def _print_gpx_info(  # noqa: C901, PLR0912, PLR0915
             print(f"  Total Duration: {hours:02d}:{minutes:02d}:{seconds:02d}")
 
 
-# =============================================================================
-# Edit command
-# =============================================================================
-
-
 def _add_edit_parser(
     subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
 ) -> None:
     """Add the edit subcommand parser."""
-    parser = subparsers.add_parser(
+    edit_parser = subparsers.add_parser(
         "edit",
         help="Edit a GPX file with various transformations",
         description="Edit a GPX file with various transformations like cropping, "
         "trimming, reversing, and stripping metadata.",
     )
-    parser.add_argument(
+    edit_parser.add_argument(
         "input_file",
         type=Path,
         help="Path to the input GPX file",
         metavar="<INPUT_FILE>",
     )
-    parser.add_argument(
+    edit_parser.add_argument(
         "-o",
         "--output-file",
         type=Path,
@@ -440,7 +435,7 @@ def _add_edit_parser(
     )
 
     # Crop options
-    crop_group = parser.add_argument_group(
+    crop_group = edit_parser.add_argument_group(
         "crop options", "Crop to a geographic bounding box"
     )
     crop_group.add_argument(
@@ -469,7 +464,9 @@ def _add_edit_parser(
     )
 
     # Trim options
-    trim_group = parser.add_argument_group("trim options", "Trim to a date/time range")
+    trim_group = edit_parser.add_argument_group(
+        "trim options", "Trim to a date/time range"
+    )
     trim_group.add_argument(
         "--start",
         type=str,
@@ -483,8 +480,62 @@ def _add_edit_parser(
         help="End datetime (ISO 8601 format, e.g., 2024-01-01T12:00:00)",
     )
 
+    # Split options
+    split_group = edit_parser.add_argument_group(
+        "split options", "Split track segments at gaps"
+    )
+    split_group.add_argument(
+        "--split-time-gap",
+        type=float,
+        metavar="SECONDS",
+        help="Split track segments where the time between consecutive points "
+        "exceeds this many seconds",
+    )
+    split_group.add_argument(
+        "--split-distance-gap",
+        type=float,
+        metavar="METERS",
+        help="Split track segments where the distance between consecutive points "
+        "exceeds this many metres",
+    )
+
+    # Simplify options
+    simplify_group = edit_parser.add_argument_group(
+        "simplify options", "Simplify tracks and routes"
+    )
+    simplify_group.add_argument(
+        "--simplify",
+        type=float,
+        metavar="TOLERANCE",
+        help="Simplify tracks and routes with the Ramer-Douglas-Peucker algorithm "
+        "using this tolerance (in metres)",
+    )
+
+    # Smooth options
+    smooth_group = edit_parser.add_argument_group(
+        "smooth options", "Smooth tracks and routes"
+    )
+    smooth_group.add_argument(
+        "--smooth",
+        type=int,
+        metavar="WINDOW",
+        help="Smooth track and route coordinates and elevations with a moving "
+        "average over this many points (an odd integer of at least 3)",
+    )
+
+    # Time shift options
+    shift_group = edit_parser.add_argument_group(
+        "time shift options", "Shift timestamps"
+    )
+    shift_group.add_argument(
+        "--shift-time",
+        type=float,
+        metavar="SECONDS",
+        help="Shift all point timestamps by this many seconds (may be negative)",
+    )
+
     # Reverse options
-    reverse_group = parser.add_argument_group(
+    reverse_group = edit_parser.add_argument_group(
         "reverse options", "Reverse routes and/or tracks"
     )
     reverse_group.add_argument(
@@ -504,7 +555,9 @@ def _add_edit_parser(
     )
 
     # Strip metadata options
-    strip_group = parser.add_argument_group("strip options", "Strip metadata fields")
+    strip_group = edit_parser.add_argument_group(
+        "strip options", "Strip metadata fields"
+    )
     strip_group.add_argument(
         "--strip-name",
         action="store_true",
@@ -545,9 +598,14 @@ def _add_edit_parser(
         action="store_true",
         help="Strip all metadata",
     )
+    strip_group.add_argument(
+        "--strip-extensions",
+        action="store_true",
+        help="Strip all extensions",
+    )
 
     # Precision options
-    precision_group = parser.add_argument_group(
+    precision_group = edit_parser.add_argument_group(
         "precision options", "Reduce coordinate precision"
     )
     precision_group.add_argument(
@@ -563,10 +621,10 @@ def _add_edit_parser(
         help="Number of decimal places for elevation (e.g., 1)",
     )
 
-    parser.set_defaults(func=_cmd_edit)
+    edit_parser.set_defaults(func=edit)
 
 
-def _cmd_edit(args: argparse.Namespace) -> int:
+def edit(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912
     """Execute the edit command."""
     input_path: Path = args.input_file
     output_path: Path = args.output_file
@@ -581,32 +639,65 @@ def _cmd_edit(args: argparse.Namespace) -> int:
     if any(
         v is not None for v in (args.min_lat, args.max_lat, args.min_lon, args.max_lon)
     ):
-        gpx = _apply_crop(gpx, args.min_lat, args.max_lat, args.min_lon, args.max_lon)
+        gpx = crop(
+            gpx,
+            min_lat=args.min_lat,
+            max_lat=args.max_lat,
+            min_lon=args.min_lon,
+            max_lon=args.max_lon,
+        )
 
     # Apply trim
     if args.start or args.end:
         start_dt = _parse_datetime(args.start) if args.start else None
         end_dt = _parse_datetime(args.end) if args.end else None
-        gpx = _apply_trim(gpx, start_dt, end_dt)
+        gpx = trim(gpx, start=start_dt, end=end_dt)
+
+    # Apply split
+    if args.split_time_gap is not None or args.split_distance_gap is not None:
+        gpx = split(
+            gpx,
+            time_gap=dt.timedelta(seconds=args.split_time_gap)
+            if args.split_time_gap is not None
+            else None,
+            distance_gap=args.split_distance_gap,
+        )
+
+    # Apply simplify
+    if args.simplify is not None:
+        gpx = simplify(gpx, args.simplify)
+
+    # Apply smooth
+    if args.smooth is not None:
+        gpx = smooth(gpx, window=args.smooth)
+
+    # Apply time shift
+    if args.shift_time is not None:
+        gpx = shift_time(gpx, dt.timedelta(seconds=args.shift_time))
 
     # Apply reverse
     if args.reverse:
-        gpx = _apply_reverse(gpx, reverse_routes=True, reverse_tracks=True)
+        gpx = reverse(gpx, routes=True, tracks=True)
     else:
         if args.reverse_routes:
-            gpx = _apply_reverse(gpx, reverse_routes=True, reverse_tracks=False)
+            gpx = reverse(gpx, routes=True, tracks=False)
         if args.reverse_tracks:
-            gpx = _apply_reverse(gpx, reverse_routes=False, reverse_tracks=True)
+            gpx = reverse(gpx, routes=False, tracks=True)
 
     # Apply strip metadata
-    if args.strip_all_metadata:
-        gpx = replace(gpx, metadata=None)
-    elif gpx.metadata:
-        gpx = _apply_strip_metadata(gpx, args)
+    gpx = _apply_strip_metadata(gpx, args)
+
+    # Apply strip extensions
+    if args.strip_extensions:
+        gpx = strip_extensions(gpx)
 
     # Apply precision reduction
     if args.precision is not None or args.elevation_precision is not None:
-        gpx = _apply_precision(gpx, args.precision, args.elevation_precision)
+        gpx = reduce_precision(
+            gpx,
+            coordinate_precision=args.precision,
+            elevation_precision=args.elevation_precision,
+        )
 
     # Write output
     gpx.write_gpx(output_path)
@@ -615,26 +706,22 @@ def _cmd_edit(args: argparse.Namespace) -> int:
 
 
 def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
-    """Apply metadata stripping based on args."""
-    metadata = gpx.metadata
-    if not metadata:
-        return gpx
+    """Apply metadata stripping based on the command-line arguments."""
+    if args.strip_all_metadata:
+        return strip_metadata(gpx)
 
-    if args.strip_name:
-        metadata = replace(metadata, name=None)
-    if args.strip_desc:
-        metadata = replace(metadata, desc=None)
-    if args.strip_author:
-        metadata = replace(metadata, author=None)
-    if args.strip_copyright:
-        metadata = replace(metadata, copyright=None)
-    if args.strip_time:
-        metadata = replace(metadata, time=None)
-    if args.strip_keywords:
-        metadata = replace(metadata, keywords=None)
-    if args.strip_links:
-        metadata = replace(metadata, link=[])
-    return replace(gpx, metadata=metadata)
+    fields = {
+        "name": args.strip_name,
+        "desc": args.strip_desc,
+        "author": args.strip_author,
+        "copyright": args.strip_copyright,
+        "time": args.strip_time,
+        "keywords": args.strip_keywords,
+        "links": args.strip_links,
+    }
+    if not any(fields.values()):
+        return gpx
+    return strip_metadata(gpx, **fields)
 
 
 def _parse_datetime(dt_str: str) -> dt.datetime:
@@ -665,151 +752,6 @@ def _parse_datetime(dt_str: str) -> dt.datetime:
     raise ValueError(msg)
 
 
-def _filter_points(gpx: GPX, predicate: Callable[[Waypoint], bool]) -> GPX:
-    """Return a new GPX with each point list filtered by ``predicate``.
-
-    Routes / segments / tracks that end up empty are dropped.
-    """
-    new_wpt = [w for w in gpx.wpt if predicate(w)]
-
-    new_rte: list[Route] = []
-    for route in gpx.rte:
-        kept = [p for p in route.rtept if predicate(p)]
-        if kept:
-            new_rte.append(replace(route, rtept=kept))
-
-    new_trk: list[Track] = []
-    for track in gpx.trk:
-        new_trkseg = [
-            replace(segment, trkpt=kept)
-            for segment in track.trkseg
-            if (kept := [p for p in segment.trkpt if predicate(p)])
-        ]
-        if new_trkseg:
-            new_trk.append(replace(track, trkseg=new_trkseg))
-
-    return replace(gpx, wpt=new_wpt, rte=new_rte, trk=new_trk)
-
-
-def _apply_crop(
-    gpx: GPX,
-    min_lat: float | None,
-    max_lat: float | None,
-    min_lon: float | None,
-    max_lon: float | None,
-) -> GPX:
-    """Apply geographic crop to GPX data."""
-
-    def is_in_bounds(point: Waypoint) -> bool:
-        lat, lon = float(point.lat), float(point.lon)
-        if min_lat is not None and lat < min_lat:
-            return False
-        if max_lat is not None and lat > max_lat:
-            return False
-        if min_lon is not None and lon < min_lon:
-            return False
-        return not (max_lon is not None and lon > max_lon)
-
-    return _filter_points(gpx, is_in_bounds)
-
-
-def _apply_trim(
-    gpx: GPX,
-    start_dt: dt.datetime | None,
-    end_dt: dt.datetime | None,
-) -> GPX:
-    """Apply time-based trim to GPX data."""
-
-    def is_in_time_range(point: Waypoint) -> bool:
-        if point.time is None:
-            return True  # Keep points without timestamps
-        if start_dt is not None and point.time < start_dt:
-            return False
-        return not (end_dt is not None and point.time > end_dt)
-
-    return _filter_points(gpx, is_in_time_range)
-
-
-def _apply_reverse(
-    gpx: GPX,
-    *,
-    reverse_routes: bool,
-    reverse_tracks: bool,
-) -> GPX:
-    """Apply reversal to routes and/or tracks."""
-    new_rte = gpx.rte
-    new_trk = gpx.trk
-
-    if reverse_routes:
-        new_rte = [
-            replace(route, rtept=list(reversed(route.rtept))) for route in gpx.rte
-        ]
-
-    if reverse_tracks:
-        new_trk = [
-            replace(
-                track,
-                trkseg=[
-                    replace(segment, trkpt=list(reversed(segment.trkpt)))
-                    for segment in reversed(track.trkseg)
-                ],
-            )
-            for track in gpx.trk
-        ]
-
-    return replace(gpx, rte=new_rte, trk=new_trk)
-
-
-def _apply_precision(
-    gpx: GPX,
-    coord_precision: int | None,
-    elevation_precision: int | None,
-) -> GPX:
-    """Apply precision reduction to coordinates and elevations."""
-
-    def round_point(point: Waypoint) -> Waypoint:
-        if coord_precision is None and elevation_precision is None:
-            return point
-        new_lat = (
-            Latitude(str(round(float(point.lat), coord_precision)))
-            if coord_precision is not None
-            else point.lat
-        )
-        new_lon = (
-            Longitude(str(round(float(point.lon), coord_precision)))
-            if coord_precision is not None
-            else point.lon
-        )
-        new_ele = (
-            Decimal(str(round(float(point.ele), elevation_precision)))
-            if elevation_precision is not None and point.ele is not None
-            else point.ele
-        )
-        return replace(point, lat=new_lat, lon=new_lon, ele=new_ele)
-
-    new_wpt = [round_point(w) for w in gpx.wpt]
-    new_rte = [
-        replace(route, rtept=[round_point(p) for p in route.rtept]) for route in gpx.rte
-    ]
-    new_trk = [
-        replace(
-            track,
-            trkseg=[
-                replace(segment, trkpt=[round_point(p) for p in segment.trkpt])
-                for segment in track.trkseg
-            ],
-        )
-        for track in gpx.trk
-    ]
-
-    return replace(gpx, wpt=new_wpt, rte=new_rte, trk=new_trk)
-
-
-# =============================================================================
-# Merge command
-# =============================================================================
-
-
 def _add_merge_parser(
     subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
 ) -> None:
@@ -835,10 +777,10 @@ def _add_merge_parser(
         metavar="<OUTPUT_FILE>",
         dest="output_file",
     )
-    parser.set_defaults(func=_cmd_merge)
+    parser.set_defaults(func=merge)
 
 
-def _cmd_merge(args: argparse.Namespace) -> int:
+def merge(args: argparse.Namespace) -> int:
     """Execute the merge command."""
     files: list[Path] = args.input_files
     output_path: Path = args.output_file
@@ -849,37 +791,16 @@ def _cmd_merge(args: argparse.Namespace) -> int:
             print(f"Error: File not found: {file_path}", file=sys.stderr)
             return 1
 
-    # Read all GPX files
-    gpx_files = [read_gpx(file_path) for file_path in files]
-
-    # Merge
-    merged_wpt: list[Waypoint] = []
-    merged_rte: list[Route] = []
-    merged_trk: list[Track] = []
-
-    for gpx in gpx_files:
-        merged_wpt.extend(gpx.wpt)
-        merged_rte.extend(gpx.rte)
-        merged_trk.extend(gpx.trk)
-
-    merged_gpx = GPX(
-        wpt=merged_wpt,
-        rte=merged_rte,
-        trk=merged_trk,
-    )
+    # Read and merge all GPX files
+    merged_gpx = merge_op(read_gpx(file_path) for file_path in files)
 
     # Write output
     merged_gpx.write_gpx(output_path)
     print(f"Merged {len(files)} files into: {output_path}")
-    print(f"  Waypoints: {len(merged_wpt)}")
-    print(f"  Routes: {len(merged_rte)}")
-    print(f"  Tracks: {len(merged_trk)}")
+    print(f"  Waypoints: {len(merged_gpx.wpt)}")
+    print(f"  Routes: {len(merged_gpx.rte)}")
+    print(f"  Tracks: {len(merged_gpx.trk)}")
     return 0
-
-
-# =============================================================================
-# Convert command
-# =============================================================================
 
 
 def _add_convert_parser(
@@ -920,10 +841,10 @@ def _add_convert_parser(
         choices=["gpx", "geojson", "kml"],
         help="Output format (default: auto-detect from file extension)",
     )
-    parser.set_defaults(func=_cmd_convert)
+    parser.set_defaults(func=convert)
 
 
-def _cmd_convert(args: argparse.Namespace) -> int:
+def convert(args: argparse.Namespace) -> int:
     """Execute the convert command."""
     input_path: Path = args.input_file
     output_path: Path = args.output_file
@@ -932,71 +853,19 @@ def _cmd_convert(args: argparse.Namespace) -> int:
         print(f"Error: File not found: {input_path}", file=sys.stderr)
         return 1
 
-    # Determine input format
-    input_format = args.from_format or _detect_format(input_path)
-    if not input_format:
-        print(
-            f"Error: Could not detect input format for: {input_path}", file=sys.stderr
+    try:
+        input_format, output_format = convert_file(
+            input_path,
+            output_path,
+            input_format=args.from_format,
+            output_format=args.to_format,
         )
-        return 1
-
-    # Determine output format
-    output_format = args.to_format or _detect_format(output_path)
-    if not output_format:
-        print(
-            f"Error: Could not detect output format for: {output_path}", file=sys.stderr
-        )
-        return 1
-
-    # Read input
-    gpx = _read_input(input_path, input_format)
-    if gpx is None:
-        print(f"Error: Unsupported input format: {input_format}", file=sys.stderr)
-        return 1
-
-    # Write output
-    if not _write_output(gpx, output_path, output_format):
-        print(f"Error: Unsupported output format: {output_format}", file=sys.stderr)
+    except ValueError as e:
+        print(f"Error: {e}", file=sys.stderr)
         return 1
 
     print(f"Converted {input_path} ({input_format}) to {output_path} ({output_format})")
     return 0
-
-
-def _read_input(input_path: Path, input_format: str) -> GPX | None:
-    """Read input file based on format."""
-    if input_format == "gpx":
-        return read_gpx(input_path)
-    if input_format == "geojson":
-        return read_geojson(input_path)
-    if input_format == "kml":
-        return read_kml(input_path)
-    return None
-
-
-def _write_output(gpx: GPX, output_path: Path, output_format: str) -> bool:
-    """Write output file based on format."""
-    if output_format == "gpx":
-        gpx.write_gpx(output_path)
-    elif output_format == "geojson":
-        gpx.write_geojson(output_path)
-    elif output_format == "kml":
-        gpx.write_kml(output_path)
-    else:
-        return False
-    return True
-
-
-def _detect_format(path: Path) -> str | None:
-    """Detect file format from extension."""
-    suffix = path.suffix.lower()
-    format_map = {
-        ".gpx": "gpx",
-        ".geojson": "geojson",
-        ".json": "geojson",
-        ".kml": "kml",
-    }
-    return format_map.get(suffix)
 
 
 if __name__ == "__main__":
