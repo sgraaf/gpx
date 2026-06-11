@@ -15,6 +15,8 @@ from gpx import (
     Track,
     TrackSegment,
     Waypoint,
+    convert_file,
+    detect_format,
     from_geo_interface,
     from_wkb,
     from_wkt,
@@ -23,10 +25,6 @@ from gpx import (
     read_kml,
 )
 from gpx.types import Latitude, Longitude
-
-# =============================================================================
-# Test fixtures
-# =============================================================================
 
 
 @pytest.fixture
@@ -137,11 +135,6 @@ def sample_kml() -> str:
 </kml>"""
 
 
-# =============================================================================
-# GeoJSON conversion tests
-# =============================================================================
-
-
 class TestGeoJSONConversion:
     """Tests for GeoJSON conversion functionality."""
 
@@ -234,11 +227,6 @@ class TestGeoJSONConversion:
         assert len(gpx2.wpt) == len(sample_gpx.wpt)
         assert len(gpx2.rte) == len(sample_gpx.rte)
         assert len(gpx2.trk) == len(sample_gpx.trk)
-
-
-# =============================================================================
-# KML conversion tests
-# =============================================================================
 
 
 class TestKMLConversion:
@@ -339,11 +327,6 @@ class TestKMLConversion:
         gpx.write_kml(temp_file)
         content = temp_file.read_text()
         assert "<MultiGeometry>" in content
-
-
-# =============================================================================
-# WKT conversion tests
-# =============================================================================
 
 
 class TestWKTConversion:
@@ -456,11 +439,6 @@ class TestWKTConversion:
         gpx2 = from_wkt(wkt)
         assert len(gpx2.wpt) == 1
         assert float(gpx2.wpt[0].lat) == pytest.approx(float(gpx1.wpt[0].lat), rel=1e-3)
-
-
-# =============================================================================
-# WKB conversion tests
-# =============================================================================
 
 
 class TestWKBConversion:
@@ -648,11 +626,6 @@ class TestWKBConversion:
         assert float(gpx2.wpt[0].lat) == pytest.approx(float(gpx1.wpt[0].lat), rel=1e-3)
 
 
-# =============================================================================
-# GPX file I/O tests
-# =============================================================================
-
-
 class TestGPXFileIO:
     """Tests for GPX file reading and writing."""
 
@@ -671,11 +644,6 @@ class TestGPXFileIO:
         content = temp_file.read_text()
         assert "<?xml" in content
         assert "<gpx" in content
-
-
-# =============================================================================
-# Error handling tests
-# =============================================================================
 
 
 class TestErrorHandling:
@@ -717,11 +685,6 @@ class TestErrorHandling:
         wkb += struct.pack("<I", 99)  # Unsupported type
         with pytest.raises(ValueError, match="Unsupported WKB geometry type"):
             from_wkb(wkb)
-
-
-# =============================================================================
-# Additional GeoJSON conversion tests for missing coverage
-# =============================================================================
 
 
 class TestGeoJSONEdgeCases:
@@ -854,11 +817,6 @@ class TestGeoJSONEdgeCases:
         assert gpx.trk[0].type == "Track Type"
 
 
-# =============================================================================
-# WKB edge cases for missing coverage
-# =============================================================================
-
-
 class TestWKBEdgeCases:
     """Tests for edge cases in WKB conversion."""
 
@@ -885,11 +843,6 @@ class TestWKBEdgeCases:
         assert len(gpx.rte) == 1
 
 
-# =============================================================================
-# WKT edge cases for missing coverage
-# =============================================================================
-
-
 class TestWKTEdgeCases:
     """Tests for edge cases in WKT conversion."""
 
@@ -911,3 +864,97 @@ class TestWKTEdgeCases:
         gpx = from_wkt(wkt)
         assert len(gpx.wpt) == 1
         assert len(gpx.rte) == 1
+
+
+class TestDetectFormat:
+    """Tests for the detect_format function."""
+
+    def test_detect_format_gpx(self) -> None:
+        """Test format detection for GPX."""
+        assert detect_format(Path("file.gpx")) == "gpx"
+
+    def test_detect_format_geojson(self) -> None:
+        """Test format detection for GeoJSON."""
+        assert detect_format(Path("file.geojson")) == "geojson"
+        assert detect_format(Path("file.json")) == "geojson"
+
+    def test_detect_format_kml(self) -> None:
+        """Test format detection for KML."""
+        assert detect_format(Path("file.kml")) == "kml"
+
+    def test_detect_format_unknown(self) -> None:
+        """Test format detection for unknown extension."""
+        assert detect_format(Path("file.xyz")) is None
+
+    def test_detect_format_accepts_strings(self) -> None:
+        """Test format detection with a string path."""
+        assert detect_format("file.GPX") == "gpx"
+
+
+class TestConvertFile:
+    """Tests for the convert_file function."""
+
+    def test_convert_gpx_to_geojson(
+        self, sample_gpx_file: Path, tmp_path: Path
+    ) -> None:
+        """Test converting GPX to GeoJSON."""
+        output_file = tmp_path / "output.geojson"
+        formats = convert_file(sample_gpx_file, output_file)
+        assert formats == ("gpx", "geojson")
+        data = json.loads(output_file.read_text())
+        assert data["type"] == "FeatureCollection"
+
+    def test_convert_gpx_to_kml(self, sample_gpx_file: Path, tmp_path: Path) -> None:
+        """Test converting GPX to KML."""
+        output_file = tmp_path / "output.kml"
+        formats = convert_file(sample_gpx_file, output_file)
+        assert formats == ("gpx", "kml")
+        assert "<kml" in output_file.read_text()
+
+    def test_convert_geojson_to_gpx(self, sample_gpx: GPX, tmp_path: Path) -> None:
+        """Test converting GeoJSON to GPX."""
+        input_file = tmp_path / "input.geojson"
+        output_file = tmp_path / "output.gpx"
+
+        sample_gpx.write_geojson(input_file)
+
+        formats = convert_file(input_file, output_file)
+        assert formats == ("geojson", "gpx")
+        gpx = read_gpx(output_file)
+        assert len(gpx.wpt) >= 1
+
+    def test_convert_with_explicit_formats(
+        self, sample_gpx_file: Path, tmp_path: Path
+    ) -> None:
+        """Test converting with explicitly given formats."""
+        output_file = tmp_path / "output.json"
+        formats = convert_file(
+            sample_gpx_file, output_file, input_format="gpx", output_format="geojson"
+        )
+        assert formats == ("gpx", "geojson")
+
+    def test_convert_undetectable_input_format(self, tmp_path: Path) -> None:
+        """An undetectable input format raises a ValueError."""
+        with pytest.raises(ValueError, match="Could not detect input format"):
+            convert_file(tmp_path / "input.xyz", tmp_path / "output.gpx")
+
+    def test_convert_undetectable_output_format(
+        self, sample_gpx_file: Path, tmp_path: Path
+    ) -> None:
+        """An undetectable output format raises a ValueError."""
+        with pytest.raises(ValueError, match="Could not detect output format"):
+            convert_file(sample_gpx_file, tmp_path / "output.xyz")
+
+    def test_convert_unsupported_input_format(
+        self, sample_gpx_file: Path, tmp_path: Path
+    ) -> None:
+        """An unsupported input format raises a ValueError."""
+        with pytest.raises(ValueError, match="Unsupported input format"):
+            convert_file(sample_gpx_file, tmp_path / "output.gpx", input_format="csv")
+
+    def test_convert_unsupported_output_format(
+        self, sample_gpx_file: Path, tmp_path: Path
+    ) -> None:
+        """An unsupported output format raises a ValueError."""
+        with pytest.raises(ValueError, match="Unsupported output format"):
+            convert_file(sample_gpx_file, tmp_path / "output.gpx", output_format="csv")

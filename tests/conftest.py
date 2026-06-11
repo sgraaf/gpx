@@ -9,8 +9,10 @@ from typing import Any
 import pytest
 
 from gpx import (
+    GPX,
     Bounds,
     Email,
+    Extensions,
     Link,
     Metadata,
     Person,
@@ -72,11 +74,6 @@ def load_fixture(fixture_path: Path) -> str:
     return fixture_path.read_text(encoding="utf-8")
 
 
-# =============================================================================
-# GPX string fixtures (loaded from files)
-# =============================================================================
-
-
 @pytest.fixture
 def minimal_gpx_string() -> str:
     """A minimal valid GPX string."""
@@ -117,11 +114,6 @@ def full_gpx_string() -> str:
 def invalid_gpx_string() -> str:
     """An invalid GPX string (missing required attributes)."""
     return load_fixture(INVALID_FIXTURES_DIR / "missing_lat_lon.gpx")
-
-
-# =============================================================================
-# GeoJSON interface fixtures
-# =============================================================================
 
 
 @pytest.fixture
@@ -248,11 +240,6 @@ def full_gpx_geo_interface() -> dict[str, Any]:
     }
 
 
-# =============================================================================
-# Programmatically created fixtures
-# =============================================================================
-
-
 @pytest.fixture
 def sample_waypoint() -> Waypoint:
     """Create a sample waypoint programmatically."""
@@ -353,9 +340,199 @@ def sample_bounds() -> Bounds:
     )
 
 
-# =============================================================================
-# Edge case fixtures (valid)
-# =============================================================================
+#: Garmin TrackPointExtension namespace (for extension tests)
+GARMIN_TPX_NS = "http://www.garmin.com/xmlschemas/TrackPointExtension/v2"
+#: Custom extension namespace (for extension tests)
+CUSTOM_NS = "http://example.com/custom/v1"
+
+
+def create_track_point_extension(hr: str = "142", cad: str = "85") -> Extensions:
+    """Create a Garmin TrackPointExtension.
+
+    Args:
+        hr: Heart rate value. Defaults to "142".
+        cad: Cadence value. Defaults to "85".
+
+    Returns:
+        An Extensions instance containing the TrackPointExtension.
+
+    """
+    ET.register_namespace("gpxtpx", GARMIN_TPX_NS)
+    tpx = ET.Element(f"{{{GARMIN_TPX_NS}}}TrackPointExtension")
+    hr_elem = ET.SubElement(tpx, f"{{{GARMIN_TPX_NS}}}hr")
+    hr_elem.text = hr
+    cad_elem = ET.SubElement(tpx, f"{{{GARMIN_TPX_NS}}}cad")
+    cad_elem.text = cad
+    return Extensions(elements=[tpx])
+
+
+def create_custom_extension(key: str, value: str) -> Extensions:
+    """Create a custom extension element.
+
+    Args:
+        key: The element tag name.
+        value: The element text content.
+
+    Returns:
+        An Extensions instance containing the custom element.
+
+    """
+    elem = ET.Element(f"{{{CUSTOM_NS}}}{key}")
+    elem.text = value
+    return Extensions(elements=[elem])
+
+
+@pytest.fixture
+def sample_gpx() -> GPX:
+    """Create a sample GPX with waypoints, routes, and tracks."""
+    waypoint = Waypoint(
+        lat=Latitude("52.5200"),
+        lon=Longitude("13.4050"),
+        ele=Decimal("34.5"),
+        name="Berlin",
+        time=dt.datetime(2024, 1, 15, 10, 0, 0, tzinfo=dt.UTC),
+    )
+
+    route_points = [
+        Waypoint(
+            lat=Latitude("52.5200"),
+            lon=Longitude("13.4050"),
+            ele=Decimal("34.5"),
+        ),
+        Waypoint(
+            lat=Latitude("52.5300"),
+            lon=Longitude("13.4150"),
+            ele=Decimal("40.0"),
+        ),
+    ]
+    route = Route(name="City Tour", desc="A tour of the city", rtept=route_points)
+
+    track_points = [
+        Waypoint(
+            lat=Latitude("52.5200"),
+            lon=Longitude("13.4050"),
+            ele=Decimal("34.5"),
+            time=dt.datetime(2024, 1, 15, 10, 0, 0, tzinfo=dt.UTC),
+        ),
+        Waypoint(
+            lat=Latitude("52.5210"),
+            lon=Longitude("13.4060"),
+            ele=Decimal("35.0"),
+            time=dt.datetime(2024, 1, 15, 10, 1, 0, tzinfo=dt.UTC),
+        ),
+        Waypoint(
+            lat=Latitude("52.5220"),
+            lon=Longitude("13.4070"),
+            ele=Decimal("36.5"),
+            time=dt.datetime(2024, 1, 15, 10, 2, 0, tzinfo=dt.UTC),
+        ),
+    ]
+    segment = TrackSegment(trkpt=track_points)
+    track = Track(name="Morning Run", desc="A morning run", trkseg=[segment])
+
+    return GPX(
+        creator="TestApp",
+        metadata=Metadata(name="Test GPX", desc="Test description"),
+        wpt=[waypoint],
+        rte=[route],
+        trk=[track],
+    )
+
+
+@pytest.fixture
+def sample_gpx_file(sample_gpx: GPX, tmp_path_factory: pytest.TempPathFactory) -> Path:
+    """Create a sample GPX file and return its path."""
+    temp_dir = tmp_path_factory.mktemp("gpx_files")
+    temp_file = temp_dir / "sample.gpx"
+    sample_gpx.write_gpx(temp_file)
+    return temp_file
+
+
+@pytest.fixture
+def gpx_with_extensions() -> GPX:
+    """Create a GPX with extensions at all levels."""
+    # GPX-level extension
+    gpx_ext = create_custom_extension("source", "TestApp")
+
+    # Metadata extension
+    metadata_ext = create_custom_extension("version", "1.0")
+
+    # Track extension
+    track_ext = create_custom_extension("activity", "running")
+
+    # Track segment extension
+    segment_ext = create_custom_extension("lap", "1")
+
+    # Track point extensions with heart rate
+    track_points = [
+        Waypoint(
+            lat=Latitude("52.5200"),
+            lon=Longitude("13.4050"),
+            ele=Decimal("34.5"),
+            time=dt.datetime(2024, 1, 15, 10, 0, 0, tzinfo=dt.UTC),
+            extensions=create_track_point_extension("140", "80"),
+        ),
+        Waypoint(
+            lat=Latitude("52.5210"),
+            lon=Longitude("13.4060"),
+            ele=Decimal("35.0"),
+            time=dt.datetime(2024, 1, 15, 10, 1, 0, tzinfo=dt.UTC),
+            extensions=create_track_point_extension("145", "85"),
+        ),
+        Waypoint(
+            lat=Latitude("52.5220"),
+            lon=Longitude("13.4070"),
+            ele=Decimal("36.5"),
+            time=dt.datetime(2024, 1, 15, 10, 2, 0, tzinfo=dt.UTC),
+            extensions=create_track_point_extension("150", "90"),
+        ),
+    ]
+    segment = TrackSegment(trkpt=track_points, extensions=segment_ext)
+    track = Track(name="Morning Run", trkseg=[segment], extensions=track_ext)
+
+    # Route with extensions
+    route_ext = create_custom_extension("type", "scenic")
+    route_points = [
+        Waypoint(
+            lat=Latitude("52.5200"),
+            lon=Longitude("13.4050"),
+            extensions=create_custom_extension("poi", "start"),
+        ),
+        Waypoint(
+            lat=Latitude("52.5300"),
+            lon=Longitude("13.4150"),
+            extensions=create_custom_extension("poi", "end"),
+        ),
+    ]
+    route = Route(name="City Tour", rtept=route_points, extensions=route_ext)
+
+    # Waypoint with extension
+    waypoint = Waypoint(
+        lat=Latitude("52.5200"),
+        lon=Longitude("13.4050"),
+        name="Test Point",
+        extensions=create_custom_extension("rating", "5"),
+    )
+
+    return GPX(
+        creator="TestApp",
+        metadata=Metadata(name="Test GPX", extensions=metadata_ext),
+        wpt=[waypoint],
+        rte=[route],
+        trk=[track],
+        extensions=gpx_ext,
+    )
+
+
+@pytest.fixture
+def gpx_with_extensions_file(
+    gpx_with_extensions: GPX, tmp_path_factory: pytest.TempPathFactory
+) -> Path:
+    """Create a GPX file with extensions and return its path."""
+    temp_dir = tmp_path_factory.mktemp("gpx_ext_files")
+    temp_file = temp_dir / "with_extensions.gpx"
+    gpx_with_extensions.write_gpx(temp_file)
+    return temp_file
 
 
 @pytest.fixture
@@ -506,11 +683,6 @@ def no_xml_declaration_gpx_string() -> str:
 def large_gpx_string() -> str:
     """A GPX string with many elements."""
     return load_fixture(VALID_FIXTURES_DIR / "large_gpx.gpx")
-
-
-# =============================================================================
-# Edge case fixtures (invalid)
-# =============================================================================
 
 
 @pytest.fixture

@@ -157,7 +157,7 @@ class Extensions:
                 # Try to match against the element tag
                 for prefix, uri in namespaces.items():
                     if path.startswith(f"{prefix}:"):
-                        local_name = path.split(":")[1].split("/")[0]
+                        local_name = path.split(":")[1].split("/", maxsplit=1)[0]
                         if elem.tag == f"{{{uri}}}{local_name}":
                             # If there's more path, continue searching
                             remaining = "/".join(path.split("/")[1:])
@@ -227,7 +227,7 @@ class Extensions:
         for elem in self.elements:
             for child in elem.iter():
                 if _matches_tag(child.tag, tag, ns_tag):
-                    return child.text if child.text else default
+                    return child.text or default
         return default
 
     def get_int(

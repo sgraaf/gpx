@@ -2,113 +2,20 @@
 
 import datetime as dt
 import json
-import xml.etree.ElementTree as ET
-from decimal import Decimal
 from pathlib import Path
 
 import pytest
 
-from gpx import (
-    GPX,
-    Extensions,
-    Metadata,
-    Route,
-    Track,
-    TrackSegment,
-    Waypoint,
-    read_gpx,
-)
-from gpx.cli import (
-    _apply_crop,
-    _apply_precision,
-    _apply_reverse,
-    _apply_trim,
-    _calculate_bounds,
-    _detect_format,
-    _gather_gpx_info,
-    _parse_datetime,
-    cli,
-)
+from gpx import GPX, Track, TrackSegment, Waypoint, read_gpx
+from gpx.cli import _calculate_bounds, _gather_gpx_info, _parse_datetime, cli
 from gpx.types import Latitude, Longitude
 
-# Extension namespace for testing
-GARMIN_TPX_NS = "http://www.garmin.com/xmlschemas/TrackPointExtension/v2"
-CUSTOM_NS = "http://example.com/custom/v1"
-
-# =============================================================================
-# Test fixtures
-# =============================================================================
-
-
-@pytest.fixture
-def sample_gpx() -> GPX:
-    """Create a sample GPX with waypoints, routes, and tracks."""
-    waypoint = Waypoint(
-        lat=Latitude("52.5200"),
-        lon=Longitude("13.4050"),
-        ele=Decimal("34.5"),
-        name="Berlin",
-        time=dt.datetime(2024, 1, 15, 10, 0, 0, tzinfo=dt.UTC),
-    )
-
-    route_points = [
-        Waypoint(
-            lat=Latitude("52.5200"),
-            lon=Longitude("13.4050"),
-            ele=Decimal("34.5"),
-        ),
-        Waypoint(
-            lat=Latitude("52.5300"),
-            lon=Longitude("13.4150"),
-            ele=Decimal("40.0"),
-        ),
-    ]
-    route = Route(name="City Tour", desc="A tour of the city", rtept=route_points)
-
-    track_points = [
-        Waypoint(
-            lat=Latitude("52.5200"),
-            lon=Longitude("13.4050"),
-            ele=Decimal("34.5"),
-            time=dt.datetime(2024, 1, 15, 10, 0, 0, tzinfo=dt.UTC),
-        ),
-        Waypoint(
-            lat=Latitude("52.5210"),
-            lon=Longitude("13.4060"),
-            ele=Decimal("35.0"),
-            time=dt.datetime(2024, 1, 15, 10, 1, 0, tzinfo=dt.UTC),
-        ),
-        Waypoint(
-            lat=Latitude("52.5220"),
-            lon=Longitude("13.4070"),
-            ele=Decimal("36.5"),
-            time=dt.datetime(2024, 1, 15, 10, 2, 0, tzinfo=dt.UTC),
-        ),
-    ]
-    segment = TrackSegment(trkpt=track_points)
-    track = Track(name="Morning Run", desc="A morning run", trkseg=[segment])
-
-    return GPX(
-        creator="TestApp",
-        metadata=Metadata(name="Test GPX", desc="Test description"),
-        wpt=[waypoint],
-        rte=[route],
-        trk=[track],
-    )
-
-
-@pytest.fixture
-def sample_gpx_file(sample_gpx: GPX, tmp_path_factory: pytest.TempPathFactory) -> Path:
-    """Create a sample GPX file and return its path."""
-    temp_dir = tmp_path_factory.mktemp("gpx_files")
-    temp_file = temp_dir / "sample.gpx"
-    sample_gpx.write_gpx(temp_file)
-    return temp_file
-
-
-# =============================================================================
-# Main function tests
-# =============================================================================
+from .conftest import (
+    CUSTOM_NS,
+    GARMIN_TPX_NS,
+    create_custom_extension,
+    create_track_point_extension,
+)
 
 
 class TestMain:
@@ -133,11 +40,6 @@ class TestMain:
         with pytest.raises(SystemExit) as exc_info:
             cli(["invalid_command"])
         assert exc_info.value.code == 2
-
-
-# =============================================================================
-# Validate command tests
-# =============================================================================
 
 
 class TestValidateCommand:
@@ -173,11 +75,6 @@ class TestValidateCommand:
         assert "Invalid GPX file" in captured.err
 
 
-# =============================================================================
-# Info command tests
-# =============================================================================
-
-
 class TestInfoCommand:
     """Tests for the info command."""
 
@@ -211,11 +108,6 @@ class TestInfoCommand:
         assert result == 1
         captured = capsys.readouterr()
         assert "File not found" in captured.err
-
-
-# =============================================================================
-# Edit command tests
-# =============================================================================
 
 
 class TestEditCommand:
@@ -272,10 +164,204 @@ class TestEditCommand:
         gpx = read_gpx(output_file)
         assert gpx.metadata is None
 
+    def test_edit_split_time_gap(self, sample_gpx_file: Path, tmp_path: Path) -> None:
+        """Test edit with --split-time-gap."""
+        output_file = tmp_path / "output.gpx"
+        # Sample track points are 1 minute apart; split at 30 seconds
+        result = cli(
+            [
+                "edit",
+                str(sample_gpx_file),
+                "-o",
+                str(output_file),
+                "--split-time-gap",
+                "30",
+            ]
+        )
+        assert result == 0
+        gpx = read_gpx(output_file)
+        assert len(gpx.trk[0].trkseg) == 3
 
-# =============================================================================
-# Merge command tests
-# =============================================================================
+    def test_edit_split_distance_gap(
+        self, sample_gpx_file: Path, tmp_path: Path
+    ) -> None:
+        """Test edit with --split-distance-gap."""
+        output_file = tmp_path / "output.gpx"
+        # Sample track points are ~130 m apart; split at 50 m
+        result = cli(
+            [
+                "edit",
+                str(sample_gpx_file),
+                "-o",
+                str(output_file),
+                "--split-distance-gap",
+                "50",
+            ]
+        )
+        assert result == 0
+        gpx = read_gpx(output_file)
+        assert len(gpx.trk[0].trkseg) == 3
+
+    def test_edit_simplify(self, sample_gpx_file: Path, tmp_path: Path) -> None:
+        """Test edit with --simplify."""
+        output_file = tmp_path / "output.gpx"
+        result = cli(
+            [
+                "edit",
+                str(sample_gpx_file),
+                "-o",
+                str(output_file),
+                "--simplify",
+                "1000",
+            ]
+        )
+        assert result == 0
+        gpx = read_gpx(output_file)
+        # With a huge tolerance, only the endpoints of the track remain
+        assert len(gpx.trk[0].trkseg[0].trkpt) == 2
+
+    def test_edit_smooth(self, sample_gpx_file: Path, tmp_path: Path) -> None:
+        """Test edit with --smooth."""
+        output_file = tmp_path / "output.gpx"
+        result = cli(
+            ["edit", str(sample_gpx_file), "-o", str(output_file), "--smooth", "3"]
+        )
+        assert result == 0
+        gpx = read_gpx(output_file)
+        assert len(gpx.trk[0].trkseg[0].trkpt) == 3
+
+    def test_edit_smooth_invalid_window(
+        self, sample_gpx_file: Path, tmp_path: Path, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test edit with an invalid --smooth window."""
+        output_file = tmp_path / "output.gpx"
+        result = cli(
+            ["edit", str(sample_gpx_file), "-o", str(output_file), "--smooth", "2"]
+        )
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "window" in captured.err
+
+    def test_edit_shift_time(self, sample_gpx_file: Path, tmp_path: Path) -> None:
+        """Test edit with --shift-time."""
+        output_file = tmp_path / "output.gpx"
+        result = cli(
+            [
+                "edit",
+                str(sample_gpx_file),
+                "-o",
+                str(output_file),
+                "--shift-time",
+                "3600",
+            ]
+        )
+        assert result == 0
+        original = read_gpx(sample_gpx_file)
+        shifted = read_gpx(output_file)
+        original_time = original.wpt[0].time
+        assert original_time is not None
+        assert shifted.wpt[0].time == original_time + dt.timedelta(hours=1)
+
+    def test_edit_strip_extensions(self, tmp_path: Path) -> None:
+        """Test edit with --strip-extensions."""
+        input_file = tmp_path / "input.gpx"
+        gpx = GPX(
+            wpt=[
+                Waypoint(
+                    lat=Latitude("52.0"),
+                    lon=Longitude("4.0"),
+                    extensions=create_custom_extension("rating", "5"),
+                )
+            ],
+            extensions=create_custom_extension("source", "TestApp"),
+        )
+        gpx.write_gpx(input_file)
+
+        output_file = tmp_path / "output.gpx"
+        result = cli(
+            ["edit", str(input_file), "-o", str(output_file), "--strip-extensions"]
+        )
+        assert result == 0
+        stripped = read_gpx(output_file)
+        assert stripped.extensions is None
+        assert stripped.wpt[0].extensions is None
+
+    def test_edit_crop_with_zero_bound(
+        self, sample_gpx_file: Path, tmp_path: Path
+    ) -> None:
+        """A bound of 0 must trigger the crop (regression: any() treated 0 as falsy).
+
+        sample_gpx points are all near (52.5, 13.4); a min-lat of 0 must keep
+        them while a min-lat of 53 must drop them.
+        """
+        out_keep = tmp_path / "keep.gpx"
+        result = cli(
+            [
+                "edit",
+                str(sample_gpx_file),
+                "-o",
+                str(out_keep),
+                "--min-lat",
+                "0",
+            ]
+        )
+        assert result == 0
+        kept = read_gpx(out_keep)
+        assert len(kept.wpt) == 1
+
+        out_drop = tmp_path / "drop.gpx"
+        result = cli(
+            [
+                "edit",
+                str(sample_gpx_file),
+                "-o",
+                str(out_drop),
+                "--min-lat",
+                "53",
+            ]
+        )
+        assert result == 0
+        dropped = read_gpx(out_drop)
+        assert len(dropped.wpt) == 0
+
+    def test_edit_strip_all_metadata_preserves_nsmap(self, tmp_path: Path) -> None:
+        """`gpx edit --strip-all-metadata` must keep custom namespace prefixes.
+
+        The prefix must survive an actual file round-trip, which means an
+        element using that namespace has to be present (ElementTree drops
+        unused xmlns declarations).
+        """
+        src = tmp_path / "with_ext.gpx"
+        src.write_text(
+            '<?xml version="1.0" encoding="UTF-8"?>\n'
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" '
+            f'xmlns:gpxtpx="{GARMIN_TPX_NS}" '
+            'version="1.1" creator="TestApp">\n'
+            "  <metadata><name>x</name></metadata>\n"
+            '  <wpt lat="52.5" lon="13.4">\n'
+            "    <extensions>\n"
+            "      <gpxtpx:TrackPointExtension>\n"
+            "        <gpxtpx:hr>120</gpxtpx:hr>\n"
+            "      </gpxtpx:TrackPointExtension>\n"
+            "    </extensions>\n"
+            "  </wpt>\n"
+            "</gpx>\n",
+            encoding="utf-8",
+        )
+
+        out = tmp_path / "stripped.gpx"
+        result = cli(
+            [
+                "edit",
+                str(src),
+                "-o",
+                str(out),
+                "--strip-all-metadata",
+            ]
+        )
+        assert result == 0
+        # Original prefix must survive the round-trip through `gpx edit`.
+        assert f'xmlns:gpxtpx="{GARMIN_TPX_NS}"' in out.read_text(encoding="utf-8")
 
 
 class TestMergeCommand:
@@ -309,11 +395,6 @@ class TestMergeCommand:
         assert result == 1
         captured = capsys.readouterr()
         assert "File not found" in captured.err
-
-
-# =============================================================================
-# Convert command tests
-# =============================================================================
 
 
 class TestConvertCommand:
@@ -381,11 +462,6 @@ class TestConvertCommand:
         assert "File not found" in captured.err
 
 
-# =============================================================================
-# Helper function tests
-# =============================================================================
-
-
 class TestHelperFunctions:
     """Tests for CLI helper functions."""
 
@@ -410,23 +486,6 @@ class TestHelperFunctions:
         with pytest.raises(ValueError, match="Invalid datetime format"):
             _parse_datetime("not a date")
 
-    def test_detect_format_gpx(self) -> None:
-        """Test format detection for GPX."""
-        assert _detect_format(Path("file.gpx")) == "gpx"
-
-    def test_detect_format_geojson(self) -> None:
-        """Test format detection for GeoJSON."""
-        assert _detect_format(Path("file.geojson")) == "geojson"
-        assert _detect_format(Path("file.json")) == "geojson"
-
-    def test_detect_format_kml(self) -> None:
-        """Test format detection for KML."""
-        assert _detect_format(Path("file.kml")) == "kml"
-
-    def test_detect_format_unknown(self) -> None:
-        """Test format detection for unknown extension."""
-        assert _detect_format(Path("file.xyz")) is None
-
     def test_calculate_bounds(self, sample_gpx: GPX) -> None:
         """Test bounds calculation."""
         bounds = _calculate_bounds(sample_gpx)
@@ -446,326 +505,6 @@ class TestHelperFunctions:
         assert info["tracks"] == 1
         assert "metadata" in info
         assert info["metadata"]["name"] == "Test GPX"
-
-
-# =============================================================================
-# Apply function tests
-# =============================================================================
-
-
-class TestApplyFunctions:
-    """Tests for the apply transformation functions."""
-
-    def test_apply_crop(self, sample_gpx: GPX) -> None:
-        """Test applying crop to GPX data."""
-        cropped = _apply_crop(
-            sample_gpx,
-            min_lat=52.515,
-            max_lat=52.525,
-            min_lon=13.400,
-            max_lon=13.410,
-        )
-        # Should keep some points but filter out those outside bounds
-        assert len(cropped.wpt) >= 0
-        assert len(cropped.trk) >= 0
-
-    def test_apply_crop_excludes_all(self, sample_gpx: GPX) -> None:
-        """Test applying crop that excludes all points."""
-        cropped = _apply_crop(
-            sample_gpx,
-            min_lat=0.0,
-            max_lat=1.0,
-            min_lon=0.0,
-            max_lon=1.0,
-        )
-        assert len(cropped.wpt) == 0
-        assert len(cropped.rte) == 0
-        assert len(cropped.trk) == 0
-
-    def test_edit_crop_with_zero_bound(
-        self, sample_gpx_file: Path, tmp_path: Path
-    ) -> None:
-        """A bound of 0 must trigger the crop (regression: any() treated 0 as falsy).
-
-        sample_gpx points are all near (52.5, 13.4); a min-lat of 0 must keep
-        them while a min-lat of 53 must drop them.
-        """
-        out_keep = tmp_path / "keep.gpx"
-        result = cli(
-            [
-                "edit",
-                str(sample_gpx_file),
-                "-o",
-                str(out_keep),
-                "--min-lat",
-                "0",
-            ]
-        )
-        assert result == 0
-        kept = read_gpx(out_keep)
-        assert len(kept.wpt) == 1
-
-        out_drop = tmp_path / "drop.gpx"
-        result = cli(
-            [
-                "edit",
-                str(sample_gpx_file),
-                "-o",
-                str(out_drop),
-                "--min-lat",
-                "53",
-            ]
-        )
-        assert result == 0
-        dropped = read_gpx(out_drop)
-        assert len(dropped.wpt) == 0
-
-    def test_apply_trim(self, sample_gpx: GPX) -> None:
-        """Test applying time trim to GPX data."""
-        start = dt.datetime(2024, 1, 15, 10, 0, 30, tzinfo=dt.UTC)
-        end = dt.datetime(2024, 1, 15, 10, 1, 30, tzinfo=dt.UTC)
-        trimmed = _apply_trim(sample_gpx, start, end)
-        # Should keep only points within time range
-        assert len(trimmed.trk) > 0
-        for track in trimmed.trk:
-            for seg in track.trkseg:
-                for pt in seg.trkpt:
-                    if pt.time:
-                        assert pt.time >= start
-                        assert pt.time <= end
-
-    def test_apply_reverse_routes(self, sample_gpx: GPX) -> None:
-        """Test applying reverse to routes."""
-        original_first_lat = float(sample_gpx.rte[0].rtept[0].lat)
-        original_last_lat = float(sample_gpx.rte[0].rtept[-1].lat)
-
-        reversed_gpx = _apply_reverse(
-            sample_gpx, reverse_routes=True, reverse_tracks=False
-        )
-
-        new_first_lat = float(reversed_gpx.rte[0].rtept[0].lat)
-        new_last_lat = float(reversed_gpx.rte[0].rtept[-1].lat)
-
-        assert new_first_lat == pytest.approx(original_last_lat, rel=1e-3)
-        assert new_last_lat == pytest.approx(original_first_lat, rel=1e-3)
-
-    def test_apply_reverse_tracks(self, sample_gpx: GPX) -> None:
-        """Test applying reverse to tracks."""
-        original_first_lat = float(sample_gpx.trk[0].trkseg[0].trkpt[0].lat)
-        original_last_lat = float(sample_gpx.trk[0].trkseg[0].trkpt[-1].lat)
-
-        reversed_gpx = _apply_reverse(
-            sample_gpx, reverse_routes=False, reverse_tracks=True
-        )
-
-        new_first_lat = float(reversed_gpx.trk[0].trkseg[0].trkpt[0].lat)
-        new_last_lat = float(reversed_gpx.trk[0].trkseg[0].trkpt[-1].lat)
-
-        assert new_first_lat == pytest.approx(original_last_lat, rel=1e-3)
-        assert new_last_lat == pytest.approx(original_first_lat, rel=1e-3)
-
-    def test_apply_precision(self, sample_gpx: GPX) -> None:
-        """Test applying precision reduction."""
-        reduced = _apply_precision(sample_gpx, coord_precision=2, elevation_precision=0)
-
-        # Check waypoint precision
-        for wpt in reduced.wpt:
-            lat_str = str(wpt.lat)
-            if "." in lat_str:
-                assert len(lat_str.split(".")[1]) <= 2
-            if wpt.ele:
-                ele_str = str(wpt.ele)
-                if "." in ele_str:
-                    assert len(ele_str.split(".")[1]) <= 1
-
-    def test_apply_precision_no_elevation(self) -> None:
-        """Test applying precision when no elevation."""
-        gpx = GPX(
-            wpt=[Waypoint(lat=Latitude("52.5200123"), lon=Longitude("13.4050456"))]
-        )
-        reduced = _apply_precision(gpx, coord_precision=3, elevation_precision=None)
-        lat_str = str(reduced.wpt[0].lat)
-        assert lat_str == "52.52"
-
-    def test_apply_helpers_preserve_nsmap(self, sample_gpx: GPX) -> None:
-        """All edit transforms must propagate gpx.nsmap so prefixes survive a round-trip.
-
-        Regression test: previously _apply_crop / _apply_trim / _apply_reverse /
-        _apply_precision / _apply_strip_metadata silently dropped nsmap, which
-        meant `gpx edit` on a file with custom prefixes (e.g. gpxtpx) emitted
-        auto-generated ns0/ns1 prefixes instead.
-        """
-        sample_gpx.nsmap = {
-            "": "http://www.topografix.com/GPX/1/1",
-            "gpxtpx": GARMIN_TPX_NS,
-        }
-
-        cropped = _apply_crop(
-            sample_gpx, min_lat=0.0, max_lat=90.0, min_lon=0.0, max_lon=90.0
-        )
-        assert cropped.nsmap == sample_gpx.nsmap
-
-        trimmed = _apply_trim(sample_gpx, None, None)
-        assert trimmed.nsmap == sample_gpx.nsmap
-
-        reversed_gpx = _apply_reverse(
-            sample_gpx, reverse_routes=True, reverse_tracks=True
-        )
-        assert reversed_gpx.nsmap == sample_gpx.nsmap
-
-        precised = _apply_precision(
-            sample_gpx, coord_precision=3, elevation_precision=1
-        )
-        assert precised.nsmap == sample_gpx.nsmap
-
-    def test_edit_strip_all_metadata_preserves_nsmap(self, tmp_path: Path) -> None:
-        """`gpx edit --strip-all-metadata` must keep custom namespace prefixes.
-
-        The prefix must survive an actual file round-trip, which means an
-        element using that namespace has to be present (ElementTree drops
-        unused xmlns declarations).
-        """
-        src = tmp_path / "with_ext.gpx"
-        src.write_text(
-            '<?xml version="1.0" encoding="UTF-8"?>\n'
-            '<gpx xmlns="http://www.topografix.com/GPX/1/1" '
-            f'xmlns:gpxtpx="{GARMIN_TPX_NS}" '
-            'version="1.1" creator="TestApp">\n'
-            "  <metadata><name>x</name></metadata>\n"
-            '  <wpt lat="52.5" lon="13.4">\n'
-            "    <extensions>\n"
-            "      <gpxtpx:TrackPointExtension>\n"
-            "        <gpxtpx:hr>120</gpxtpx:hr>\n"
-            "      </gpxtpx:TrackPointExtension>\n"
-            "    </extensions>\n"
-            "  </wpt>\n"
-            "</gpx>\n",
-            encoding="utf-8",
-        )
-
-        out = tmp_path / "stripped.gpx"
-        result = cli(
-            [
-                "edit",
-                str(src),
-                "-o",
-                str(out),
-                "--strip-all-metadata",
-            ]
-        )
-        assert result == 0
-        # Original prefix must survive the round-trip through `gpx edit`.
-        assert f'xmlns:gpxtpx="{GARMIN_TPX_NS}"' in out.read_text(encoding="utf-8")
-
-
-# =============================================================================
-# Extensions tests
-# =============================================================================
-
-
-def _create_track_point_extension(hr: str = "142", cad: str = "85") -> Extensions:
-    """Create a Garmin TrackPointExtension."""
-    ET.register_namespace("gpxtpx", GARMIN_TPX_NS)
-    tpx = ET.Element(f"{{{GARMIN_TPX_NS}}}TrackPointExtension")
-    hr_elem = ET.SubElement(tpx, f"{{{GARMIN_TPX_NS}}}hr")
-    hr_elem.text = hr
-    cad_elem = ET.SubElement(tpx, f"{{{GARMIN_TPX_NS}}}cad")
-    cad_elem.text = cad
-    return Extensions(elements=[tpx])
-
-
-def _create_custom_extension(key: str, value: str) -> Extensions:
-    """Create a custom extension element."""
-    elem = ET.Element(f"{{{CUSTOM_NS}}}{key}")
-    elem.text = value
-    return Extensions(elements=[elem])
-
-
-@pytest.fixture
-def gpx_with_extensions() -> GPX:
-    """Create a GPX with extensions at all levels."""
-    # GPX-level extension
-    gpx_ext = _create_custom_extension("source", "TestApp")
-
-    # Metadata extension
-    metadata_ext = _create_custom_extension("version", "1.0")
-
-    # Track extension
-    track_ext = _create_custom_extension("activity", "running")
-
-    # Track segment extension
-    segment_ext = _create_custom_extension("lap", "1")
-
-    # Track point extensions with heart rate
-    track_points = [
-        Waypoint(
-            lat=Latitude("52.5200"),
-            lon=Longitude("13.4050"),
-            ele=Decimal("34.5"),
-            time=dt.datetime(2024, 1, 15, 10, 0, 0, tzinfo=dt.UTC),
-            extensions=_create_track_point_extension("140", "80"),
-        ),
-        Waypoint(
-            lat=Latitude("52.5210"),
-            lon=Longitude("13.4060"),
-            ele=Decimal("35.0"),
-            time=dt.datetime(2024, 1, 15, 10, 1, 0, tzinfo=dt.UTC),
-            extensions=_create_track_point_extension("145", "85"),
-        ),
-        Waypoint(
-            lat=Latitude("52.5220"),
-            lon=Longitude("13.4070"),
-            ele=Decimal("36.5"),
-            time=dt.datetime(2024, 1, 15, 10, 2, 0, tzinfo=dt.UTC),
-            extensions=_create_track_point_extension("150", "90"),
-        ),
-    ]
-    segment = TrackSegment(trkpt=track_points, extensions=segment_ext)
-    track = Track(name="Morning Run", trkseg=[segment], extensions=track_ext)
-
-    # Route with extensions
-    route_ext = _create_custom_extension("type", "scenic")
-    route_points = [
-        Waypoint(
-            lat=Latitude("52.5200"),
-            lon=Longitude("13.4050"),
-            extensions=_create_custom_extension("poi", "start"),
-        ),
-        Waypoint(
-            lat=Latitude("52.5300"),
-            lon=Longitude("13.4150"),
-            extensions=_create_custom_extension("poi", "end"),
-        ),
-    ]
-    route = Route(name="City Tour", rtept=route_points, extensions=route_ext)
-
-    # Waypoint with extension
-    waypoint = Waypoint(
-        lat=Latitude("52.5200"),
-        lon=Longitude("13.4050"),
-        name="Test Point",
-        extensions=_create_custom_extension("rating", "5"),
-    )
-
-    return GPX(
-        creator="TestApp",
-        metadata=Metadata(name="Test GPX", extensions=metadata_ext),
-        wpt=[waypoint],
-        rte=[route],
-        trk=[track],
-        extensions=gpx_ext,
-    )
-
-
-@pytest.fixture
-def gpx_with_extensions_file(
-    gpx_with_extensions: GPX, tmp_path_factory: pytest.TempPathFactory
-) -> Path:
-    """Create a GPX file with extensions and return its path."""
-    temp_dir = tmp_path_factory.mktemp("gpx_ext_files")
-    temp_file = temp_dir / "with_extensions.gpx"
-    gpx_with_extensions.write_gpx(temp_file)
-    return temp_file
 
 
 class TestExtensionsInCLI:
@@ -996,14 +735,14 @@ class TestExtensionsInCLI:
             trk=[
                 Track(
                     name="Afternoon Run",
-                    extensions=_create_custom_extension("activity", "cycling"),
+                    extensions=create_custom_extension("activity", "cycling"),
                     trkseg=[
                         TrackSegment(
                             trkpt=[
                                 Waypoint(
                                     lat=Latitude("52.6000"),
                                     lon=Longitude("13.5000"),
-                                    extensions=_create_track_point_extension(
+                                    extensions=create_track_point_extension(
                                         "160", "95"
                                     ),
                                 ),
@@ -1057,140 +796,3 @@ class TestExtensionsInCLI:
 
         # Track point extensions preserved
         assert gpx.trk[0].trkseg[0].trkpt[0].extensions is not None
-
-
-class TestApplyFunctionsWithExtensions:
-    """Test apply functions preserve extensions."""
-
-    def test_apply_crop_preserves_waypoint_extensions(
-        self, gpx_with_extensions: GPX
-    ) -> None:
-        """Test that crop preserves extensions on remaining waypoints."""
-        cropped = _apply_crop(
-            gpx_with_extensions,
-            min_lat=52.0,
-            max_lat=53.0,
-            min_lon=13.0,
-            max_lon=14.0,
-        )
-
-        # Waypoint should be preserved with extensions
-        assert len(cropped.wpt) == 1
-        assert cropped.wpt[0].extensions is not None
-        assert cropped.wpt[0].extensions.get_text("rating", namespace=CUSTOM_NS) == "5"
-
-    def test_apply_crop_preserves_track_extensions(
-        self, gpx_with_extensions: GPX
-    ) -> None:
-        """Test that crop preserves track and track point extensions."""
-        cropped = _apply_crop(
-            gpx_with_extensions,
-            min_lat=52.0,
-            max_lat=53.0,
-            min_lon=13.0,
-            max_lon=14.0,
-        )
-
-        # Track extensions preserved
-        assert cropped.trk[0].extensions is not None
-        assert (
-            cropped.trk[0].extensions.get_text("activity", namespace=CUSTOM_NS)
-            == "running"
-        )
-
-        # Track point extensions preserved
-        assert cropped.trk[0].trkseg[0].trkpt[0].extensions is not None
-        assert (
-            cropped.trk[0]
-            .trkseg[0]
-            .trkpt[0]
-            .extensions.get_text("hr", namespace=GARMIN_TPX_NS)
-            == "140"
-        )
-
-    def test_apply_crop_preserves_route_extensions(
-        self, gpx_with_extensions: GPX
-    ) -> None:
-        """Test that crop preserves route and route point extensions."""
-        cropped = _apply_crop(
-            gpx_with_extensions,
-            min_lat=52.0,
-            max_lat=53.0,
-            min_lon=13.0,
-            max_lon=14.0,
-        )
-
-        # Route extensions preserved
-        assert cropped.rte[0].extensions is not None
-        assert (
-            cropped.rte[0].extensions.get_text("type", namespace=CUSTOM_NS) == "scenic"
-        )
-
-        # Route point extensions preserved
-        assert cropped.rte[0].rtept[0].extensions is not None
-
-    def test_apply_trim_preserves_extensions(self, gpx_with_extensions: GPX) -> None:
-        """Test that trim preserves extensions on remaining elements."""
-        start = dt.datetime(2024, 1, 15, 10, 0, 30, tzinfo=dt.UTC)
-        end = dt.datetime(2024, 1, 15, 10, 1, 30, tzinfo=dt.UTC)
-        trimmed = _apply_trim(gpx_with_extensions, start, end)
-
-        # Track extensions preserved
-        if trimmed.trk:
-            assert trimmed.trk[0].extensions is not None
-            assert (
-                trimmed.trk[0].extensions.get_text("activity", namespace=CUSTOM_NS)
-                == "running"
-            )
-
-    def test_apply_reverse_preserves_all_extensions(
-        self, gpx_with_extensions: GPX
-    ) -> None:
-        """Test that reverse preserves all extensions."""
-        reversed_gpx = _apply_reverse(
-            gpx_with_extensions, reverse_routes=True, reverse_tracks=True
-        )
-
-        # Route extensions preserved
-        assert reversed_gpx.rte[0].extensions is not None
-        assert (
-            reversed_gpx.rte[0].extensions.get_text("type", namespace=CUSTOM_NS)
-            == "scenic"
-        )
-
-        # Track extensions preserved
-        assert reversed_gpx.trk[0].extensions is not None
-        assert (
-            reversed_gpx.trk[0].extensions.get_text("activity", namespace=CUSTOM_NS)
-            == "running"
-        )
-
-        # Track segment extensions preserved
-        assert reversed_gpx.trk[0].trkseg[0].extensions is not None
-
-        # Track point extensions preserved (order reversed)
-        # First point after reverse was the last point (hr=150)
-        first_point_ext = reversed_gpx.trk[0].trkseg[0].trkpt[0].extensions
-        assert first_point_ext is not None
-        assert first_point_ext.get_text("hr", namespace=GARMIN_TPX_NS) == "150"
-
-    def test_apply_precision_preserves_all_extensions(
-        self, gpx_with_extensions: GPX
-    ) -> None:
-        """Test that precision reduction preserves all extensions."""
-        reduced = _apply_precision(
-            gpx_with_extensions, coord_precision=4, elevation_precision=1
-        )
-
-        # Waypoint extensions preserved
-        assert reduced.wpt[0].extensions is not None
-        assert reduced.wpt[0].extensions.get_text("rating", namespace=CUSTOM_NS) == "5"
-
-        # Route extensions preserved
-        assert reduced.rte[0].extensions is not None
-        assert reduced.rte[0].rtept[0].extensions is not None
-
-        # Track extensions preserved
-        assert reduced.trk[0].extensions is not None
-        assert reduced.trk[0].trkseg[0].extensions is not None
-        assert reduced.trk[0].trkseg[0].trkpt[0].extensions is not None

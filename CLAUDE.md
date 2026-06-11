@@ -36,7 +36,8 @@ gpx/
 │   ├── types.py          # Custom types: Latitude, Longitude, Degrees, Fix, DGPSStation
 │   ├── utils.py          # Utility functions for XML parsing and serialization
 │   ├── convert.py        # Conversion functions: from_geo_interface, from_wkb, from_wkt
-│   ├── io.py             # I/O functions: read_gpx, read_geojson, read_kml
+│   ├── io.py             # I/O functions: read_gpx, read_geojson, read_kml, convert_file, detect_format
+│   ├── operations.py     # Edit/merge operations: crop, trim, reverse, strip_metadata, strip_extensions, reduce_precision, filter_points, split, simplify, smooth, shift_time, merge
 │   ├── cli.py            # Command-line interface implementation
 │   └── py.typed          # PEP 561 marker for type hints
 ├── docs/                 # Sphinx documentation (MyST Markdown)
@@ -57,6 +58,7 @@ gpx/
 │   ├── test_utils.py     # Utilities tests
 │   ├── test_waypoint.py  # Waypoint model tests
 │   ├── test_io_convert.py # IO and conversion tests (read/write/convert)
+│   ├── test_operations.py # Edit/merge operations tests
 │   ├── test_cli.py       # CLI tests
 │   ├── test_main.py      # Main entry point tests
 │   ├── test_extensions.py # Extensions tests

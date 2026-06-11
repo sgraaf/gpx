@@ -171,11 +171,6 @@ def from_wkt(wkt: str, *, creator: str | None = None) -> GPX:
     return _wkt_geometry_to_gpx(geometry, gpx_kwargs)
 
 
-# =============================================================================
-# GeoJSON Helper Functions
-# =============================================================================
-
-
 def _feature_collection_to_gpx(fc: dict[str, Any], gpx_kwargs: dict[str, Any]) -> GPX:
     """Convert a GeoJSON FeatureCollection to GPX."""
     waypoints: list[Waypoint] = []
@@ -336,11 +331,6 @@ def _coords_to_track(
             kwargs["type"] = str(properties["type"])
 
     return Track(**kwargs)
-
-
-# =============================================================================
-# WKB Helper Functions
-# =============================================================================
 
 
 def _parse_wkb_geometry(wkb: bytes, offset: int) -> tuple[dict[str, Any], int]:
@@ -586,11 +576,6 @@ def _wkb_geometry_to_gpx(geometry: dict[str, Any], gpx_kwargs: dict[str, Any]) -
     return _geometry_to_gpx(geometry, gpx_kwargs)
 
 
-# =============================================================================
-# WKT Helper Functions
-# =============================================================================
-
-
 def _parse_wkt(wkt: str) -> dict[str, Any]:  # noqa: PLR0911
     """Parse WKT string into geometry dict."""
     wkt = wkt.strip()
@@ -737,7 +722,7 @@ def _parse_wkt_multipolygon(coords_part: str, has_z: bool) -> dict[str, Any]:  #
                     parsed_rings.append(coords)
                 polygons.append(parsed_rings)
                 current = []
-        elif depth > 1 or (depth == 1 and char not in ","):
+        elif depth > 1 or (depth == 1 and char != ","):
             current.append(char)
 
     return {"type": "MultiPolygon", "coordinates": polygons}

@@ -10,6 +10,37 @@ The **third number** is for emergencies when we need to start branches for older
 
 ## [Unreleased](https://github.com/sgraaf/gpx/compare/2026.3.0...HEAD)
 
+### Added
+
+- New `operations` module that exposes the editing and merging operations behind the `gpx edit` and `gpx merge` CLI commands as a public, reusable API:
+  - `crop()`: Crop a GPX to a geographic bounding box
+  - `trim()`: Trim a GPX to a date/time range
+  - `reverse()`: Reverse the routes and/or tracks of a GPX
+  - `strip_metadata()`: Strip metadata (fields) from a GPX
+  - `reduce_precision()`: Reduce the precision of the coordinates and/or elevations of a GPX
+  - `filter_points()`: Filter the points of a GPX with an arbitrary predicate
+  - `merge()`: Merge multiple GPX instances into one
+  - `split()`: Split track segments at time and/or distance gaps
+  - `simplify()`: Simplify the tracks and routes of a GPX with the Ramer-Douglas-Peucker algorithm
+  - `smooth()`: Smooth the coordinates and/or elevations of the tracks and routes of a GPX with a moving average
+  - `shift_time()`: Shift all point timestamps of a GPX by a time delta
+  - `strip_extensions()`: Strip all extensions from a GPX
+  - All operations are pure (they return a new `GPX` instance and never mutate the input) and are importable directly from the top-level package (e.g. `from gpx import crop, merge`).
+- New `gpx edit` CLI options exposing the new operations:
+  - `--split-time-gap SECONDS` and `--split-distance-gap METERS`: Split track segments at gaps
+  - `--simplify TOLERANCE`: Simplify tracks and routes (tolerance in metres)
+  - `--smooth WINDOW`: Smooth track and route coordinates and elevations with a moving average
+  - `--shift-time SECONDS`: Shift all point timestamps (may be negative)
+  - `--strip-extensions`: Strip all extensions
+- New file conversion functions in the `io` module, exposing the operation behind the `gpx convert` CLI command as a public, reusable API:
+  - `convert_file()`: Convert a file between the GPX, GeoJSON and KML file formats
+  - `detect_format()`: Detect the file format from a file path's extension
+  - Both are importable directly from the top-level package (e.g. `from gpx import convert_file`).
+
+### Changed
+
+- The CLI (`gpx edit`, `gpx merge` and `gpx convert`) now uses the new `operations` module and `io` conversion functions internally (behavior is unchanged).
+
 ## [2026.3.0](https://github.com/sgraaf/gpx/compare/2026.2.0...2026.3.0) - 2026-05-17
 
 This third release in the year 2026 adds a new `GeoGPXModel` base class for GPX models that carry geometric data.
