@@ -8,6 +8,8 @@ The **first number** of the version is the year.
 The **second number** is incremented with each release, starting at 1 for each year.
 The **third number** is for emergencies when we need to start branches for older releases.
 
+## [Unreleased](https://github.com/sgraaf/gpx/compare/2026.3.0...HEAD)
+
 ## [2026.3.0](https://github.com/sgraaf/gpx/compare/2026.2.0...2026.3.0) - 2026-05-17
 
 This third release in the year 2026 adds a new `GeoGPXModel` base class for GPX models that carry geometric data.
