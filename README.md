@@ -406,13 +406,43 @@ without_extensions = strip_extensions(gpx)
 merged = merge([read_gpx("one.gpx"), read_gpx("two.gpx")])
 ```
 
+### Validating against the GPX 1.1 schema
+
+*gpx* can validate GPX data against the GPX 1.1 schema, catching problems that lenient parsing silently ignores (unknown/misspelled elements, duplicates, out-of-order children, out-of-range values, and more):
+
+```python
+from gpx import read_gpx, validate
+
+
+# Validate a file path, a string of GPX content, or a GPX instance
+result = validate("path/to/file.gpx")
+
+if not result.is_valid:
+    for issue in result.errors:
+        # e.g. "ERROR   line 8  gpx > wpt[0]: unknown element <nmae> (did you mean <name>?)"
+        print(issue)
+
+# Warnings are off-spec but readable (e.g. out-of-order elements, naive timestamps)
+for warning in result.warnings:
+    print(warning)
+
+# Validate a programmatically built GPX before writing it
+gpx = read_gpx("path/to/file.gpx")
+assert validate(gpx).is_valid
+
+# Opt in to strict parsing: raises InvalidGPXError on any schema error
+strict_gpx = read_gpx("path/to/file.gpx", strict=True)
+```
+
 ### Command-Line Interface
 
 *gpx* provides a command-line interface (CLI) for common GPX operations:
 
 ```shell
-# Validate a GPX file
+# Validate a GPX file against the GPX 1.1 schema
 gpx validate path/to/file.gpx
+gpx validate --strict path/to/file.gpx  # also fail on warnings
+gpx validate --json path/to/file.gpx    # machine-readable report
 
 # Show information and statistics about a GPX file
 gpx info path/to/file.gpx

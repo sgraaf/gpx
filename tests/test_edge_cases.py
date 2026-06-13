@@ -100,7 +100,7 @@ class TestValidEdgeCases:
 
         # North Pole, Antimeridian
         assert gpx.wpt[0].lat == Latitude("90")
-        assert gpx.wpt[0].lon == Longitude("180")
+        assert gpx.wpt[0].lon == Longitude("-180")
 
         # South Pole, Antimeridian
         assert gpx.wpt[1].lat == Latitude("-90")

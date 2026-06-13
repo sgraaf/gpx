@@ -103,5 +103,10 @@ pydocstyle.convention = "google"
 [tool.pyrefly]
 search_path = ["src", "."]
 
+[tool.codespell]
+# "nmae" is an intentional misspelling used to demonstrate the validator's
+# "did you mean <name>?" suggestion.
+ignore-words-list = "nmae"
+
 [tool.mypy]
 python_version = "3.11"

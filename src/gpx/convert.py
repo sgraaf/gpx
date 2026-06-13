@@ -18,6 +18,7 @@ from .track import Track
 from .track_segment import TrackSegment
 from .types import Latitude, Longitude, SupportsGeoInterface
 from .utils import extract_namespaces_from_string
+from .validation import InvalidGPXError, validate
 from .waypoint import Waypoint
 
 #: WKB geometry type codes
@@ -35,14 +36,20 @@ WKB_Z_FLAG = 1000
 EWKB_Z_FLAG = 0x80000000
 
 
-def from_string(gpx_str: str) -> GPX:
+def from_string(gpx_str: str, *, strict: bool = False) -> GPX:
     """Create a GPX instance from a string.
 
     Args:
         gpx_str: The string containing the GPX data.
+        strict: If True, validate the GPX against the GPX 1.1 schema before
+            parsing and raise :class:`~gpx.validation.InvalidGPXError` if any
+            errors are found. Defaults to False (lenient parsing).
 
     Returns:
         The GPX instance with namespace prefixes preserved.
+
+    Raises:
+        InvalidGPXError: If ``strict`` is True and the GPX data has schema errors.
 
     Example:
         >>> from gpx import from_string
@@ -54,6 +61,11 @@ def from_string(gpx_str: str) -> GPX:
         MyApp
 
     """
+    if strict:
+        result = validate(gpx_str)
+        if not result.is_valid:
+            raise InvalidGPXError(result)
+
     # Extract namespace prefixes before parsing (ElementTree loses this info)
     namespaces = extract_namespaces_from_string(gpx_str)
 

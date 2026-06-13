@@ -36,10 +36,23 @@ The **third number** is for emergencies when we need to start branches for older
   - `convert_file()`: Convert a file between the GPX, GeoJSON and KML file formats
   - `detect_format()`: Detect the file format from a file path's extension
   - Both are importable directly from the top-level package (e.g. `from gpx import convert_file`).
+- New `validation` module that validates GPX data against the GPX 1.1 schema (`gpx.xsd`) without any extra dependencies:
+  - `validate()`: Validate a file path, a string of GPX content, or a `GPX` instance and return a `ValidationResult`.
+  - `ValidationResult`: Holds all issues, with `is_valid`, `errors` and `warnings` properties.
+  - `ValidationIssue`: A single issue with a `severity`, `message`, `path` (e.g. `gpx > trk[0] > trkseg[2] > trkpt[14]`) and source `line` (when available).
+  - `Severity`: Enum of `ERROR` and `WARNING`.
+  - `InvalidGPXError`: Raised by strict parsing; carries the full `ValidationResult`.
+  - Detects, among others: wrong root element / namespace (with a GPX 1.0 hint), missing required attributes, unknown elements (with "did you mean …?" suggestions), duplicate single-occurrence elements, out-of-order children, `<extensions>` children that are not in a foreign namespace (e.g. unprefixed elements that inherit the default GPX namespace), and invalid values (latitude/longitude/degrees ranges, `fix`, `dgpsid`, `sat`, copyright `year`, `time`).
+  - All names are importable directly from the top-level package (e.g. `from gpx import validate`).
+- New `strict` keyword argument on `read_gpx()` and `from_string()`. When `strict=True`, the input is validated against the GPX 1.1 schema first and an `InvalidGPXError` is raised if any errors are found. The default (`strict=False`) keeps the existing lenient behavior.
+- New `gpx validate` CLI options:
+  - `--strict`: Treat warnings as failures (non-zero exit code).
+  - `--json`: Output a machine-readable validation report.
 
 ### Changed
 
 - The CLI (`gpx edit`, `gpx merge` and `gpx convert`) now uses the new `operations` module and `io` conversion functions internally (behavior is unchanged).
+- The `gpx validate` CLI command is now a real GPX 1.1 schema validator. It reports all errors and warnings (with source line numbers) instead of only checking whether the file can be parsed, and exits non-zero when errors are found (or, with `--strict`, when warnings are found).
 
 ## [2026.3.0](https://github.com/sgraaf/gpx/compare/2026.2.0...2026.3.0) - 2026-05-17
 

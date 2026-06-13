@@ -29,6 +29,13 @@ from .route import Route
 from .track import Track
 from .track_segment import TrackSegment
 from .types import Degrees, DGPSStation, Fix, Latitude, Longitude
+from .validation import (
+    InvalidGPXError,
+    Severity,
+    ValidationIssue,
+    ValidationResult,
+    validate,
+)
 from .waypoint import Waypoint
 
 __all__ = [
@@ -42,14 +49,18 @@ __all__ = [
     "Fix",
     "GPXModel",
     "GeoGPXModel",
+    "InvalidGPXError",
     "Latitude",
     "Link",
     "Longitude",
     "Metadata",
     "Person",
     "Route",
+    "Severity",
     "Track",
     "TrackSegment",
+    "ValidationIssue",
+    "ValidationResult",
     "Waypoint",
     "convert_file",
     "crop",
@@ -72,4 +83,5 @@ __all__ = [
     "strip_extensions",
     "strip_metadata",
     "trim",
+    "validate",
 ]

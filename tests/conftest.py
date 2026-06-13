@@ -31,6 +31,7 @@ GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 VALID_FIXTURES_DIR = FIXTURES_DIR / "valid"
 INVALID_FIXTURES_DIR = FIXTURES_DIR / "invalid"
+WARNINGS_FIXTURES_DIR = FIXTURES_DIR / "warnings"
 
 
 def find_gpx(element: ET.Element, tag: str) -> ET.Element | None:

@@ -8,8 +8,8 @@
     <ele>34.5</ele>
     <time>2023-06-15T10:30:00Z</time>
     <name>Berlin</name>
-    <desc>Capital of Germany</desc>
     <cmt>A comment</cmt>
+    <desc>Capital of Germany</desc>
     <src>Manual</src>
     <sym>City</sym>
     <type>City</type>

@@ -63,16 +63,115 @@ class TestValidateCommand:
         captured = capsys.readouterr()
         assert "File not found" in captured.err
 
-    def test_validate_invalid_file(
+    def test_validate_malformed_file(
         self, capsys: pytest.CaptureFixture[str], tmp_path: Path
     ) -> None:
-        """Test validating an invalid GPX file."""
+        """Test validating a not-well-formed XML file."""
         temp_file = tmp_path / "invalid.gpx"
         temp_file.write_text("not valid xml")
         result = cli(["validate", str(temp_file)])
         assert result == 1
         captured = capsys.readouterr()
-        assert "Invalid GPX file" in captured.err
+        assert "not well-formed" in captured.out
+
+    def test_validate_schema_error(
+        self, capsys: pytest.CaptureFixture[str], tmp_path: Path
+    ) -> None:
+        """Test validating a file with a schema error (unknown element)."""
+        temp_file = tmp_path / "bad.gpx"
+        temp_file.write_text(
+            '<?xml version="1.0"?>\n'
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" '
+            'version="1.1" creator="Test">\n'
+            '  <wpt lat="52.0" lon="4.0"><nmae>oops</nmae></wpt>\n'
+            "</gpx>\n"
+        )
+        result = cli(["validate", str(temp_file)])
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "unknown element" in captured.out
+        assert "ERROR" in captured.out
+
+    def test_validate_warning_not_strict(
+        self, capsys: pytest.CaptureFixture[str], tmp_path: Path
+    ) -> None:
+        """Test that warnings alone do not fail validation."""
+        temp_file = tmp_path / "warn.gpx"
+        temp_file.write_text(
+            '<?xml version="1.0"?>\n'
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" '
+            'version="1.0" creator="Test"/>\n'
+        )
+        result = cli(["validate", str(temp_file)])
+        assert result == 0
+        captured = capsys.readouterr()
+        assert "WARNING" in captured.out
+        assert "Valid GPX file" in captured.out
+
+    def test_validate_strict_fails_on_warning(
+        self, capsys: pytest.CaptureFixture[str], tmp_path: Path
+    ) -> None:
+        """Test that --strict makes warnings fail."""
+        temp_file = tmp_path / "warn.gpx"
+        temp_file.write_text(
+            '<?xml version="1.0"?>\n'
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" '
+            'version="1.0" creator="Test"/>\n'
+        )
+        result = cli(["validate", "--strict", str(temp_file)])
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "WARNING" in captured.out
+        # A failing run must not claim the file is valid.
+        assert "Valid GPX file" not in captured.out
+
+    def test_validate_strict_json_reports_passed_false(
+        self, capsys: pytest.CaptureFixture[str], tmp_path: Path
+    ) -> None:
+        """Test that --strict --json reports valid=True but passed=False."""
+        temp_file = tmp_path / "warn.gpx"
+        temp_file.write_text(
+            '<?xml version="1.0"?>\n'
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" '
+            'version="1.0" creator="Test"/>\n'
+        )
+        result = cli(["validate", "--strict", "--json", str(temp_file)])
+        assert result == 1
+        captured = capsys.readouterr()
+        data = json.loads(captured.out)
+        assert data["valid"] is True
+        assert data["passed"] is False
+        assert data["warnings"] == 1
+
+    def test_validate_json_output(
+        self, capsys: pytest.CaptureFixture[str], tmp_path: Path
+    ) -> None:
+        """Test JSON validation report output."""
+        temp_file = tmp_path / "bad.gpx"
+        temp_file.write_text(
+            '<?xml version="1.0"?>\n'
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" '
+            'version="1.1" creator="Test">\n'
+            '  <wpt lat="91.0" lon="4.0"/>\n'
+            "</gpx>\n"
+        )
+        result = cli(["validate", "--json", str(temp_file)])
+        assert result == 1
+        captured = capsys.readouterr()
+        data = json.loads(captured.out)
+        assert data["valid"] is False
+        assert data["errors"] == 1
+        assert data["issues"][0]["severity"] == "error"
+
+    def test_validate_json_nonexistent_file(
+        self, capsys: pytest.CaptureFixture[str]
+    ) -> None:
+        """Test JSON output for a non-existent file."""
+        result = cli(["validate", "--json", "nonexistent.gpx"])
+        assert result == 1
+        captured = capsys.readouterr()
+        data = json.loads(captured.out)
+        assert "error" in data
 
 
 class TestInfoCommand:

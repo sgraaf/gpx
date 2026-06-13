@@ -6,8 +6,8 @@
      creator="TestCreator">
   <trk>
     <name>Morning Run</name>
-    <desc>A morning run through the park</desc>
     <cmt>Good weather</cmt>
+    <desc>A morning run through the park</desc>
     <src>Garmin</src>
     <number>1</number>
     <type>Running</type>
