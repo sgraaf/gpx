@@ -136,11 +136,6 @@ class InvalidGPXError(ValueError):
         super().__init__(f"Invalid GPX ({count} {noun}):\n{summary}")
 
 
-# --------------------------------------------------------------------------- #
-# Content validators (leaf element text / attribute values)
-# --------------------------------------------------------------------------- #
-
-
 def _decimal(text: str) -> tuple[Severity, str] | None:
     try:
         Decimal(text)
@@ -242,11 +237,6 @@ def _version(text: str) -> tuple[Severity, str] | None:
             f"version is '{text}' but only '1.1' is supported by this library",
         )
     return None
-
-
-# --------------------------------------------------------------------------- #
-# Schema definition (mirrors gpx.xsd)
-# --------------------------------------------------------------------------- #
 
 
 @dataclass(slots=True, frozen=True)
@@ -401,11 +391,6 @@ SCHEMA: dict[str, ComplexType] = {
 }
 
 
-# --------------------------------------------------------------------------- #
-# Parsing with source line numbers
-# --------------------------------------------------------------------------- #
-
-
 def _split_tag(tag: str) -> tuple[str, str]:
     """Split a Clark-notation tag into ``(namespace, local_name)``."""
     if tag.startswith("{"):
@@ -445,11 +430,6 @@ def _parse_with_lines(text: str) -> tuple[ET.Element, dict[int, int]]:
     parser.Parse(text, True)  # noqa: FBT003
 
     return builder.close(), line_map
-
-
-# --------------------------------------------------------------------------- #
-# Tree validation
-# --------------------------------------------------------------------------- #
 
 
 class _Validator:
@@ -665,11 +645,6 @@ class _Validator:
         if matches:
             return f"unknown element <{local}> (did you mean <{matches[0]}>?)"
         return f"unknown element <{local}>"
-
-
-# --------------------------------------------------------------------------- #
-# Public API
-# --------------------------------------------------------------------------- #
 
 
 def _resolve_source(source: str | Path | Any) -> str:  # noqa: ANN401
