@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="Colota" xmlns="http://www.topografix.com/GPX/1/1">
+  <metadata>
+    <name>Colota Location Export</name>
+    <time>2026-05-20T22:04:53.000Z</time>
+  </metadata>
+  <trk>
+    <name>Colota Track Export</name>
+    <trkseg>
+      <trkpt lat="62.424161" lon="6.274748">
+        <ele>78</ele>
+        <time>2026-05-20T10:14:42.000Z</time>
+        <extensions>
+          <accuracy>19.296001434326172</accuracy>
+          <speed>0</speed>
+          <battery>35</battery>
+        </extensions>
+      </trkpt>
+    </trkseg>
+  </trk>
+</gpx>

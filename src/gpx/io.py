@@ -25,21 +25,27 @@ from .waypoint import Waypoint
 KML_NAMESPACE = "http://www.opengis.net/kml/2.2"
 
 
-def read_gpx(file_path: str | Path) -> GPX:
+def read_gpx(file_path: str | Path, *, strict: bool = False) -> GPX:
     """Read a GPX file and return a GPX object.
 
     Args:
         file_path: Path to the GPX file.
+        strict: If True, validate the file against the GPX 1.1 schema before
+            parsing and raise :class:`~gpx.validation.InvalidGPXError` if any
+            errors are found. Defaults to False (lenient parsing).
 
     Returns:
         A GPX object with namespace prefixes preserved.
+
+    Raises:
+        InvalidGPXError: If ``strict`` is True and the file has schema errors.
 
     Example:
         >>> from gpx import read_gpx
         >>> gpx = read_gpx("path/to/file.gpx")
 
     """
-    return from_string(Path(file_path).read_text("utf-8"))
+    return from_string(Path(file_path).read_text("utf-8"), strict=strict)
 
 
 def read_geojson(file_path: str | Path, *, creator: str | None = None) -> GPX:

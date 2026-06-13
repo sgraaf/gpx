@@ -44,7 +44,7 @@ commands:
   Available commands
 
   {validate,info,edit,merge,convert}
-    validate            Validate a GPX file
+    validate            Validate a GPX file against the GPX 1.1 schema
     info                Show information and statistics about a GPX file
     edit                Edit a GPX file with various transformations
     merge               Merge multiple GPX files into one
@@ -55,7 +55,7 @@ commands:
 
 ## gpx validate
 
-Validate one or more GPX files for well-formedness and basic structure.
+Validate a GPX file against the GPX 1.1 schema, reporting all errors and warnings. Use `--strict` to also fail on warnings and `--json` for a machine-readable report.
 
 <!--[[[cog
 help_output(["validate", "--help"])
@@ -64,15 +64,18 @@ help_output(["validate", "--help"])
 Running `gpx validate --help` or `python -m gpx validate --help` shows a list of all of the available options and arguments:
 
 ```shell
-usage: gpx validate [-h] <INPUT_FILE>
+usage: gpx validate [-h] [--strict] [--json] <INPUT_FILE>
 
-Validate a GPX file by attempting to parse it.
+Validate a GPX file against the GPX 1.1 schema, reporting all errors and
+warnings.
 
 positional arguments:
   <INPUT_FILE>  Path to the input GPX file
 
 options:
   -h, --help    show this help message and exit
+  --strict      Treat warnings as failures (non-zero exit code)
+  --json        Output the validation report in JSON format
 ```
 
 <!--[[[end]]]-->

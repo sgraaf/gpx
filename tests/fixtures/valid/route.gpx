@@ -6,8 +6,8 @@
      creator="TestCreator">
   <rte>
     <name>City Tour</name>
-    <desc>A tour of the city</desc>
     <cmt>Best route</cmt>
+    <desc>A tour of the city</desc>
     <src>Planned</src>
     <number>1</number>
     <type>Tourism</type>

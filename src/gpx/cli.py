@@ -29,6 +29,8 @@ from .operations import (
     trim,
 )
 from .operations import merge as merge_op
+from .validation import ValidationResult
+from .validation import validate as validate_gpx
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
@@ -105,14 +107,25 @@ def _add_validate_parser(
     """Add the validate subcommand parser."""
     validate_parser = subparsers.add_parser(
         "validate",
-        help="Validate a GPX file",
-        description="Validate a GPX file by attempting to parse it.",
+        help="Validate a GPX file against the GPX 1.1 schema",
+        description="Validate a GPX file against the GPX 1.1 schema, reporting "
+        "all errors and warnings.",
     )
     validate_parser.add_argument(
         "input_file",
         type=Path,
         help="Path to the input GPX file",
         metavar="<INPUT_FILE>",
+    )
+    validate_parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Treat warnings as failures (non-zero exit code)",
+    )
+    validate_parser.add_argument(
+        "--json",
+        action="store_true",
+        help="Output the validation report in JSON format",
     )
     validate_parser.set_defaults(func=validate)
 
@@ -122,22 +135,84 @@ def validate(args: argparse.Namespace) -> int:
     file_path: Path = args.input_file
 
     if not file_path.exists():
-        print(f"Error: File not found: {file_path}", file=sys.stderr)
+        if args.json:
+            print(json.dumps({"file": str(file_path), "error": "file not found"}))
+        else:
+            print(f"Error: File not found: {file_path}", file=sys.stderr)
         return 1
 
-    try:
-        gpx = read_gpx(file_path)
-    except Exception as e:  # noqa: BLE001
-        print(f"✗ Invalid GPX file: {file_path}", file=sys.stderr)
-        print(f"  Error: {e}", file=sys.stderr)
-        return 1
+    result = validate_gpx(file_path)
 
-    print(f"✓ Valid GPX file: {file_path}")
-    print(f"  Creator: {gpx.creator}")
-    print(f"  Waypoints: {len(gpx.wpt)}")
-    print(f"  Routes: {len(gpx.rte)}")
-    print(f"  Tracks: {len(gpx.trk)}")
-    return 0
+    # The file fails (exit 1) on any error, or on any warning in strict mode.
+    failed = bool(result.errors) or (args.strict and bool(result.warnings))
+
+    if args.json:
+        return _validate_json_output(file_path, result, failed=failed)
+
+    return _validate_text_output(file_path, result, failed=failed)
+
+
+def _validate_json_output(
+    file_path: Path, result: ValidationResult, *, failed: bool
+) -> int:
+    """Print the validation report as JSON and return the exit code."""
+    # "valid" reflects schema validity (no errors); "passed" reflects the exit
+    # status, which also fails on warnings in strict mode.
+    report: dict = {
+        "file": str(file_path),
+        "valid": result.is_valid,
+        "passed": not failed,
+        "errors": len(result.errors),
+        "warnings": len(result.warnings),
+        "issues": [issue.to_dict() for issue in result.issues],
+    }
+    print(json.dumps(report, indent=2))
+    return 1 if failed else 0
+
+
+def _validate_text_output(
+    file_path: Path, result: ValidationResult, *, failed: bool
+) -> int:
+    """Print a human-readable validation report and return the exit code."""
+    n_errors = len(result.errors)
+    n_warnings = len(result.warnings)
+
+    if result.issues:
+        mark = "✗" if failed else "⚠"
+        error_label = "error" if n_errors == 1 else "errors"
+        warning_label = "warning" if n_warnings == 1 else "warnings"
+        print(
+            f"{mark} {file_path}: {n_errors} {error_label}, "
+            f"{n_warnings} {warning_label}"
+        )
+        print()
+        for issue in result.issues:
+            print(f"  {issue}")
+        print()
+
+    if result.is_valid:
+        # The document is schema-valid, so it is guaranteed to parse; guard the
+        # read anyway so the CLI reports cleanly instead of raising a traceback.
+        try:
+            gpx = read_gpx(file_path)
+        except Exception as e:  # noqa: BLE001
+            print(
+                f"✗ {file_path}: passed schema validation but could not be parsed: {e}",
+                file=sys.stderr,
+            )
+            return 1
+
+        if failed:
+            # Schema-valid but failing because warnings are errors in strict mode.
+            print(f"✗ {file_path}: failed because warnings are present (--strict)")
+        else:
+            print(f"✓ Valid GPX file: {file_path}")
+        print(f"  Creator: {gpx.creator}")
+        print(f"  Waypoints: {len(gpx.wpt)}")
+        print(f"  Routes: {len(gpx.rte)}")
+        print(f"  Tracks: {len(gpx.trk)}")
+
+    return 1 if failed else 0
 
 
 def _add_info_parser(

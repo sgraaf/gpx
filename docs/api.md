@@ -131,6 +131,13 @@
     :members:
 ```
 
+## `gpx.validation` Module
+
+```{eval-rst}
+.. automodule:: gpx.validation
+    :members:
+```
+
 ## `gpx.utils` Module
 
 ```{eval-rst}
