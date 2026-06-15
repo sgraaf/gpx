@@ -82,7 +82,7 @@ options:
 
 ## gpx info
 
-Display information and statistics about a GPX file.
+Display information and statistics about a GPX file. Use `--strict` to validate the input against the GPX 1.1 schema first, printing warnings and aborting on schema errors.
 
 <!--[[[cog
 help_output(["info", "--help"])
@@ -91,7 +91,7 @@ help_output(["info", "--help"])
 Running `gpx info --help` or `python -m gpx info --help` shows a list of all of the available options and arguments:
 
 ```shell
-usage: gpx info [-h] [--json] <INPUT_FILE>
+usage: gpx info [-h] [--json] [--strict] <INPUT_FILE>
 
 Display detailed information and statistics about a GPX file.
 
@@ -101,13 +101,15 @@ positional arguments:
 options:
   -h, --help    show this help message and exit
   --json        Output information in JSON format
+  --strict      Validate the input against the GPX 1.1 schema first; print
+                warnings and abort on schema errors
 ```
 
 <!--[[[end]]]-->
 
 ## gpx edit
 
-Edit a GPX file with various transformations.
+Edit a GPX file with various transformations. Use `--strict` to validate the input against the GPX 1.1 schema first, printing warnings and aborting on schema errors.
 
 <!--[[[cog
 help_output(["edit", "--help"])
@@ -126,7 +128,7 @@ usage: gpx edit [-h] -o <OUTPUT_FILE> [--min-lat LATITUDE]
                 [--strip-author] [--strip-copyright] [--strip-time]
                 [--strip-keywords] [--strip-links] [--strip-all-metadata]
                 [--strip-extensions] [--precision DIGITS]
-                [--elevation-precision DIGITS]
+                [--elevation-precision DIGITS] [--strict]
                 <INPUT_FILE>
 
 Edit a GPX file with various transformations like cropping, trimming,
@@ -139,6 +141,8 @@ options:
   -h, --help            show this help message and exit
   -o, --output-file <OUTPUT_FILE>
                         Path to the output file
+  --strict              Validate the input against the GPX 1.1 schema first;
+                        print warnings and abort on schema errors
 
 crop options:
   Crop to a geographic bounding box
@@ -218,7 +222,7 @@ precision options:
 
 ## gpx merge
 
-Merge multiple GPX files into a single file.
+Merge multiple GPX files into a single file. Use `--strict` to validate every input against the GPX 1.1 schema first, printing warnings and aborting if any input has schema errors.
 
 <!--[[[cog
 help_output(["merge", "--help"])
@@ -227,7 +231,8 @@ help_output(["merge", "--help"])
 Running `gpx merge --help` or `python -m gpx merge --help` shows a list of all of the available options and arguments:
 
 ```shell
-usage: gpx merge [-h] -o <OUTPUT_FILE> <INPUT_FILE> [<INPUT_FILE> ...]
+usage: gpx merge [-h] -o <OUTPUT_FILE> [--strict]
+                 <INPUT_FILE> [<INPUT_FILE> ...]
 
 Merge multiple GPX files into a single GPX file.
 
@@ -238,13 +243,15 @@ options:
   -h, --help            show this help message and exit
   -o, --output-file <OUTPUT_FILE>
                         Path to the output file
+  --strict              Validate the input against the GPX 1.1 schema first;
+                        print warnings and abort on schema errors
 ```
 
 <!--[[[end]]]-->
 
 ## gpx convert
 
-Convert between GPX, GeoJSON, and KML formats.
+Convert between GPX, GeoJSON, and KML formats. Use `--strict` to validate GPX input against the GPX 1.1 schema first, printing warnings and aborting on schema errors (ignored for non-GPX input).
 
 <!--[[[cog
 help_output(["convert", "--help"])
@@ -254,7 +261,7 @@ Running `gpx convert --help` or `python -m gpx convert --help` shows a list of a
 
 ```shell
 usage: gpx convert [-h] -o <OUTPUT_FILE> [-f {gpx,geojson,kml}]
-                   [-t {gpx,geojson,kml}]
+                   [-t {gpx,geojson,kml}] [--strict]
                    <INPUT_FILE>
 
 Convert GPX files to other file formats or vice versa.
@@ -272,6 +279,8 @@ options:
   -t, --to-format {gpx,geojson,kml}
                         Output format (default: auto-detect from file
                         extension)
+  --strict              Validate the input against the GPX 1.1 schema first;
+                        print warnings and abort on schema errors
 ```
 
 <!--[[[end]]]-->

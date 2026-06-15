@@ -15,7 +15,7 @@ from importlib import metadata
 from pathlib import Path
 from typing import TYPE_CHECKING
 
-from .io import convert_file, read_gpx
+from .io import convert_file, detect_format, read_gpx
 from .operations import (
     crop,
     reduce_precision,
@@ -29,7 +29,7 @@ from .operations import (
     trim,
 )
 from .operations import merge as merge_op
-from .validation import ValidationResult
+from .validation import InvalidGPXError, ValidationResult
 from .validation import validate as validate_gpx
 
 if TYPE_CHECKING:
@@ -215,6 +215,38 @@ def _validate_text_output(
     return 1 if failed else 0
 
 
+def _add_strict_argument(parser: argparse.ArgumentParser) -> None:
+    """Add the shared ``--strict`` option to a file-reading subcommand."""
+    parser.add_argument(
+        "--strict",
+        action="store_true",
+        help="Validate the input against the GPX 1.1 schema first; print "
+        "warnings and abort on schema errors",
+    )
+
+
+def _validate_or_raise(file_path: Path) -> None:
+    """Validate a GPX file, printing warnings and raising on schema errors.
+
+    Any validation warnings are printed to stderr; any schema errors raise
+    :class:`~gpx.validation.InvalidGPXError`, which the CLI reports as an error
+    and exits non-zero. This backs the ``--strict`` option of the file-reading
+    subcommands, mirroring ``read_gpx(..., strict=True)`` while also surfacing
+    warnings.
+    """
+    result = validate_gpx(file_path)
+
+    if result.warnings:
+        n_warnings = len(result.warnings)
+        noun = "warning" if n_warnings == 1 else "warnings"
+        print(f"⚠ {file_path}: {n_warnings} {noun}", file=sys.stderr)
+        for issue in result.warnings:
+            print(f"  {issue}", file=sys.stderr)
+
+    if not result.is_valid:
+        raise InvalidGPXError(result)
+
+
 def _add_info_parser(
     subparsers: argparse._SubParsersAction[argparse.ArgumentParser],
 ) -> None:
@@ -235,6 +267,7 @@ def _add_info_parser(
         action="store_true",
         help="Output information in JSON format",
     )
+    _add_strict_argument(info_parser)
     info_parser.set_defaults(func=info)
 
 
@@ -245,6 +278,9 @@ def info(args: argparse.Namespace) -> int:
     if not file_path.exists():
         print(f"Error: File not found: {file_path}", file=sys.stderr)
         return 1
+
+    if args.strict:
+        _validate_or_raise(file_path)
 
     gpx = read_gpx(file_path)
 
@@ -696,6 +732,7 @@ def _add_edit_parser(
         help="Number of decimal places for elevation (e.g., 1)",
     )
 
+    _add_strict_argument(edit_parser)
     edit_parser.set_defaults(func=edit)
 
 
@@ -707,6 +744,9 @@ def edit(args: argparse.Namespace) -> int:  # noqa: C901, PLR0912
     if not input_path.exists():
         print(f"Error: File not found: {input_path}", file=sys.stderr)
         return 1
+
+    if args.strict:
+        _validate_or_raise(input_path)
 
     gpx = read_gpx(input_path)
 
@@ -852,6 +892,7 @@ def _add_merge_parser(
         metavar="<OUTPUT_FILE>",
         dest="output_file",
     )
+    _add_strict_argument(parser)
     parser.set_defaults(func=merge)
 
 
@@ -865,6 +906,11 @@ def merge(args: argparse.Namespace) -> int:
         if not file_path.exists():
             print(f"Error: File not found: {file_path}", file=sys.stderr)
             return 1
+
+    # In strict mode, validate every input before merging any of them.
+    if args.strict:
+        for file_path in files:
+            _validate_or_raise(file_path)
 
     # Read and merge all GPX files
     merged_gpx = merge_op(read_gpx(file_path) for file_path in files)
@@ -916,6 +962,7 @@ def _add_convert_parser(
         choices=["gpx", "geojson", "kml"],
         help="Output format (default: auto-detect from file extension)",
     )
+    _add_strict_argument(parser)
     parser.set_defaults(func=convert)
 
 
@@ -927,6 +974,10 @@ def convert(args: argparse.Namespace) -> int:
     if not input_path.exists():
         print(f"Error: File not found: {input_path}", file=sys.stderr)
         return 1
+
+    # Schema validation only applies to GPX input.
+    if args.strict and (args.from_format or detect_format(input_path)) == "gpx":
+        _validate_or_raise(input_path)
 
     try:
         input_format, output_format = convert_file(
