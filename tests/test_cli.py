@@ -895,3 +895,141 @@ class TestExtensionsInCLI:
 
         # Track point extensions preserved
         assert gpx.trk[0].trkseg[0].trkpt[0].extensions is not None
+
+
+#: A GPX document with a schema error (an unknown element ``<nmae>``).
+_SCHEMA_ERROR_GPX = (
+    '<?xml version="1.0"?>\n'
+    '<gpx xmlns="http://www.topografix.com/GPX/1/1" '
+    'version="1.1" creator="Test">\n'
+    '  <wpt lat="52.0" lon="4.0"><nmae>oops</nmae></wpt>\n'
+    "</gpx>\n"
+)
+
+#: A GPX document that is schema-valid but yields a warning (version != 1.1).
+_SCHEMA_WARNING_GPX = (
+    '<?xml version="1.0"?>\n'
+    '<gpx xmlns="http://www.topografix.com/GPX/1/1" '
+    'version="1.0" creator="Test">\n'
+    '  <wpt lat="52.0" lon="4.0"/>\n'
+    "</gpx>\n"
+)
+
+
+class TestStrictMode:
+    """Tests for the shared ``--strict`` option on file-reading commands."""
+
+    def test_info_strict_fails_on_error(
+        self, capsys: pytest.CaptureFixture[str], tmp_path: Path
+    ) -> None:
+        """``info --strict`` aborts on a schema error."""
+        input_file = tmp_path / "bad.gpx"
+        input_file.write_text(_SCHEMA_ERROR_GPX)
+
+        result = cli(["info", "--strict", str(input_file)])
+        assert result == 1
+        captured = capsys.readouterr()
+        assert "unknown element" in captured.err
+
+    def test_info_lenient_ignores_error(self, tmp_path: Path) -> None:
+        """Without ``--strict``, schema errors are ignored (lenient default)."""
+        input_file = tmp_path / "bad.gpx"
+        input_file.write_text(_SCHEMA_ERROR_GPX)
+
+        result = cli(["info", str(input_file)])
+        assert result == 0
+
+    def test_info_strict_warns_but_succeeds(
+        self, capsys: pytest.CaptureFixture[str], tmp_path: Path
+    ) -> None:
+        """``info --strict`` prints warnings to stderr but does not abort."""
+        input_file = tmp_path / "warn.gpx"
+        input_file.write_text(_SCHEMA_WARNING_GPX)
+
+        result = cli(["info", "--strict", str(input_file)])
+        assert result == 0
+        captured = capsys.readouterr()
+        assert "WARNING" in captured.err
+        assert "GPX File:" in captured.out
+
+    def test_edit_strict_fails_on_error(
+        self, capsys: pytest.CaptureFixture[str], tmp_path: Path
+    ) -> None:
+        """``edit --strict`` aborts on a schema error and writes no output."""
+        input_file = tmp_path / "bad.gpx"
+        input_file.write_text(_SCHEMA_ERROR_GPX)
+        output_file = tmp_path / "out.gpx"
+
+        result = cli(["edit", "--strict", str(input_file), "-o", str(output_file)])
+        assert result == 1
+        assert not output_file.exists()
+        captured = capsys.readouterr()
+        assert "unknown element" in captured.err
+
+    def test_edit_strict_warns_but_writes(self, tmp_path: Path) -> None:
+        """``edit --strict`` still writes output when there are only warnings."""
+        input_file = tmp_path / "warn.gpx"
+        input_file.write_text(_SCHEMA_WARNING_GPX)
+        output_file = tmp_path / "out.gpx"
+
+        result = cli(["edit", "--strict", str(input_file), "-o", str(output_file)])
+        assert result == 0
+        assert output_file.exists()
+
+    def test_merge_strict_fails_on_error(
+        self, sample_gpx: GPX, capsys: pytest.CaptureFixture[str], tmp_path: Path
+    ) -> None:
+        """``merge --strict`` aborts when any input has a schema error."""
+        good_file = tmp_path / "good.gpx"
+        sample_gpx.write_gpx(good_file)
+        bad_file = tmp_path / "bad.gpx"
+        bad_file.write_text(_SCHEMA_ERROR_GPX)
+        output_file = tmp_path / "out.gpx"
+
+        result = cli(
+            ["merge", "--strict", str(good_file), str(bad_file), "-o", str(output_file)]
+        )
+        assert result == 1
+        assert not output_file.exists()
+        captured = capsys.readouterr()
+        assert "unknown element" in captured.err
+
+    def test_merge_strict_valid_inputs(self, sample_gpx: GPX, tmp_path: Path) -> None:
+        """``merge --strict`` succeeds when all inputs are valid."""
+        file1 = tmp_path / "file1.gpx"
+        file2 = tmp_path / "file2.gpx"
+        sample_gpx.write_gpx(file1)
+        sample_gpx.write_gpx(file2)
+        output_file = tmp_path / "out.gpx"
+
+        result = cli(
+            ["merge", "--strict", str(file1), str(file2), "-o", str(output_file)]
+        )
+        assert result == 0
+        assert output_file.exists()
+
+    def test_convert_strict_fails_on_error(
+        self, capsys: pytest.CaptureFixture[str], tmp_path: Path
+    ) -> None:
+        """``convert --strict`` aborts on a schema error in GPX input."""
+        input_file = tmp_path / "bad.gpx"
+        input_file.write_text(_SCHEMA_ERROR_GPX)
+        output_file = tmp_path / "out.geojson"
+
+        result = cli(["convert", "--strict", str(input_file), "-o", str(output_file)])
+        assert result == 1
+        assert not output_file.exists()
+        captured = capsys.readouterr()
+        assert "unknown element" in captured.err
+
+    def test_convert_strict_skips_non_gpx_input(
+        self, sample_gpx: GPX, tmp_path: Path
+    ) -> None:
+        """``convert --strict`` ignores validation for non-GPX input."""
+        input_file = tmp_path / "input.geojson"
+        output_file = tmp_path / "out.gpx"
+        sample_gpx.write_geojson(input_file)
+
+        result = cli(["convert", "--strict", str(input_file), "-o", str(output_file)])
+        assert result == 0
+        assert output_file.exists()

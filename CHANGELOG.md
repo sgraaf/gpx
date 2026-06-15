@@ -48,6 +48,7 @@ The **third number** is for emergencies when we need to start branches for older
 - New `gpx validate` CLI options:
   - `--strict`: Treat warnings as failures (non-zero exit code).
   - `--json`: Output a machine-readable validation report.
+- New `--strict` option on the `gpx info`, `gpx edit`, `gpx merge` and `gpx convert` CLI commands. When given, each input is validated against the GPX 1.1 schema first: warnings are printed to stderr and the command aborts (non-zero exit code) if any schema errors are found. For `gpx convert`, validation only applies to GPX input. The default keeps the existing lenient behavior.
 
 ### Changed
 

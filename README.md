@@ -466,6 +466,12 @@ gpx merge file1.gpx file2.gpx file3.gpx -o merged.gpx
 gpx convert input.gpx -o output.geojson
 gpx convert input.gpx -o output.kml
 gpx convert input.geojson -o output.gpx
+
+# Validate the input first with --strict (info, edit, merge and convert):
+# prints warnings and aborts on schema errors before doing any work
+gpx info --strict path/to/file.gpx
+gpx edit --strict input.gpx -o output.gpx --simplify 10
+gpx merge --strict file1.gpx file2.gpx -o merged.gpx
 ```
 
 <!-- end docs-include-usage -->
