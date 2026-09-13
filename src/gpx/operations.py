@@ -16,6 +16,7 @@ from math import cos, radians, sqrt
 from statistics import fmean
 from typing import TYPE_CHECKING
 
+from .bounds import Bounds
 from .gpx import GPX
 from .types import Latitude, Longitude
 
@@ -29,12 +30,46 @@ if TYPE_CHECKING:
     from .waypoint import Waypoint
 
 
+def _refresh_bounds(gpx: GPX) -> GPX:
+    """Return ``gpx`` with its metadata bounds recomputed from its points.
+
+    Operations that drop or move points call this so the ``<bounds>`` element
+    keeps describing the extent of the coordinates in the file. Bounds are only
+    recomputed when present, and removed when no points remain.
+    """
+    metadata = gpx.metadata
+    if metadata is None or metadata.bounds is None:
+        return gpx
+
+    points = [
+        *gpx.wpt,
+        *(point for route in gpx.rte for point in route.rtept),
+        *(
+            point
+            for track in gpx.trk
+            for segment in track.trkseg
+            for point in segment.trkpt
+        ),
+    ]
+    bounds = (
+        Bounds(
+            minlat=min(point.lat for point in points),
+            minlon=min(point.lon for point in points),
+            maxlat=max(point.lat for point in points),
+            maxlon=max(point.lon for point in points),
+        )
+        if points
+        else None
+    )
+    return replace(gpx, metadata=replace(metadata, bounds=bounds))
+
+
 def filter_points(gpx: GPX, predicate: Callable[[Waypoint], bool]) -> GPX:
     """Return a new GPX with each point list filtered by ``predicate``.
 
     Waypoints, route points and track points for which ``predicate`` returns
     False are dropped. Routes, track segments and tracks that end up empty
-    are dropped as well.
+    are dropped as well. Metadata bounds (if present) are recomputed.
 
     Args:
         gpx: The GPX instance to filter.
@@ -67,7 +102,7 @@ def filter_points(gpx: GPX, predicate: Callable[[Waypoint], bool]) -> GPX:
         if new_trkseg:
             new_trk.append(replace(track, trkseg=new_trkseg))
 
-    return replace(gpx, wpt=new_wpt, rte=new_rte, trk=new_trk)
+    return _refresh_bounds(replace(gpx, wpt=new_wpt, rte=new_rte, trk=new_trk))
 
 
 def _map_points(gpx: GPX, transform: Callable[[Waypoint], Waypoint]) -> GPX:
@@ -75,6 +110,7 @@ def _map_points(gpx: GPX, transform: Callable[[Waypoint], Waypoint]) -> GPX:
 
     Waypoints, route points and track points are all transformed. The
     structure of the GPX (routes, tracks, segments) is left unchanged.
+    Metadata bounds (if present) are recomputed.
     """
     new_wpt = [transform(w) for w in gpx.wpt]
     new_rte = [
@@ -90,7 +126,7 @@ def _map_points(gpx: GPX, transform: Callable[[Waypoint], Waypoint]) -> GPX:
         )
         for track in gpx.trk
     ]
-    return replace(gpx, wpt=new_wpt, rte=new_rte, trk=new_trk)
+    return _refresh_bounds(replace(gpx, wpt=new_wpt, rte=new_rte, trk=new_trk))
 
 
 def crop(
@@ -504,7 +540,7 @@ def simplify(gpx: GPX, tolerance: float) -> GPX:
         for track in gpx.trk
     ]
 
-    return replace(gpx, rte=new_rte, trk=new_trk)
+    return _refresh_bounds(replace(gpx, rte=new_rte, trk=new_trk))
 
 
 def smooth(
@@ -583,7 +619,7 @@ def smooth(
         for track in gpx.trk
     ]
 
-    return replace(gpx, rte=new_rte, trk=new_trk)
+    return _refresh_bounds(replace(gpx, rte=new_rte, trk=new_trk))
 
 
 def shift_time(gpx: GPX, delta: dt.timedelta) -> GPX:

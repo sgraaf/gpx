@@ -7,6 +7,7 @@ import pytest
 
 from gpx import (
     GPX,
+    Bounds,
     Metadata,
     Person,
     Route,
@@ -115,6 +116,59 @@ class TestCrop:
 
         dropped = crop(sample_gpx, min_lat=53.0)
         assert len(dropped.wpt) == 0
+
+
+class TestMetadataBounds:
+    """Tests that operations keep the metadata bounds in sync with the points."""
+
+    @pytest.fixture
+    def bounded_gpx(self) -> GPX:
+        """A GPX with waypoints at (1, 1) and (60, 60) and matching bounds."""
+        return GPX(
+            metadata=Metadata(
+                bounds=Bounds(
+                    minlat=Latitude("1"),
+                    minlon=Longitude("1"),
+                    maxlat=Latitude("60"),
+                    maxlon=Longitude("60"),
+                )
+            ),
+            wpt=[
+                Waypoint(lat=Latitude("1"), lon=Longitude("1")),
+                Waypoint(lat=Latitude("60"), lon=Longitude("60")),
+            ],
+        )
+
+    def test_crop_recomputes_bounds(self, bounded_gpx: GPX) -> None:
+        cropped = crop(bounded_gpx, max_lat=10.0)
+        assert cropped.metadata is not None
+        assert cropped.metadata.bounds == Bounds(
+            minlat=Latitude("1"),
+            minlon=Longitude("1"),
+            maxlat=Latitude("1"),
+            maxlon=Longitude("1"),
+        )
+
+    def test_crop_removes_bounds_without_points(self, bounded_gpx: GPX) -> None:
+        cropped = crop(bounded_gpx, max_lat=0.0)
+        assert cropped.metadata is not None
+        assert cropped.metadata.bounds is None
+
+    def test_reduce_precision_recomputes_bounds(self, bounded_gpx: GPX) -> None:
+        bounded_gpx.wpt[1] = Waypoint(lat=Latitude("60.123456"), lon=Longitude("60"))
+        reduced = reduce_precision(bounded_gpx, coordinate_precision=2)
+        assert reduced.metadata is not None
+        assert reduced.metadata.bounds is not None
+        assert reduced.metadata.bounds.maxlat == Decimal("60.12")
+
+    def test_bounds_not_added_when_absent(self) -> None:
+        gpx = GPX(
+            metadata=Metadata(name="No bounds"),
+            wpt=[Waypoint(lat=Latitude("1"), lon=Longitude("1"))],
+        )
+        cropped = crop(gpx, max_lat=10.0)
+        assert cropped.metadata is not None
+        assert cropped.metadata.bounds is None
 
 
 class TestTrim:
