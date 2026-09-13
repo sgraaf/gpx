@@ -866,6 +866,49 @@ class TestWKBEdgeCases:
         assert len(gpx.wpt) == 1
         assert len(gpx.rte) == 1
 
+    @pytest.mark.parametrize(
+        ("geom_type", "dimensions", "expected_ele"),
+        [
+            (2002, 3, None),  # ISO LineString M
+            (3002, 4, Decimal("10.0")),  # ISO LineString ZM
+            (2 | 0x40000000, 3, None),  # EWKB LineString M
+            (2 | 0x80000000 | 0x40000000, 4, Decimal("10.0")),  # EWKB LineString ZM
+        ],
+    )
+    def test_from_wkb_drops_m_values(
+        self, geom_type: int, dimensions: int, expected_ele: Decimal | None
+    ) -> None:
+        """Test that M values are skipped without misaligning later coordinates."""
+        points = [(4.0, 52.0, 10.0, 1.0), (4.1, 52.1, 10.0, 2.0)]
+        wkb = b"\x01" + struct.pack("<II", geom_type, len(points))
+        for x, y, z, m in points:
+            values = (x, y, z, m) if dimensions == 4 else (x, y, m)
+            wkb += struct.pack(f"<{dimensions}d", *values)
+
+        rtept = from_wkb(wkb).rte[0].rtept
+        assert [(p.lon, p.lat, p.ele) for p in rtept] == [
+            (Decimal("4.0"), Decimal("52.0"), expected_ele),
+            (Decimal("4.1"), Decimal("52.1"), expected_ele),
+        ]
+
+    def test_from_ewkb_with_srid(self) -> None:
+        """Test that the SRID of an EWKB geometry is skipped."""
+        wkb = b"\x01" + struct.pack("<II", 1 | 0x80000000 | 0x20000000, 4326)
+        wkb += struct.pack("<ddd", 4.0, 52.0, 10.0)
+
+        waypoint = from_wkb(wkb).wpt[0]
+        assert (waypoint.lon, waypoint.lat, waypoint.ele) == (
+            Decimal("4.0"),
+            Decimal("52.0"),
+            Decimal("10.0"),
+        )
+
+    def test_from_wkb_invalid_dimension_flags(self) -> None:
+        """Test that an unknown ISO dimension flag raises ValueError."""
+        wkb = b"\x01" + struct.pack("<I", 4001) + struct.pack("<dd", 4.0, 52.0)
+        with pytest.raises(ValueError, match="Unsupported WKB geometry type: 4001"):
+            from_wkb(wkb)
+
 
 class TestWKTEdgeCases:
     """Tests for edge cases in WKT conversion."""
