@@ -46,6 +46,7 @@ The **third number** is for emergencies when we need to start branches for older
   - Detects, among others: wrong root element / namespace (with a GPX 1.0 hint), missing required attributes, unknown elements (with "did you mean …?" suggestions), duplicate single-occurrence elements, out-of-order children, `<extensions>` children that are not in a foreign namespace (e.g. unprefixed elements that inherit the default GPX namespace), and invalid values (latitude/longitude/degrees ranges, `fix`, `dgpsid`, `sat`, copyright `year`, `time`).
   - All names are importable directly from the top-level package (e.g. `from gpx import validate`).
 - New `strict` keyword argument on `read_gpx()` and `from_string()`. When `strict=True`, the input is validated against the GPX 1.1 schema first and an `InvalidGPXError` is raised if any errors are found. The default (`strict=False`) keeps the existing lenient behavior.
+- New `Year` type (an `int` subclass) for `xsd:gYear` values such as `2004`, `2004Z` or `2004+02:00`. The optional timezone is kept in `Year.timezone`, and `str()` returns valid `xsd:gYear` text. It's importable from the top-level package (`from gpx import Year`).
 - New `gpx validate` CLI options:
   - `--strict`: Treat warnings as failures (non-zero exit code).
   - `--json`: Output a machine-readable validation report.
@@ -55,6 +56,7 @@ The **third number** is for emergencies when we need to start branches for older
 
 - The CLI (`gpx edit`, `gpx merge` and `gpx convert`) now uses the new `operations` module and `io` conversion functions internally (behavior is unchanged).
 - The `gpx validate` CLI command is now a real GPX 1.1 schema validator. It reports all errors and warnings (with source line numbers) instead of only checking whether the file can be parsed, and exits non-zero when errors are found (or, with `--strict`, when warnings are found).
+- `Copyright.year` is now typed as `Year | None` instead of `int | None`. `Year` is an `int` subclass, so existing code keeps working at runtime, but type checkers now expect `Year(2004)` instead of `2004`.
 - Parsing and serializing GPX data is ~20× faster: the type annotations of each model are now resolved once per class instead of once per XML element.
 
 ### Fixed
@@ -77,6 +79,7 @@ The **third number** is for emergencies when we need to start branches for older
 - `crop()`, `trim()`, `filter_points()`, `reduce_precision()`, `simplify()`, `smooth()` and `gpx edit` now recompute the metadata bounds (if present) from the remaining points. The bounds are removed if no points remain. The original, stale bounds were previously kept.
 - `reverse()` with `routes=False` or `tracks=False` no longer returns a GPX that shares its route or track list with the input. `strip_metadata()` on a GPX without metadata now returns a new instance instead of the input itself.
 - `in` checks on `Extensions` (e.g. `"hr" in extensions`) now return `True` for matching elements without text content.
+- Copyright years with a timezone (e.g. `<year>2004Z</year>`) are now parsed, and written back with their timezone. They previously passed `validate()` but then failed to parse. Years before 1000 are now written with four digits (e.g. `0999`), as `xsd:gYear` requires.
 - `gpx edit --start/--end` now accept any ISO 8601 datetime, including fractional seconds (e.g. `2024-01-01T10:00:00.5Z`). Datetimes without a timezone are still interpreted as UTC.
 
 ## [2026.3.0](https://github.com/sgraaf/gpx/compare/2026.2.0...2026.3.0) - 2026-05-17

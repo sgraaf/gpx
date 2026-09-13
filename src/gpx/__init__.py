@@ -28,7 +28,7 @@ from .person import Person
 from .route import Route
 from .track import Track
 from .track_segment import TrackSegment
-from .types import Degrees, DGPSStation, Fix, Latitude, Longitude
+from .types import Degrees, DGPSStation, Fix, Latitude, Longitude, Year
 from .validation import (
     InvalidGPXError,
     Severity,
@@ -63,6 +63,7 @@ __all__ = [
     "ValidationIssue",
     "ValidationResult",
     "Waypoint",
+    "Year",
     "convert_file",
     "crop",
     "detect_format",

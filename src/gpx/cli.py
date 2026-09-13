@@ -192,9 +192,8 @@ def _validate_text_output(
         print()
 
     if result.is_valid:
-        # A schema-valid document should parse, but the validator is not an XSD
-        # engine (e.g. it accepts an xsd:gYear with a timezone, which the parser
-        # does not), so report parse failures cleanly instead of a traceback.
+        # The document is schema-valid, so it should parse; guard the read anyway
+        # so the CLI reports cleanly instead of raising a traceback.
         try:
             gpx = read_gpx(file_path)
         except Exception as e:  # noqa: BLE001

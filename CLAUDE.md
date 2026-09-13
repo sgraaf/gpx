@@ -33,7 +33,7 @@ gpx/
 │   ├── copyright.py      # Copyright dataclass model
 │   ├── extensions.py     # Extensions dataclass model for GPX extensions
 │   ├── mixins.py         # Mixins for shared functionality (e.g., PointsMixin)
-│   ├── types.py          # Custom types: Latitude, Longitude, Degrees, Fix, DGPSStation
+│   ├── types.py          # Custom types: Latitude, Longitude, Degrees, Fix, DGPSStation, Year
 │   ├── utils.py          # Utility functions for XML parsing and serialization
 │   ├── convert.py        # Conversion functions: from_geo_interface, from_wkb, from_wkt
 │   ├── io.py             # I/O functions: read_gpx, read_geojson, read_kml, convert_file, detect_format
@@ -187,6 +187,7 @@ GPXModel (base.py)
    - `Degrees`: For bearing/heading (0-360)
    - `Fix`: GPS fix type enum-like string
    - `DGPSStation`: DGPS station ID (0-1023)
+   - `Year`: Copyright year (`xsd:gYear`, preserving an optional timezone)
 
 1. **GeoJSON Support**:
 

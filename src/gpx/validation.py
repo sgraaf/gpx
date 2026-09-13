@@ -35,7 +35,7 @@ from typing import Any
 from xml.parsers import expat
 
 from .base import GPX_NAMESPACE
-from .types import Fix
+from .types import Fix, Year
 
 #: GPX 1.0 namespace (unsupported; only used to give a helpful hint).
 GPX_10_NAMESPACE = "http://www.topografix.com/GPX/1/0"
@@ -218,8 +218,10 @@ def _non_negative_int(text: str) -> tuple[Severity, str] | None:
 
 
 def _gyear(text: str) -> tuple[Severity, str] | None:
-    # xsd:gYear, e.g. "2004" with an optional timezone suffix.
-    if not re.fullmatch(r"-?\d{4,}(?:Z|[+-]\d{2}:\d{2})?", text):
+    # Validate with the parser's own type, so valid years are guaranteed to parse
+    try:
+        Year(text)
+    except ValueError:
         return Severity.ERROR, f"invalid year '{text}' (must be a year, e.g. 2004)"
     return None
 

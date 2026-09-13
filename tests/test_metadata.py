@@ -2,8 +2,10 @@
 
 import datetime as dt
 
-from gpx import Bounds, Copyright, Email, Link, Metadata, Person, from_string
-from gpx.types import Latitude, Longitude
+import pytest
+
+from gpx import Bounds, Copyright, Email, Link, Metadata, Person, from_string, validate
+from gpx.types import Latitude, Longitude, Year
 
 #: GPX 1.1 namespace
 GPX_NAMESPACE = "http://www.topografix.com/GPX/1/1"
@@ -408,7 +410,7 @@ class TestCopyrightBuilding:
         """Test building copyright XML."""
         copyright_ = Copyright(
             author="Test Author",
-            year=2023,
+            year=Year(2023),
             license="https://example.com/license",
         )
 
@@ -429,6 +431,23 @@ class TestCopyrightBuilding:
         assert gpx2.metadata.copyright.author == gpx.metadata.copyright.author
         assert gpx2.metadata.copyright.year == gpx.metadata.copyright.year
 
+    @pytest.mark.parametrize("year", ["2004", "2004Z", "2004+02:00", "-0044", "0999"])
+    def test_copyright_year_roundtrip_is_lossless(self, year: str) -> None:
+        """Test that any xsd:gYear parses and is written back unchanged."""
+        gpx_str = (
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="t">'
+            f'<metadata><copyright author="ACME"><year>{year}</year></copyright></metadata>'
+            "</gpx>"
+        )
+        gpx = from_string(gpx_str, strict=True)
+        assert gpx.metadata is not None
+        assert gpx.metadata.copyright is not None
+        assert str(gpx.metadata.copyright.year) == year
+
+        output = gpx.to_string()
+        assert f"<year>{year}</year>" in output
+        assert validate(output).is_valid
+
 
 class TestCopyrightCreation:
     """Tests for creating copyright programmatically."""
@@ -437,7 +456,7 @@ class TestCopyrightCreation:
         """Test creating copyright."""
         copyright_ = Copyright(
             author="Test Author",
-            year=2023,
+            year=Year(2023),
             license="MIT",
         )
 

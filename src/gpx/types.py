@@ -2,8 +2,13 @@
 
 from __future__ import annotations
 
+import re
 from decimal import Decimal, InvalidOperation
 from typing import Any, Protocol, Self, runtime_checkable
+
+#: The lexical space of ``xsd:gYear``: a (possibly negative) year of at least
+#: four digits, with an optional timezone.
+_GYEAR_PATTERN = re.compile(r"(?P<year>-?\d{4,})(?P<timezone>Z|[+-]\d{2}:\d{2})?")
 
 
 @runtime_checkable
@@ -164,3 +169,41 @@ class DGPSStation(int):
             )
 
         return super().__new__(cls, int_value)
+
+
+class Year(int):
+    """A year class for the GPX data format.
+
+    Represents an ``xsd:gYear`` value, e.g. ``2004``, ``2004Z`` or
+    ``2004+02:00``. The optional timezone is preserved (as :attr:`timezone`) so
+    the year is written back as it was read. Comparisons use the year only.
+
+    Args:
+        value: The year, as an integer or as ``xsd:gYear`` text.
+
+    Raises:
+        ValueError: If the value is not a valid year (e.g. ``2004``, ``2004Z``
+            or ``2004+02:00``).
+
+    """
+
+    #: The timezone suffix (``Z`` or ``±hh:mm``), or None if there is none.
+    timezone: str | None
+
+    def __new__(cls, value: int | str) -> Self:
+        if isinstance(value, str):
+            match = _GYEAR_PATTERN.fullmatch(value.strip())
+            if match is None:
+                msg = f"Invalid year value: '{value}'. Must be a year, e.g. 2004, 2004Z or 2004+02:00."
+                raise ValueError(msg)
+            year = super().__new__(cls, match["year"])
+            year.timezone = match["timezone"]
+        else:
+            year = super().__new__(cls, value)
+            year.timezone = value.timezone if isinstance(value, Year) else None
+        return year
+
+    def __str__(self) -> str:
+        """Return the year as ``xsd:gYear`` text (at least four digits)."""
+        sign = "-" if self < 0 else ""
+        return f"{sign}{abs(self):04d}{self.timezone or ''}"
