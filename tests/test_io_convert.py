@@ -143,6 +143,8 @@ class TestGeoJSONConversion:
         data = sample_gpx.__geo_interface__
         assert data["type"] == "FeatureCollection"
         assert len(data["features"]) == 3  # 1 waypoint + 1 route + 1 track
+        # RFC 7946: every Feature has a "properties" member
+        assert all("properties" in feature for feature in data["features"])
 
     def test_gpx_write_geojson(self, sample_gpx: GPX, tmp_path: Path) -> None:
         """Test writing GPX to GeoJSON file."""
@@ -235,6 +237,7 @@ class TestGeoJSONConversion:
             trk=[Track(), Track(trkseg=[TrackSegment()])],
         )
         features = gpx.__geo_interface__["features"]
+        assert all(feature["properties"] is None for feature in features)
         assert [feature["geometry"] for feature in features] == [
             {"type": "LineString", "coordinates": []},
             {"type": "MultiLineString", "coordinates": []},

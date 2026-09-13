@@ -144,8 +144,9 @@ class GPX(GeoGPXModel):
                 continue
             geo = child.__geo_interface__
             # Wrap pure geometries in a Feature; pass Features through as-is.
+            # RFC 7946 requires every Feature to have a "properties" member.
             if geo.get("type") != "Feature":
-                geo = {"type": "Feature", "geometry": geo}
+                geo = {"type": "Feature", "geometry": geo, "properties": None}
             features.append(geo)
 
         return {
