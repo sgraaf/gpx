@@ -115,10 +115,14 @@ class Extensions:
             True
 
         """
-        if isinstance(item, tuple):
-            namespace, tag = item
-            return self.get_text(tag, namespace=namespace) is not None
-        return self.get_text(item) is not None
+        namespace, tag = item if isinstance(item, tuple) else (None, item)
+        ns_tag = f"{{{namespace}}}{tag}" if namespace else None
+        # Match on the element itself, not its text: empty elements exist too
+        return any(
+            _matches_tag(child.tag, tag, ns_tag)
+            for elem in self.elements
+            for child in elem.iter()
+        )
 
     def copy(self) -> Extensions:
         """Create a deep copy of this Extensions instance.
