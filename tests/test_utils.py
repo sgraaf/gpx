@@ -133,8 +133,14 @@ class TestDatetimeFormatting:
         """Test to_isoformat with microseconds."""
         dt_obj = dt.datetime(2024, 1, 15, 10, 30, 45, 123456, tzinfo=dt.UTC)
         result = to_isoformat(dt_obj)
-        assert "2024-01-15T10:30:45.123" in result
-        assert result.endswith("Z")
+        assert result == "2024-01-15T10:30:45.123456Z"
+        assert from_isoformat(result) == dt_obj
+
+    def test_to_isoformat_with_milliseconds(self) -> None:
+        """Test to_isoformat with whole milliseconds."""
+        dt_obj = dt.datetime(2024, 1, 15, 10, 30, 45, 123000, tzinfo=dt.UTC)
+        result = to_isoformat(dt_obj)
+        assert result == "2024-01-15T10:30:45.123Z"
 
     def test_to_isoformat_without_microseconds(self) -> None:
         """Test to_isoformat without microseconds."""

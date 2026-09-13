@@ -119,10 +119,18 @@ def from_isoformat(dt_str: str) -> dt.datetime:
 
 
 def to_isoformat(dt: dt.datetime) -> str:
-    """Convert a `datetime` object to a string in ISO 8601 format."""
-    return dt.isoformat(
-        timespec="milliseconds" if dt.microsecond else "seconds"
-    ).replace("+00:00", "Z")
+    """Convert a `datetime` object to a string in ISO 8601 format.
+
+    Fractional seconds are written with the fewest digits (none, milliseconds
+    or microseconds) that represent the time without loss.
+    """
+    if not dt.microsecond:
+        timespec = "seconds"
+    elif dt.microsecond % 1000 == 0:
+        timespec = "milliseconds"
+    else:
+        timespec = "microseconds"
+    return dt.isoformat(timespec=timespec).replace("+00:00", "Z")
 
 
 def is_optional(field_type: type) -> bool:
