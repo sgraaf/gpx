@@ -9,8 +9,9 @@ from typing import Any, get_type_hints
 import pytest
 
 import gpx.utils
-from gpx import GPX, Waypoint, from_string
+from gpx import GPX, Extensions, Waypoint, from_string
 from gpx.link import Link
+from gpx.types import Fix, Latitude, Longitude
 from gpx.utils import (
     build_geo_properties,
     build_to_xml,
@@ -377,3 +378,38 @@ class TestGeoProperties:
         obj = TestModel(flag=True)
         props = build_geo_properties(obj)
         assert props["flag"] is True
+
+    def test_build_geo_properties_excludes_extensions(self) -> None:
+        """build_geo_properties never includes extensions (no JSON representation)."""
+        extensions = Extensions(
+            elements=[ET.fromstring('<x:hr xmlns:x="urn:x">1</x:hr>')]
+        )
+        waypoint = Waypoint(
+            lat=Latitude("52"), lon=Longitude("4"), name="a", extensions=extensions
+        )
+        assert build_geo_properties(waypoint) == {"name": "a"}
+        assert (
+            has_geo_properties(
+                Waypoint(lat=Latitude("52"), lon=Longitude("4"), extensions=extensions)
+            )
+            is False
+        )
+
+    def test_build_geo_properties_with_str_subclass(self) -> None:
+        """build_geo_properties converts str subclasses to plain strings."""
+        waypoint = Waypoint(lat=Latitude("52"), lon=Longitude("4"), fix=Fix("3d"))
+        props = build_geo_properties(waypoint)
+        assert props["fix"] == "3d"
+        assert type(props["fix"]) is str
+
+    def test_build_geo_properties_rejects_unsupported_type(self) -> None:
+        """build_geo_properties raises for values without a JSON representation."""
+
+        @dataclass
+        class TestModel:
+            """Test model with an unsupported value type."""
+
+            value: object | None = None
+
+        with pytest.raises(TypeError, match="Cannot convert object"):
+            build_geo_properties(TestModel(value=object()))

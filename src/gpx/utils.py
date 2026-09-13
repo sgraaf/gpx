@@ -15,13 +15,12 @@ from __future__ import annotations
 import datetime as dt
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, fields
+from decimal import Decimal
 from functools import cache
 from typing import (
     TYPE_CHECKING,
     Any,
     Literal,
-    SupportsFloat,
-    SupportsInt,
     get_args,
     get_origin,
     get_type_hints,
@@ -33,6 +32,9 @@ if TYPE_CHECKING:
 #: Number of characters (or bytes) fed to the parser at a time when scanning for
 #: the root element's namespace declarations.
 _NAMESPACE_SCAN_CHUNK_SIZE = 8192
+
+#: Fields without a JSON representation, which are never GeoJSON properties.
+_NON_GEO_PROPERTY_FIELDS = frozenset({"extensions"})
 
 
 def _get_namespace(element: ET.Element) -> str:
@@ -452,7 +454,7 @@ def has_geo_properties(obj: Any, exclude_fields: Iterable[str] | None = None) ->
         True if any optional fields (excluding specified ones) are set, False otherwise.
 
     """
-    exclude_fields = set() if exclude_fields is None else set(exclude_fields)
+    exclude_fields = _NON_GEO_PROPERTY_FIELDS.union(exclude_fields or ())
 
     for spec in _field_specs(type(obj)):
         if spec.name in exclude_fields:
@@ -488,7 +490,7 @@ def build_geo_properties(
         A dictionary mapping field names to JSON-serializable values.
 
     """
-    exclude_fields = set() if exclude_fields is None else set(exclude_fields)
+    exclude_fields = _NON_GEO_PROPERTY_FIELDS.union(exclude_fields or ())
 
     properties: dict[str, Any] = {}
 
@@ -536,18 +538,20 @@ def _convert_value_to_json(value: Any) -> Any:  # noqa: ANN401
     Returns:
         The JSON-serializable value.
 
+    Raises:
+        TypeError: If the value has no JSON representation.
+
     """
-    if isinstance(value, bool):
+    if isinstance(value, int):  # Includes bool
         return value
-    if isinstance(value, int):
-        return value
+    if isinstance(value, str):
+        return str(value)  # Plain str, also for str subclasses such as Fix
     if isinstance(value, dt.datetime):
         return to_isoformat(value)
-    if isinstance(value, SupportsFloat):  # Decimal, Latitude, etc.
+    if isinstance(value, Decimal | float):  # Includes Latitude, Longitude, etc.
         return float(value)
-    if isinstance(value, SupportsInt):
-        return int(value)
-    return str(value)
+    msg = f"Cannot convert {type(value).__name__} to a GeoJSON property value"
+    raise TypeError(msg)
 
 
 def build_geo_feature(
