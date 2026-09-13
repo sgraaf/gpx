@@ -77,6 +77,7 @@ The **third number** is for emergencies when we need to start branches for older
 - `crop()`, `trim()`, `filter_points()`, `reduce_precision()`, `simplify()`, `smooth()` and `gpx edit` now recompute the metadata bounds (if present) from the remaining points. The bounds are removed if no points remain. The original, stale bounds were previously kept.
 - `reverse()` with `routes=False` or `tracks=False` no longer returns a GPX that shares its route or track list with the input. `strip_metadata()` on a GPX without metadata now returns a new instance instead of the input itself.
 - `in` checks on `Extensions` (e.g. `"hr" in extensions`) now return `True` for matching elements without text content.
+- `gpx edit --start/--end` now accept any ISO 8601 datetime, including fractional seconds (e.g. `2024-01-01T10:00:00.5Z`). Datetimes without a timezone are still interpreted as UTC.
 
 ## [2026.3.0](https://github.com/sgraaf/gpx/compare/2026.2.0...2026.3.0) - 2026-05-17
 
