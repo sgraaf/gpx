@@ -319,6 +319,38 @@ class TestKMLConversion:
         gpx = read_kml(temp_file, creator="MyApp")
         assert gpx.creator == "MyApp"
 
+    @pytest.mark.parametrize(
+        "namespace",
+        [
+            "http://www.opengis.net/kml/2.2",
+            "http://earth.google.com/kml/2.2",
+            "http://earth.google.com/kml/2.1",
+            "http://earth.google.com/kml/2.0",
+            None,
+        ],
+    )
+    def test_read_kml_namespaces(
+        self, sample_kml: str, namespace: str | None, tmp_path: Path
+    ) -> None:
+        """Test reading KML in the OGC, legacy Google Earth, or no namespace."""
+        xmlns = f' xmlns="{namespace}"' if namespace else ""
+        temp_file = tmp_path / "input.kml"
+        temp_file.write_text(
+            sample_kml.replace(' xmlns="http://www.opengis.net/kml/2.2"', xmlns)
+        )
+        gpx = read_kml(temp_file)
+        assert gpx.metadata is not None
+        assert gpx.metadata.name == "Test KML"
+        assert [waypoint.name for waypoint in gpx.wpt] == ["Berlin"]
+        assert [route.name for route in gpx.rte] == ["City Tour"]
+
+    def test_read_kml_unsupported_root_raises(self, tmp_path: Path) -> None:
+        """Test that a document that is not KML raises instead of reading as empty."""
+        temp_file = tmp_path / "input.kml"
+        temp_file.write_text('<kml xmlns="http://example.com/not-kml"/>')
+        with pytest.raises(ValueError, match="Unsupported KML document"):
+            read_kml(temp_file)
+
     def test_kml_roundtrip(self, sample_gpx: GPX, tmp_path: Path) -> None:
         """Test KML roundtrip conversion."""
         temp_file = tmp_path / "roundtrip.kml"

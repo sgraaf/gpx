@@ -67,6 +67,7 @@ The **third number** is for emergencies when we need to start branches for older
 - GeoJSON Features created for waypoints, routes and tracks without any properties now have `"properties": null`, as required by RFC 7946. They previously had no `properties` member, which strict GeoJSON readers reject.
 - `from_wkb()` now correctly reads geometries with M values (ISO `M`/`ZM` types and EWKB M flag) and EWKB geometries with an embedded SRID (e.g. PostGIS `ST_AsEWKB` output). These previously produced wrong coordinates without any error.
 - `from_string(..., strict=True)` no longer treats content that doesn't start with `<` as a file path to read. Such content is now reported as not well-formed XML.
+- `read_kml()` and `gpx convert` now read KML files in the legacy Google Earth namespaces (`http://earth.google.com/kml/2.0`, `2.1` and `2.2`), which previously produced an empty GPX without any error. Documents whose root element is not `<kml>` in a supported namespace (or no namespace) now raise a `ValueError`.
 
 ## [2026.3.0](https://github.com/sgraaf/gpx/compare/2026.2.0...2026.3.0) - 2026-05-17
 
