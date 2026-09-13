@@ -127,14 +127,13 @@ class Track(PointsMixin, GeoGPXModel):
         return sum((trkseg.moving_duration for trkseg in self.trkseg), dt.timedelta())
 
     @property
-    def max_speed(self) -> float:
-        """The maximum speed of the track (in metres / second)."""
-        return max(trkseg.max_speed for trkseg in self.trkseg)
+    def _speeds(self) -> list[float]:
+        """The speeds between consecutive points within each segment.
 
-    @property
-    def min_speed(self) -> float:
-        """The minimum speed of the track (in metres / second)."""
-        return min(trkseg.min_speed for trkseg in self.trkseg)
+        Segments with fewer than two points contribute no speeds, and no speed
+        is computed across the gap between consecutive segments.
+        """
+        return [speed for trkseg in self.trkseg for speed in trkseg._speeds]
 
     @property
     def speed_profile(self) -> list[tuple[dt.datetime, float]]:

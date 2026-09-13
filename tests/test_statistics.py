@@ -84,6 +84,26 @@ class TestTrackStatistics:
         assert min_speed >= 0
         assert isinstance(min_speed, float)
 
+    def test_track_speeds_ignore_short_segments(self) -> None:
+        """Test that segments with fewer than two points don't break max/min speed."""
+        gpx = from_string(
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="t">'
+            "<trk>"
+            "<trkseg/>"
+            '<trkseg><trkpt lat="52" lon="4"><time>2024-01-01T00:00:00Z</time></trkpt></trkseg>'
+            "<trkseg>"
+            '<trkpt lat="52.0" lon="4"><time>2024-01-01T00:00:00Z</time></trkpt>'
+            '<trkpt lat="52.01" lon="4"><time>2024-01-01T00:01:00Z</time></trkpt>'
+            '<trkpt lat="52.03" lon="4"><time>2024-01-01T00:02:00Z</time></trkpt>'
+            "</trkseg>"
+            "</trk></gpx>"
+        )
+        track = gpx.trk[0]
+        segment = track.trkseg[2]
+        assert track.max_speed == segment.max_speed
+        assert track.min_speed == segment.min_speed
+        assert track.max_speed == pytest.approx(2 * track.min_speed)
+
     def test_track_speed_profile(self, track_gpx: GPX) -> None:
         """Test track speed profile generation."""
         track = track_gpx.trk[0]

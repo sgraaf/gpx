@@ -60,6 +60,7 @@ The **third number** is for emergencies when we need to start branches for older
 
 - Writing a parsed GPX file no longer moves the document into the wrong XML namespace when an element deeper in the file (e.g. a Garmin extension) redeclares the default namespace, or when text content contains `xmlns="..."`. Only the namespace declarations on the root element are now preserved.
 - `__geo_interface__`, `write_geojson()` and `gpx convert` to GeoJSON no longer crash on routes and tracks without any points. Their geometries are now written without a `bbox`.
+- `Track.max_speed` and `Track.min_speed` no longer raise when a track segment has fewer than two points. Such segments are now skipped.
 
 ## [2026.3.0](https://github.com/sgraaf/gpx/compare/2026.2.0...2026.3.0) - 2026-05-17
 
