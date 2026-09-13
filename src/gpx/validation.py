@@ -136,18 +136,28 @@ class InvalidGPXError(ValueError):
         super().__init__(f"Invalid GPX ({count} {noun}):\n{summary}")
 
 
-def _decimal(text: str) -> tuple[Severity, str] | None:
+def _finite_decimal(text: str) -> Decimal | None:
+    """Parse ``text`` as a finite decimal, or return None if it isn't one.
+
+    ``NaN`` and ``Infinity`` are rejected: they are not valid ``xsd:decimal``
+    values, and comparing NaN raises ``decimal.InvalidOperation``.
+    """
     try:
-        Decimal(text)
+        value = Decimal(text)
     except InvalidOperation:
+        return None
+    return value if value.is_finite() else None
+
+
+def _decimal(text: str) -> tuple[Severity, str] | None:
+    if _finite_decimal(text) is None:
         return Severity.ERROR, f"'{text}' is not a valid decimal number"
     return None
 
 
 def _latitude(text: str) -> tuple[Severity, str] | None:
-    try:
-        value = Decimal(text)
-    except InvalidOperation:
+    value = _finite_decimal(text)
+    if value is None:
         return Severity.ERROR, f"invalid latitude '{text}' (not a number)"
     if not -90 <= value <= 90:  # noqa: PLR2004
         return Severity.ERROR, f"invalid latitude '{text}' (must be in [-90, 90])"
@@ -155,9 +165,8 @@ def _latitude(text: str) -> tuple[Severity, str] | None:
 
 
 def _longitude(text: str) -> tuple[Severity, str] | None:
-    try:
-        value = Decimal(text)
-    except InvalidOperation:
+    value = _finite_decimal(text)
+    if value is None:
         return Severity.ERROR, f"invalid longitude '{text}' (not a number)"
     if not -180 <= value <= 180:  # noqa: PLR2004
         return Severity.ERROR, f"invalid longitude '{text}' (must be in [-180, 180])"
@@ -173,9 +182,8 @@ def _longitude(text: str) -> tuple[Severity, str] | None:
 
 
 def _degrees(text: str) -> tuple[Severity, str] | None:
-    try:
-        value = Decimal(text)
-    except InvalidOperation:
+    value = _finite_decimal(text)
+    if value is None:
         return Severity.ERROR, f"invalid degrees value '{text}' (not a number)"
     if not 0 <= value < 360:  # noqa: PLR2004
         return Severity.ERROR, f"invalid degrees value '{text}' (must be in [0, 360))"

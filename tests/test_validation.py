@@ -189,6 +189,23 @@ class TestContentValidation:
         result = validate(INVALID_FIXTURES_DIR / fixture)
         assert not result.is_valid, fixture
 
+    @pytest.mark.parametrize(
+        "wpt",
+        [
+            '<wpt lat="NaN" lon="4"/>',
+            '<wpt lat="52" lon="Infinity"/>',
+            '<wpt lat="52" lon="4"><ele>NaN</ele></wpt>',
+            '<wpt lat="52" lon="4"><magvar>sNaN</magvar></wpt>',
+        ],
+    )
+    def test_non_finite_value_is_error(self, wpt: str) -> None:
+        result = validate(
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="t">'
+            f"{wpt}</gpx>"
+        )
+        assert not result.is_valid
+        assert "not a" in _messages(result.errors)
+
     def test_invalid_sat_path_points_at_element(self) -> None:
         result = validate(INVALID_FIXTURES_DIR / "non_integer_sat.gpx")
         sat_errors = [i for i in result.errors if i.path.endswith("> sat")]

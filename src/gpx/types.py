@@ -33,7 +33,8 @@ class Latitude(Decimal):
             msg = f"Invalid latitude value: '{value}'."
             raise ValueError(msg) from e
 
-        if not -90 <= decimal_value <= 90:  # noqa: PLR2004
+        # Check finiteness first: comparing NaN raises decimal.InvalidOperation
+        if not decimal_value.is_finite() or not -90 <= decimal_value <= 90:  # noqa: PLR2004
             msg = f"Invalid latitude value: '{value}'. Must be between [-90.0, 90.0]."
             raise ValueError(
                 msg,
@@ -63,7 +64,8 @@ class Longitude(Decimal):
             msg = f"Invalid longitude value: '{value}'."
             raise ValueError(msg) from e
 
-        if not -180 <= decimal_value <= 180:  # noqa: PLR2004
+        # Check finiteness first: comparing NaN raises decimal.InvalidOperation
+        if not decimal_value.is_finite() or not -180 <= decimal_value <= 180:  # noqa: PLR2004
             msg = (
                 f"Invalid longitude value: '{value}'. Must be between [-180.0, 180.0]."
             )
@@ -96,7 +98,8 @@ class Degrees(Decimal):
             msg = f"Invalid degrees value: '{value}'."
             raise ValueError(msg) from e
 
-        if not 0 <= decimal_value < 360:  # noqa: PLR2004
+        # Check finiteness first: comparing NaN raises decimal.InvalidOperation
+        if not decimal_value.is_finite() or not 0 <= decimal_value < 360:  # noqa: PLR2004
             msg = f"Invalid degrees value: '{value}'. Must be between [0.0, 360.0)."
             raise ValueError(
                 msg,

@@ -269,3 +269,22 @@ class TestDGPSStation:
         """Test that None raises ValueError."""
         with pytest.raises(ValueError, match="Invalid DGPS station value"):
             DGPSStation(None)  # type: ignore[arg-type, ty:invalid-argument-type]
+
+
+class TestNonFiniteDecimalTypes:
+    """Tests that NaN and Infinity are rejected with a ValueError."""
+
+    @pytest.mark.parametrize("value", ["NaN", "sNaN", "Infinity", "-Infinity"])
+    @pytest.mark.parametrize(
+        ("decimal_type", "message"),
+        [
+            (Latitude, "Invalid latitude value"),
+            (Longitude, "Invalid longitude value"),
+            (Degrees, "Invalid degrees value"),
+        ],
+    )
+    def test_non_finite_value_raises_value_error(
+        self, decimal_type: type[Decimal], message: str, value: str
+    ) -> None:
+        with pytest.raises(ValueError, match=message):
+            decimal_type(value)
