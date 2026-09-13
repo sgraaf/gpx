@@ -38,6 +38,7 @@ The **third number** is for emergencies when we need to start branches for older
   - Both are importable directly from the top-level package (e.g. `from gpx import convert_file`).
 - New `validation` module that validates GPX data against the GPX 1.1 schema (`gpx.xsd`) without any extra dependencies:
   - `validate()`: Validate a file path, a string of GPX content, or a `GPX` instance and return a `ValidationResult`.
+  - `validate_text()`: Validate a string that is always treated as GPX content (never as a file path), e.g. for untrusted input.
   - `ValidationResult`: Holds all issues, with `is_valid`, `errors` and `warnings` properties.
   - `ValidationIssue`: A single issue with a `severity`, `message`, `path` (e.g. `gpx > trk[0] > trkseg[2] > trkpt[14]`) and source `line` (when available).
   - `Severity`: Enum of `ERROR` and `WARNING`.
@@ -65,6 +66,7 @@ The **third number** is for emergencies when we need to start branches for older
 - GeoJSON output (`__geo_interface__`, `write_geojson()` and `gpx convert`) no longer contains Python object representations (with memory addresses) for extensions. Extensions have no GeoJSON representation and are now left out of the properties.
 - GeoJSON Features created for waypoints, routes and tracks without any properties now have `"properties": null`, as required by RFC 7946. They previously had no `properties` member, which strict GeoJSON readers reject.
 - `from_wkb()` now correctly reads geometries with M values (ISO `M`/`ZM` types and EWKB M flag) and EWKB geometries with an embedded SRID (e.g. PostGIS `ST_AsEWKB` output). These previously produced wrong coordinates without any error.
+- `from_string(..., strict=True)` no longer treats content that doesn't start with `<` as a file path to read. Such content is now reported as not well-formed XML.
 
 ## [2026.3.0](https://github.com/sgraaf/gpx/compare/2026.2.0...2026.3.0) - 2026-05-17
 

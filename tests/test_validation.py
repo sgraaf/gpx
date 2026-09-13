@@ -15,6 +15,7 @@ from gpx import (
     from_string,
     read_gpx,
     validate,
+    validate_text,
 )
 from gpx.types import Latitude, Longitude
 
@@ -315,6 +316,16 @@ class TestValidateSources:
         with pytest.raises(TypeError):
             validate(42)  # type: ignore[arg-type]
 
+    def test_validate_text_content_string(self) -> None:
+        content = (VALID_FIXTURES_DIR / "minimal.gpx").read_text("utf-8")
+        assert validate_text(content).is_valid
+
+    def test_validate_text_never_reads_a_file(self) -> None:
+        # A path-like string is content (and therefore not well-formed XML)
+        result = validate_text(str(VALID_FIXTURES_DIR / "minimal.gpx"))
+        assert not result.is_valid
+        assert "not well-formed XML" in _messages(result.errors)
+
 
 class TestRoundTrip:
     """Anything serialized by the library must validate clean."""
@@ -344,6 +355,13 @@ class TestStrictMode:
     def test_from_string_strict_raises_on_error(self) -> None:
         content = (INVALID_FIXTURES_DIR / "lat_too_high.gpx").read_text("utf-8")
         with pytest.raises(InvalidGPXError):
+            from_string(content, strict=True)
+
+    @pytest.mark.parametrize(
+        "content", [str(VALID_FIXTURES_DIR / "minimal.gpx"), "not xml at all"]
+    )
+    def test_from_string_strict_never_reads_a_file(self, content: str) -> None:
+        with pytest.raises(InvalidGPXError, match="not well-formed XML"):
             from_string(content, strict=True)
 
     def test_from_string_strict_allows_warnings(self) -> None:

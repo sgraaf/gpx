@@ -35,6 +35,7 @@ from .validation import (
     ValidationIssue,
     ValidationResult,
     validate,
+    validate_text,
 )
 from .waypoint import Waypoint
 
@@ -84,4 +85,5 @@ __all__ = [
     "strip_metadata",
     "trim",
     "validate",
+    "validate_text",
 ]

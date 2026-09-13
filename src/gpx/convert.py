@@ -18,7 +18,7 @@ from .track import Track
 from .track_segment import TrackSegment
 from .types import Latitude, Longitude, SupportsGeoInterface
 from .utils import extract_namespaces_from_string
-from .validation import InvalidGPXError, validate
+from .validation import InvalidGPXError, validate_text
 from .waypoint import Waypoint
 
 #: WKB geometry type codes
@@ -70,7 +70,7 @@ def from_string(gpx_str: str, *, strict: bool = False) -> GPX:
 
     """
     if strict:
-        result = validate(gpx_str)
+        result = validate_text(gpx_str)
         if not result.is_valid:
             raise InvalidGPXError(result)
 

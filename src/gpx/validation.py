@@ -701,8 +701,22 @@ def validate(source: str | Path | Any) -> ValidationResult:  # noqa: ANN401
         ...         print(issue)
 
     """
-    text = _resolve_source(source)
+    return validate_text(_resolve_source(source))
 
+
+def validate_text(text: str) -> ValidationResult:
+    """Validate a string of GPX content against the GPX 1.1 schema.
+
+    Unlike :func:`validate`, the string is always treated as GPX content, never
+    as a file path.
+
+    Args:
+        text: The GPX XML content to validate.
+
+    Returns:
+        A :class:`ValidationResult` holding all errors and warnings found.
+
+    """
     try:
         root, line_map = _parse_with_lines(text)
     except expat.ExpatError as e:
