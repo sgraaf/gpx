@@ -82,21 +82,7 @@ class Track(PointsMixin, GeoGPXModel):
                 ]
                 for trkseg in self.trkseg
             ],
-            "bbox": [
-                float(self.bounds[1]),
-                float(self.bounds[0]),
-                float(self.min_elevation),
-                float(self.bounds[3]),
-                float(self.bounds[2]),
-                float(self.max_elevation),
-            ]
-            if self._eles
-            else [
-                float(self.bounds[1]),
-                float(self.bounds[0]),
-                float(self.bounds[3]),
-                float(self.bounds[2]),
-            ],
+            "bbox": self._bbox,
         }
 
         # Exclude geometry fields from properties
