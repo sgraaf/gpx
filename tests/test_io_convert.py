@@ -228,6 +228,27 @@ class TestGeoJSONConversion:
         assert len(gpx2.rte) == len(sample_gpx.rte)
         assert len(gpx2.trk) == len(sample_gpx.trk)
 
+    def test_geo_interface_empty_route_and_track(self) -> None:
+        """Test that routes and tracks without points have no bbox."""
+        gpx = GPX(
+            rte=[Route()],
+            trk=[Track(), Track(trkseg=[TrackSegment()])],
+        )
+        features = gpx.__geo_interface__["features"]
+        assert [feature["geometry"] for feature in features] == [
+            {"type": "LineString", "coordinates": []},
+            {"type": "MultiLineString", "coordinates": []},
+            {"type": "MultiLineString", "coordinates": [[]]},
+        ]
+
+    def test_convert_empty_route_fixture_to_geojson(self, tmp_path: Path) -> None:
+        """Test converting a valid GPX file with an empty route to GeoJSON."""
+        fixture = Path(__file__).parent / "fixtures" / "valid" / "empty_route.gpx"
+        output_file = tmp_path / "output.geojson"
+        convert_file(fixture, output_file)
+        data = json.loads(output_file.read_text())
+        assert data["features"][0]["geometry"]["coordinates"] == []
+
 
 class TestKMLConversion:
     """Tests for KML conversion functionality."""

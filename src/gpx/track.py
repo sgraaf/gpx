@@ -73,7 +73,7 @@ class Track(PointsMixin, GeoGPXModel):
 
         """
         # Build MultiLineString coordinates from all segments
-        geometry = {
+        geometry: dict[str, Any] = {
             "type": "MultiLineString",
             "coordinates": [
                 [
@@ -82,8 +82,9 @@ class Track(PointsMixin, GeoGPXModel):
                 ]
                 for trkseg in self.trkseg
             ],
-            "bbox": self._bbox,
         }
+        if (bbox := self._bbox) is not None:
+            geometry["bbox"] = bbox
 
         # Exclude geometry fields from properties
         return build_geo_feature(geometry, self, exclude_fields={"trkseg"})

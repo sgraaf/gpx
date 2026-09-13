@@ -42,25 +42,28 @@ class PointsMixin:
 
         """
         # Build LineString coordinates from all route/track segment points
-        geometry = {
+        geometry: dict[str, Any] = {
             "type": "LineString",
             "coordinates": [
                 [float(coordinate) for coordinate in point._coordinates]
                 for point in self._points
             ],
-            "bbox": self._bbox,
         }
+        if (bbox := self._bbox) is not None:
+            geometry["bbox"] = bbox
 
         # Exclude geometry fields from properties
         return build_geo_feature(geometry, self, exclude_fields={"rtept", "trkpt"})
 
     @property
-    def _bbox(self) -> list[float]:
-        """The GeoJSON bounding box of the points.
+    def _bbox(self) -> list[float] | None:
+        """The GeoJSON bounding box of the points, or None if there are no points.
 
         The bounding box is ``[min_lon, min_lat, max_lon, max_lat]``, extended
         with the minimum and maximum elevation when any point has an elevation.
         """
+        if not self._points:
+            return None
         min_lat, min_lon, max_lat, max_lon = (float(bound) for bound in self.bounds)
         elevations = self._eles
         if elevations:
