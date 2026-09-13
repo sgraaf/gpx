@@ -235,6 +235,29 @@ class TestXMLParsing:
         result = parse_from_xml(TestModel, element)
         assert result["value"] is None
 
+    def test_parse_values_with_surrounding_whitespace(self) -> None:
+        """Test that non-string values ignore whitespace, as the validator does."""
+        gpx_str = """<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="t">
+  <wpt lat=" 52.0 " lon="4.0">
+    <ele>
+      10.5
+    </ele>
+    <time> 2024-01-01T00:00:00Z </time>
+    <name> Padded name </name>
+    <fix> 3d </fix>
+    <sat> 7 </sat>
+    <hdop> </hdop>
+  </wpt>
+</gpx>"""
+        waypoint = from_string(gpx_str, strict=True).wpt[0]
+        assert waypoint.lat == Decimal("52.0")
+        assert waypoint.ele == Decimal("10.5")
+        assert waypoint.time == dt.datetime(2024, 1, 1, tzinfo=dt.UTC)
+        assert waypoint.name == " Padded name "  # xsd:string preserves whitespace
+        assert waypoint.fix == "3d"
+        assert waypoint.sat == 7
+        assert waypoint.hdop is None
+
     def test_parse_from_xml_optional_list(self) -> None:
         """Test parse_from_xml with optional list field."""
 

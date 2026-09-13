@@ -332,7 +332,7 @@ def _parse_single_element(
         value_type: The type of the element value.
 
     Returns:
-        The parsed value, or None if the element is not found.
+        The parsed value, or None if the element is not found or empty.
 
     """
     child = element.find(_ns_tag(field_name, element))  # type: ignore[assignment]
@@ -340,9 +340,12 @@ def _parse_single_element(
         return None
     if has_from_xml(value_type):
         return value_type.from_xml(child)  # type: ignore[attr-defined, ty:unresolved-attribute]
-    if child.text is None:
+    # Non-string values (numbers, times, etc.) ignore surrounding whitespace,
+    # matching the XML Schema whitespace handling of their types.
+    text = child.text if value_type is str else (child.text or "").strip()
+    if not text:
         return None
-    return _parse_single_value(child.text, value_type)
+    return _parse_single_value(text, value_type)
 
 
 def parse_from_xml(cls: type[Any], element: ET.Element) -> dict[str, Any]:
