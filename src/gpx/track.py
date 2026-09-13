@@ -73,7 +73,7 @@ class Track(PointsMixin, GeoGPXModel):
 
         """
         # Build MultiLineString coordinates from all segments
-        geometry = {
+        geometry: dict[str, Any] = {
             "type": "MultiLineString",
             "coordinates": [
                 [
@@ -82,22 +82,9 @@ class Track(PointsMixin, GeoGPXModel):
                 ]
                 for trkseg in self.trkseg
             ],
-            "bbox": [
-                float(self.bounds[1]),
-                float(self.bounds[0]),
-                float(self.min_elevation),
-                float(self.bounds[3]),
-                float(self.bounds[2]),
-                float(self.max_elevation),
-            ]
-            if self._eles
-            else [
-                float(self.bounds[1]),
-                float(self.bounds[0]),
-                float(self.bounds[3]),
-                float(self.bounds[2]),
-            ],
         }
+        if (bbox := self._bbox) is not None:
+            geometry["bbox"] = bbox
 
         # Exclude geometry fields from properties
         return build_geo_feature(geometry, self, exclude_fields={"trkseg"})
@@ -140,14 +127,13 @@ class Track(PointsMixin, GeoGPXModel):
         return sum((trkseg.moving_duration for trkseg in self.trkseg), dt.timedelta())
 
     @property
-    def max_speed(self) -> float:
-        """The maximum speed of the track (in metres / second)."""
-        return max(trkseg.max_speed for trkseg in self.trkseg)
+    def _speeds(self) -> list[float]:
+        """The speeds between consecutive points within each segment.
 
-    @property
-    def min_speed(self) -> float:
-        """The minimum speed of the track (in metres / second)."""
-        return min(trkseg.min_speed for trkseg in self.trkseg)
+        Segments with fewer than two points contribute no speeds, and no speed
+        is computed across the gap between consecutive segments.
+        """
+        return [speed for trkseg in self.trkseg for speed in trkseg._speeds]
 
     @property
     def speed_profile(self) -> list[tuple[dt.datetime, float]]:

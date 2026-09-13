@@ -151,6 +151,16 @@ class TestExtensionsAccessors:
         assert (GARMIN_TPX_NS, "hr") in garmin_tpx_extensions
         assert (CUSTOM_NS, "hr") not in garmin_tpx_extensions
 
+    def test_contains_with_empty_element(self) -> None:
+        """Test __contains__ finds elements without text content."""
+        parent = ET.Element(f"{{{GARMIN_TPX_NS}}}TrackPointExtension")
+        ET.SubElement(parent, f"{{{GARMIN_TPX_NS}}}hr")
+        ext = Extensions(elements=[parent])
+        assert "hr" in ext
+        assert (GARMIN_TPX_NS, "hr") in ext
+        assert "TrackPointExtension" in ext
+        assert (CUSTOM_NS, "hr") not in ext
+
 
 class TestExtensionsMutation:
     """Test Extensions mutation methods."""

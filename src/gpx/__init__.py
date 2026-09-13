@@ -28,13 +28,14 @@ from .person import Person
 from .route import Route
 from .track import Track
 from .track_segment import TrackSegment
-from .types import Degrees, DGPSStation, Fix, Latitude, Longitude
+from .types import Degrees, DGPSStation, Fix, Latitude, Longitude, Year
 from .validation import (
     InvalidGPXError,
     Severity,
     ValidationIssue,
     ValidationResult,
     validate,
+    validate_text,
 )
 from .waypoint import Waypoint
 
@@ -62,6 +63,7 @@ __all__ = [
     "ValidationIssue",
     "ValidationResult",
     "Waypoint",
+    "Year",
     "convert_file",
     "crop",
     "detect_format",
@@ -84,4 +86,5 @@ __all__ = [
     "strip_metadata",
     "trim",
     "validate",
+    "validate_text",
 ]

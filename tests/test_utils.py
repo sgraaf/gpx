@@ -4,9 +4,14 @@ import datetime as dt
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Any
+from typing import Any, get_type_hints
 
+import pytest
+
+import gpx.utils
+from gpx import GPX, Extensions, Waypoint, from_string
 from gpx.link import Link
+from gpx.types import Fix, Latitude, Longitude
 from gpx.utils import (
     build_geo_properties,
     build_to_xml,
@@ -40,9 +45,35 @@ class TestNamespaceExtraction:
         assert namespaces["foo"] == "http://example.com/foo"
 
     def test_extract_namespaces_empty_string(self) -> None:
-        """Test extracting namespaces from empty string."""
-        namespaces = extract_namespaces_from_string("")
-        assert namespaces == {}
+        """Test that extracting namespaces from an empty string raises."""
+        with pytest.raises(ET.ParseError):
+            extract_namespaces_from_string("")
+
+    def test_extract_namespaces_ignores_nested_declarations(self) -> None:
+        """Test that namespaces redeclared on nested elements are not extracted."""
+        xml_str = (
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1">'
+            '<extensions><hr xmlns="http://example.com/ext" xmlns:foo="http://example.com/foo"/>'
+            "</extensions></gpx>"
+        )
+        namespaces = extract_namespaces_from_string(xml_str)
+        assert namespaces == {"": "http://www.topografix.com/GPX/1/1"}
+
+    def test_extract_namespaces_ignores_text_content(self) -> None:
+        """Test that xmlns-like text content is not mistaken for a declaration."""
+        xml_str = (
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1">'
+            '<desc>set xmlns="urn:foo" here</desc><!-- xmlns:bar="urn:bar" --></gpx>'
+        )
+        namespaces = extract_namespaces_from_string(xml_str)
+        assert namespaces == {"": "http://www.topografix.com/GPX/1/1"}
+
+    def test_extract_namespaces_from_bytes(self) -> None:
+        """Test extracting namespaces from a bytes document with a long prolog."""
+        comment = "<!-- " + "x" * 20_000 + " -->"
+        xml_bytes = f'<?xml version="1.0"?>{comment}<root xmlns:foo="http://example.com/foo"/>'.encode()
+        namespaces = extract_namespaces_from_string(xml_bytes)
+        assert namespaces == {"foo": "http://example.com/foo"}
 
 
 class TestTypeIntrospection:
@@ -102,8 +133,14 @@ class TestDatetimeFormatting:
         """Test to_isoformat with microseconds."""
         dt_obj = dt.datetime(2024, 1, 15, 10, 30, 45, 123456, tzinfo=dt.UTC)
         result = to_isoformat(dt_obj)
-        assert "2024-01-15T10:30:45.123" in result
-        assert result.endswith("Z")
+        assert result == "2024-01-15T10:30:45.123456Z"
+        assert from_isoformat(result) == dt_obj
+
+    def test_to_isoformat_with_milliseconds(self) -> None:
+        """Test to_isoformat with whole milliseconds."""
+        dt_obj = dt.datetime(2024, 1, 15, 10, 30, 45, 123000, tzinfo=dt.UTC)
+        result = to_isoformat(dt_obj)
+        assert result == "2024-01-15T10:30:45.123Z"
 
     def test_to_isoformat_without_microseconds(self) -> None:
         """Test to_isoformat without microseconds."""
@@ -128,6 +165,30 @@ class TestDatetimeFormatting:
 
 class TestXMLParsing:
     """Tests for XML parsing utilities."""
+
+    def test_type_hints_resolved_once_per_class(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that type hints are resolved once per class, not once per element."""
+        calls: list[type] = []
+
+        def counting_get_type_hints(cls: type) -> dict[str, Any]:
+            calls.append(cls)
+            return get_type_hints(cls)
+
+        monkeypatch.setattr(gpx.utils, "get_type_hints", counting_get_type_hints)
+        gpx.utils._field_specs.cache_clear()
+
+        gpx_str = (
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="t">'
+            + '<wpt lat="1" lon="1"><name>a</name></wpt>' * 100
+            + "</gpx>"
+        )
+        output = from_string(gpx_str).to_string()
+        from_string(output)
+
+        assert calls.count(Waypoint) == 1
+        assert calls.count(GPX) == 1
 
     def test_parse_from_xml_with_kw_only_field(self) -> None:
         """Test parse_from_xml skips KW_ONLY marker."""
@@ -173,6 +234,29 @@ class TestXMLParsing:
         element = ET.fromstring("<test><value></value></test>")
         result = parse_from_xml(TestModel, element)
         assert result["value"] is None
+
+    def test_parse_values_with_surrounding_whitespace(self) -> None:
+        """Test that non-string values ignore whitespace, as the validator does."""
+        gpx_str = """<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="t">
+  <wpt lat=" 52.0 " lon="4.0">
+    <ele>
+      10.5
+    </ele>
+    <time> 2024-01-01T00:00:00Z </time>
+    <name> Padded name </name>
+    <fix> 3d </fix>
+    <sat> 7 </sat>
+    <hdop> </hdop>
+  </wpt>
+</gpx>"""
+        waypoint = from_string(gpx_str, strict=True).wpt[0]
+        assert waypoint.lat == Decimal("52.0")
+        assert waypoint.ele == Decimal("10.5")
+        assert waypoint.time == dt.datetime(2024, 1, 1, tzinfo=dt.UTC)
+        assert waypoint.name == " Padded name "  # xsd:string preserves whitespace
+        assert waypoint.fix == "3d"
+        assert waypoint.sat == 7
+        assert waypoint.hdop is None
 
     def test_parse_from_xml_optional_list(self) -> None:
         """Test parse_from_xml with optional list field."""
@@ -323,3 +407,38 @@ class TestGeoProperties:
         obj = TestModel(flag=True)
         props = build_geo_properties(obj)
         assert props["flag"] is True
+
+    def test_build_geo_properties_excludes_extensions(self) -> None:
+        """build_geo_properties never includes extensions (no JSON representation)."""
+        extensions = Extensions(
+            elements=[ET.fromstring('<x:hr xmlns:x="urn:x">1</x:hr>')]
+        )
+        waypoint = Waypoint(
+            lat=Latitude("52"), lon=Longitude("4"), name="a", extensions=extensions
+        )
+        assert build_geo_properties(waypoint) == {"name": "a"}
+        assert (
+            has_geo_properties(
+                Waypoint(lat=Latitude("52"), lon=Longitude("4"), extensions=extensions)
+            )
+            is False
+        )
+
+    def test_build_geo_properties_with_str_subclass(self) -> None:
+        """build_geo_properties converts str subclasses to plain strings."""
+        waypoint = Waypoint(lat=Latitude("52"), lon=Longitude("4"), fix=Fix("3d"))
+        props = build_geo_properties(waypoint)
+        assert props["fix"] == "3d"
+        assert type(props["fix"]) is str
+
+    def test_build_geo_properties_rejects_unsupported_type(self) -> None:
+        """build_geo_properties raises for values without a JSON representation."""
+
+        @dataclass
+        class TestModel:
+            """Test model with an unsupported value type."""
+
+            value: object | None = None
+
+        with pytest.raises(TypeError, match="Cannot convert object"):
+            build_geo_properties(TestModel(value=object()))

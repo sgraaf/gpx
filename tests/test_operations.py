@@ -7,6 +7,7 @@ import pytest
 
 from gpx import (
     GPX,
+    Bounds,
     Metadata,
     Person,
     Route,
@@ -117,6 +118,59 @@ class TestCrop:
         assert len(dropped.wpt) == 0
 
 
+class TestMetadataBounds:
+    """Tests that operations keep the metadata bounds in sync with the points."""
+
+    @pytest.fixture
+    def bounded_gpx(self) -> GPX:
+        """A GPX with waypoints at (1, 1) and (60, 60) and matching bounds."""
+        return GPX(
+            metadata=Metadata(
+                bounds=Bounds(
+                    minlat=Latitude("1"),
+                    minlon=Longitude("1"),
+                    maxlat=Latitude("60"),
+                    maxlon=Longitude("60"),
+                )
+            ),
+            wpt=[
+                Waypoint(lat=Latitude("1"), lon=Longitude("1")),
+                Waypoint(lat=Latitude("60"), lon=Longitude("60")),
+            ],
+        )
+
+    def test_crop_recomputes_bounds(self, bounded_gpx: GPX) -> None:
+        cropped = crop(bounded_gpx, max_lat=10.0)
+        assert cropped.metadata is not None
+        assert cropped.metadata.bounds == Bounds(
+            minlat=Latitude("1"),
+            minlon=Longitude("1"),
+            maxlat=Latitude("1"),
+            maxlon=Longitude("1"),
+        )
+
+    def test_crop_removes_bounds_without_points(self, bounded_gpx: GPX) -> None:
+        cropped = crop(bounded_gpx, max_lat=0.0)
+        assert cropped.metadata is not None
+        assert cropped.metadata.bounds is None
+
+    def test_reduce_precision_recomputes_bounds(self, bounded_gpx: GPX) -> None:
+        bounded_gpx.wpt[1] = Waypoint(lat=Latitude("60.123456"), lon=Longitude("60"))
+        reduced = reduce_precision(bounded_gpx, coordinate_precision=2)
+        assert reduced.metadata is not None
+        assert reduced.metadata.bounds is not None
+        assert reduced.metadata.bounds.maxlat == Decimal("60.12")
+
+    def test_bounds_not_added_when_absent(self) -> None:
+        gpx = GPX(
+            metadata=Metadata(name="No bounds"),
+            wpt=[Waypoint(lat=Latitude("1"), lon=Longitude("1"))],
+        )
+        cropped = crop(gpx, max_lat=10.0)
+        assert cropped.metadata is not None
+        assert cropped.metadata.bounds is None
+
+
 class TestTrim:
     """Tests for the trim operation."""
 
@@ -169,6 +223,19 @@ class TestReverse:
 
         assert new_first_lat == pytest.approx(original_last_lat, rel=1e-3)
         assert new_last_lat == pytest.approx(original_first_lat, rel=1e-3)
+
+    @pytest.mark.parametrize(("routes", "tracks"), [(False, True), (True, False)])
+    def test_reverse_does_not_share_lists_with_input(
+        self, sample_gpx: GPX, *, routes: bool, tracks: bool
+    ) -> None:
+        """Mutating the result's route/track lists leaves the input unchanged."""
+        reversed_gpx = reverse(sample_gpx, routes=routes, tracks=tracks)
+        assert reversed_gpx.rte is not sample_gpx.rte
+        assert reversed_gpx.trk is not sample_gpx.trk
+
+        original_rte_count = len(sample_gpx.rte)
+        reversed_gpx.rte.append(Route())
+        assert len(sample_gpx.rte) == original_rte_count
 
     def test_reverse_defaults_to_both(self, sample_gpx: GPX) -> None:
         """By default, both routes and tracks are reversed."""
@@ -223,6 +290,7 @@ class TestStripMetadata:
         gpx = GPX()
         stripped = strip_metadata(gpx, name=True)
         assert stripped.metadata is None
+        assert stripped is not gpx
 
     def test_strip_all_metadata_preserves_nsmap(self, sample_gpx: GPX) -> None:
         """Stripping all metadata preserves the namespace mappings."""

@@ -28,14 +28,14 @@ import re
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
 from xml.parsers import expat
 
 from .base import GPX_NAMESPACE
-from .types import Fix
+from .types import Fix, Year
 
 #: GPX 1.0 namespace (unsupported; only used to give a helpful hint).
 GPX_10_NAMESPACE = "http://www.topografix.com/GPX/1/0"
@@ -136,18 +136,28 @@ class InvalidGPXError(ValueError):
         super().__init__(f"Invalid GPX ({count} {noun}):\n{summary}")
 
 
+#: The lexical space of ``xsd:decimal``: fixed-point notation only, so no
+#: exponents, ``NaN`` or ``Infinity``.
+_XSD_DECIMAL_PATTERN = re.compile(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)")
+
+
+def _xsd_decimal(text: str) -> Decimal | None:
+    """Parse ``text`` as an ``xsd:decimal``, or return None if it isn't one."""
+    text = text.strip()
+    if not _XSD_DECIMAL_PATTERN.fullmatch(text):
+        return None
+    return Decimal(text)
+
+
 def _decimal(text: str) -> tuple[Severity, str] | None:
-    try:
-        Decimal(text)
-    except InvalidOperation:
+    if _xsd_decimal(text) is None:
         return Severity.ERROR, f"'{text}' is not a valid decimal number"
     return None
 
 
 def _latitude(text: str) -> tuple[Severity, str] | None:
-    try:
-        value = Decimal(text)
-    except InvalidOperation:
+    value = _xsd_decimal(text)
+    if value is None:
         return Severity.ERROR, f"invalid latitude '{text}' (not a number)"
     if not -90 <= value <= 90:  # noqa: PLR2004
         return Severity.ERROR, f"invalid latitude '{text}' (must be in [-90, 90])"
@@ -155,9 +165,8 @@ def _latitude(text: str) -> tuple[Severity, str] | None:
 
 
 def _longitude(text: str) -> tuple[Severity, str] | None:
-    try:
-        value = Decimal(text)
-    except InvalidOperation:
+    value = _xsd_decimal(text)
+    if value is None:
         return Severity.ERROR, f"invalid longitude '{text}' (not a number)"
     if not -180 <= value <= 180:  # noqa: PLR2004
         return Severity.ERROR, f"invalid longitude '{text}' (must be in [-180, 180])"
@@ -173,9 +182,8 @@ def _longitude(text: str) -> tuple[Severity, str] | None:
 
 
 def _degrees(text: str) -> tuple[Severity, str] | None:
-    try:
-        value = Decimal(text)
-    except InvalidOperation:
+    value = _xsd_decimal(text)
+    if value is None:
         return Severity.ERROR, f"invalid degrees value '{text}' (not a number)"
     if not 0 <= value < 360:  # noqa: PLR2004
         return Severity.ERROR, f"invalid degrees value '{text}' (must be in [0, 360))"
@@ -210,8 +218,10 @@ def _non_negative_int(text: str) -> tuple[Severity, str] | None:
 
 
 def _gyear(text: str) -> tuple[Severity, str] | None:
-    # xsd:gYear, e.g. "2004" with an optional timezone suffix.
-    if not re.fullmatch(r"-?\d{4,}(?:Z|[+-]\d{2}:\d{2})?", text):
+    # Validate with the parser's own type, so valid years are guaranteed to parse
+    try:
+        Year(text)
+    except ValueError:
         return Severity.ERROR, f"invalid year '{text}' (must be a year, e.g. 2004)"
     return None
 
@@ -401,11 +411,12 @@ def _split_tag(tag: str) -> tuple[str, str]:
     return "", tag
 
 
-def _parse_with_lines(text: str) -> tuple[ET.Element, dict[int, int]]:
+def _parse_with_lines(text: str | bytes) -> tuple[ET.Element, dict[int, int]]:
     """Parse XML into an element tree, recording each element's source line.
 
     Args:
-        text: The XML content.
+        text: The XML content, as a string or as bytes (decoded according to
+            the XML declaration).
 
     Returns:
         A tuple of the root element and a mapping from ``id(element)`` to the
@@ -649,24 +660,27 @@ class _Validator:
         return f"unknown element <{local}>"
 
 
-def _resolve_source(source: str | Path | Any) -> str:  # noqa: ANN401
-    """Resolve a validation source to a string of GPX XML content.
+def _resolve_source(source: str | Path | Any) -> str | bytes:  # noqa: ANN401
+    """Resolve a validation source to GPX XML content.
+
+    Files are read as bytes, so the parser honors the encoding in their XML
+    declaration.
 
     Args:
         source: A file path, a string of GPX content, or a GPX instance.
 
     Returns:
-        The GPX XML content as a string.
+        The GPX XML content as a string or as bytes.
 
     """
     if isinstance(source, Path):
-        return source.read_text("utf-8")
+        return source.read_bytes()
     if isinstance(source, str):
         # A string that looks like XML is treated as content; otherwise it is
         # treated as a file path.
         if source.lstrip().startswith("<"):
             return source
-        return Path(source).read_text("utf-8")
+        return Path(source).read_bytes()
     # Assume a GPX instance (or anything serializable to a GPX string).
     if hasattr(source, "to_string"):
         return source.to_string()
@@ -693,8 +707,24 @@ def validate(source: str | Path | Any) -> ValidationResult:  # noqa: ANN401
         ...         print(issue)
 
     """
-    text = _resolve_source(source)
+    return validate_text(_resolve_source(source))
 
+
+def validate_text(text: str | bytes) -> ValidationResult:
+    """Validate a string of GPX content against the GPX 1.1 schema.
+
+    Unlike :func:`validate`, the string is always treated as GPX content, never
+    as a file path.
+
+    Args:
+        text: The GPX XML content to validate. May also be the encoded content
+            as bytes, which are decoded according to the XML declaration
+            (UTF-8 by default).
+
+    Returns:
+        A :class:`ValidationResult` holding all errors and warnings found.
+
+    """
     try:
         root, line_map = _parse_with_lines(text)
     except expat.ExpatError as e:

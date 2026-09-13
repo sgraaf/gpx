@@ -23,6 +23,13 @@ from .waypoint import Waypoint
 
 #: KML namespace
 KML_NAMESPACE = "http://www.opengis.net/kml/2.2"
+#: All supported KML namespaces: OGC KML 2.2 and the legacy Google Earth namespaces
+KML_NAMESPACES = (
+    KML_NAMESPACE,
+    "http://earth.google.com/kml/2.2",
+    "http://earth.google.com/kml/2.1",
+    "http://earth.google.com/kml/2.0",
+)
 
 
 def read_gpx(file_path: str | Path, *, strict: bool = False) -> GPX:
@@ -45,7 +52,8 @@ def read_gpx(file_path: str | Path, *, strict: bool = False) -> GPX:
         >>> gpx = read_gpx("path/to/file.gpx")
 
     """
-    return from_string(Path(file_path).read_text("utf-8"), strict=strict)
+    # Pass bytes so the parser honors the encoding in the XML declaration
+    return from_string(Path(file_path).read_bytes(), strict=strict)
 
 
 def read_geojson(file_path: str | Path, *, creator: str | None = None) -> GPX:
@@ -78,6 +86,10 @@ def read_kml(file_path: str | Path, *, creator: str | None = None) -> GPX:
     Returns:
         A GPX object.
 
+    Raises:
+        ValueError: If the root element is not a ``<kml>`` element in one of the
+            supported KML namespaces (or in no namespace).
+
     Example:
         >>> from gpx import read_kml
         >>> gpx = read_kml("path/to/file.kml")
@@ -85,6 +97,7 @@ def read_kml(file_path: str | Path, *, creator: str | None = None) -> GPX:
     """
     # ET.parse handles XML declarations (including encoding) natively.
     root = ET.parse(file_path).getroot()
+    ns = _kml_namespace_prefix(root)
 
     gpx_kwargs: dict[str, Any] = {}
     if creator:
@@ -97,20 +110,18 @@ def read_kml(file_path: str | Path, *, creator: str | None = None) -> GPX:
     metadata_desc: str | None = None
 
     # Get document name/description if present
-    doc = _find_kml_element(root, "Document")
+    doc = root.find(f"{ns}Document")
     if doc is not None:
-        name_elem = _find_kml_element(doc, "name")
+        name_elem = doc.find(f"{ns}name")
         if name_elem is not None and name_elem.text:
             metadata_name = name_elem.text
-        desc_elem = _find_kml_element(doc, "description")
+        desc_elem = doc.find(f"{ns}description")
         if desc_elem is not None and desc_elem.text:
             metadata_desc = desc_elem.text
 
     # Find all placemarks
-    placemarks = _find_all_kml_elements(root, "Placemark")
-
-    for placemark in placemarks:
-        _process_kml_placemark(placemark, waypoints, routes, tracks)
+    for placemark in root.iterfind(f".//{ns}Placemark"):
+        _process_kml_placemark(placemark, ns, waypoints, routes, tracks)
 
     if metadata_name or metadata_desc:
         gpx_kwargs["metadata"] = Metadata(name=metadata_name, desc=metadata_desc)
@@ -218,54 +229,48 @@ def _write_file(gpx: GPX, file_path: Path, file_format: str) -> None:
         raise ValueError(msg)
 
 
-def _find_kml_element(parent: ET.Element, tag: str) -> ET.Element | None:
-    """Find a KML element, handling namespace variations.
+def _kml_namespace_prefix(root: ET.Element) -> str:
+    """Return the Clark-notation namespace prefix (``"{namespace}"``) of a KML document.
 
-    Tries to find the element with the KML namespace first, then without.
+    Args:
+        root: The root element of the KML document.
+
+    Returns:
+        The namespace prefix, or an empty string for a KML document without a
+        namespace.
+
+    Raises:
+        ValueError: If the root element is not a ``<kml>`` element in one of the
+            supported KML namespaces (or in no namespace).
+
     """
-    # Try with full namespace tag
-    elem = parent.find(f"{{{KML_NAMESPACE}}}{tag}")
-    if elem is not None:
-        return elem
-
-    # Try without namespace
-    elem = parent.find(tag)
-    if elem is not None:
-        return elem
-
-    return None
-
-
-def _find_all_kml_elements(parent: ET.Element, tag: str) -> list[ET.Element]:
-    """Find all KML elements with a given tag, handling namespace variations."""
-    elements = []
-
-    # Try with full namespace
-    elements.extend(parent.findall(f".//{{{KML_NAMESPACE}}}{tag}"))
-
-    # Try without namespace
-    elements.extend(parent.findall(f".//{tag}"))
-
-    return elements
+    for namespace in KML_NAMESPACES:
+        if root.tag == f"{{{namespace}}}kml":
+            return f"{{{namespace}}}"
+    if root.tag == "kml":
+        return ""
+    msg = f"Unsupported KML document: unexpected root element {root.tag!r}"
+    raise ValueError(msg)
 
 
 def _process_kml_placemark(  # noqa: C901
     placemark: ET.Element,
+    ns: str,
     waypoints: list[Waypoint],
     routes: list[Route],
     tracks: list[Track],
 ) -> None:
     """Process a KML Placemark and add to appropriate list."""
     # Get name and description
-    name_elem = _find_kml_element(placemark, "name")
+    name_elem = placemark.find(f"{ns}name")
     name = name_elem.text.strip() if name_elem is not None and name_elem.text else None
-    desc_elem = _find_kml_element(placemark, "description")
+    desc_elem = placemark.find(f"{ns}description")
     desc = desc_elem.text.strip() if desc_elem is not None and desc_elem.text else None
 
     # Check for Point
-    point = _find_kml_element(placemark, "Point")
+    point = placemark.find(f"{ns}Point")
     if point is not None:
-        coords_elem = _find_kml_element(point, "coordinates")
+        coords_elem = point.find(f"{ns}coordinates")
         if coords_elem is not None and coords_elem.text:
             coords = _parse_kml_coordinates(coords_elem.text)
             if coords:
@@ -274,9 +279,9 @@ def _process_kml_placemark(  # noqa: C901
         return
 
     # Check for LineString
-    linestring = _find_kml_element(placemark, "LineString")
+    linestring = placemark.find(f"{ns}LineString")
     if linestring is not None:
-        coords_elem = _find_kml_element(linestring, "coordinates")
+        coords_elem = linestring.find(f"{ns}coordinates")
         if coords_elem is not None and coords_elem.text:
             coords = _parse_kml_coordinates(coords_elem.text)
             if coords:
@@ -285,13 +290,13 @@ def _process_kml_placemark(  # noqa: C901
         return
 
     # Check for MultiGeometry containing LineStrings (for tracks)
-    multigeom = _find_kml_element(placemark, "MultiGeometry")
+    multigeom = placemark.find(f"{ns}MultiGeometry")
     if multigeom is not None:
-        linestrings = _find_all_kml_elements(multigeom, "LineString")
+        linestrings = multigeom.findall(f".//{ns}LineString")
         if linestrings:
             segments = []
             for ls in linestrings:
-                coords_elem = _find_kml_element(ls, "coordinates")
+                coords_elem = ls.find(f"{ns}coordinates")
                 if coords_elem is not None and coords_elem.text:
                     coords = _parse_kml_coordinates(coords_elem.text)
                     if coords:

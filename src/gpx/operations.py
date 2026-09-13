@@ -4,8 +4,9 @@ This module provides the operations behind the ``gpx edit`` and ``gpx merge``
 CLI commands as a reusable, importable API.
 
 All operations are pure: they never mutate the input, but return a new
-:class:`~gpx.gpx.GPX` instance instead. Namespace mappings (``nsmap``) and
-extensions are preserved.
+:class:`~gpx.gpx.GPX` instance (with new point, route and track lists) instead.
+Unchanged waypoints, routes, tracks and extensions are shared with the input
+rather than copied. Namespace mappings (``nsmap``) and extensions are preserved.
 """
 
 from __future__ import annotations
@@ -16,6 +17,7 @@ from math import cos, radians, sqrt
 from statistics import fmean
 from typing import TYPE_CHECKING
 
+from .bounds import Bounds
 from .gpx import GPX
 from .types import Latitude, Longitude
 
@@ -29,12 +31,46 @@ if TYPE_CHECKING:
     from .waypoint import Waypoint
 
 
+def _refresh_bounds(gpx: GPX) -> GPX:
+    """Return ``gpx`` with its metadata bounds recomputed from its points.
+
+    Operations that drop or move points call this so the ``<bounds>`` element
+    keeps describing the extent of the coordinates in the file. Bounds are only
+    recomputed when present, and removed when no points remain.
+    """
+    metadata = gpx.metadata
+    if metadata is None or metadata.bounds is None:
+        return gpx
+
+    points = [
+        *gpx.wpt,
+        *(point for route in gpx.rte for point in route.rtept),
+        *(
+            point
+            for track in gpx.trk
+            for segment in track.trkseg
+            for point in segment.trkpt
+        ),
+    ]
+    bounds = (
+        Bounds(
+            minlat=min(point.lat for point in points),
+            minlon=min(point.lon for point in points),
+            maxlat=max(point.lat for point in points),
+            maxlon=max(point.lon for point in points),
+        )
+        if points
+        else None
+    )
+    return replace(gpx, metadata=replace(metadata, bounds=bounds))
+
+
 def filter_points(gpx: GPX, predicate: Callable[[Waypoint], bool]) -> GPX:
     """Return a new GPX with each point list filtered by ``predicate``.
 
     Waypoints, route points and track points for which ``predicate`` returns
     False are dropped. Routes, track segments and tracks that end up empty
-    are dropped as well.
+    are dropped as well. Metadata bounds (if present) are recomputed.
 
     Args:
         gpx: The GPX instance to filter.
@@ -67,7 +103,7 @@ def filter_points(gpx: GPX, predicate: Callable[[Waypoint], bool]) -> GPX:
         if new_trkseg:
             new_trk.append(replace(track, trkseg=new_trkseg))
 
-    return replace(gpx, wpt=new_wpt, rte=new_rte, trk=new_trk)
+    return _refresh_bounds(replace(gpx, wpt=new_wpt, rte=new_rte, trk=new_trk))
 
 
 def _map_points(gpx: GPX, transform: Callable[[Waypoint], Waypoint]) -> GPX:
@@ -75,6 +111,7 @@ def _map_points(gpx: GPX, transform: Callable[[Waypoint], Waypoint]) -> GPX:
 
     Waypoints, route points and track points are all transformed. The
     structure of the GPX (routes, tracks, segments) is left unchanged.
+    Metadata bounds (if present) are recomputed.
     """
     new_wpt = [transform(w) for w in gpx.wpt]
     new_rte = [
@@ -90,7 +127,7 @@ def _map_points(gpx: GPX, transform: Callable[[Waypoint], Waypoint]) -> GPX:
         )
         for track in gpx.trk
     ]
-    return replace(gpx, wpt=new_wpt, rte=new_rte, trk=new_trk)
+    return _refresh_bounds(replace(gpx, wpt=new_wpt, rte=new_rte, trk=new_trk))
 
 
 def crop(
@@ -195,8 +232,8 @@ def reverse(gpx: GPX, *, routes: bool = True, tracks: bool = True) -> GPX:
         >>> reversed_gpx = reverse(gpx)
 
     """
-    new_rte = gpx.rte
-    new_trk = gpx.trk
+    new_rte = list(gpx.rte)
+    new_trk = list(gpx.trk)
 
     if routes:
         new_rte = [
@@ -259,7 +296,7 @@ def strip_metadata(  # noqa: PLR0913
 
     metadata = gpx.metadata
     if metadata is None:
-        return gpx
+        return replace(gpx)
 
     if name:
         metadata = replace(metadata, name=None)
@@ -504,7 +541,7 @@ def simplify(gpx: GPX, tolerance: float) -> GPX:
         for track in gpx.trk
     ]
 
-    return replace(gpx, rte=new_rte, trk=new_trk)
+    return _refresh_bounds(replace(gpx, rte=new_rte, trk=new_trk))
 
 
 def smooth(
@@ -583,7 +620,7 @@ def smooth(
         for track in gpx.trk
     ]
 
-    return replace(gpx, rte=new_rte, trk=new_trk)
+    return _refresh_bounds(replace(gpx, rte=new_rte, trk=new_trk))
 
 
 def shift_time(gpx: GPX, delta: dt.timedelta) -> GPX:

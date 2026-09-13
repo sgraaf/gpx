@@ -580,6 +580,29 @@ class TestHelperFunctions:
         assert dt.month == 1
         assert dt.day == 15
 
+    @pytest.mark.parametrize(
+        ("dt_str", "expected"),
+        [
+            (
+                "2024-01-15T10:30:00.5Z",
+                dt.datetime(2024, 1, 15, 10, 30, 0, 500000, tzinfo=dt.UTC),
+            ),
+            (
+                "2024-01-15T12:30:00+02:00",
+                dt.datetime(2024, 1, 15, 10, 30, tzinfo=dt.UTC),
+            ),
+            (
+                "2024-01-15T10:30",
+                dt.datetime(2024, 1, 15, 10, 30, tzinfo=dt.UTC),
+            ),
+        ],
+    )
+    def test_parse_datetime_iso_variants(
+        self, dt_str: str, expected: dt.datetime
+    ) -> None:
+        """Test parsing fractional seconds, UTC offsets and naive (UTC) datetimes."""
+        assert _parse_datetime(dt_str) == expected
+
     def test_parse_datetime_invalid(self) -> None:
         """Test parsing invalid datetime."""
         with pytest.raises(ValueError, match="Invalid datetime format"):

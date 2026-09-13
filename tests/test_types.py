@@ -1,10 +1,11 @@
 """Tests for gpx.types module."""
 
+import copy
 from decimal import Decimal
 
 import pytest
 
-from gpx.types import Degrees, DGPSStation, Fix, Latitude, Longitude
+from gpx.types import Degrees, DGPSStation, Fix, Latitude, Longitude, Year
 
 
 class TestLatitude:
@@ -269,3 +270,77 @@ class TestDGPSStation:
         """Test that None raises ValueError."""
         with pytest.raises(ValueError, match="Invalid DGPS station value"):
             DGPSStation(None)  # type: ignore[arg-type, ty:invalid-argument-type]
+
+
+class TestNonFiniteDecimalTypes:
+    """Tests that NaN and Infinity are rejected with a ValueError."""
+
+    @pytest.mark.parametrize("value", ["NaN", "sNaN", "Infinity", "-Infinity"])
+    @pytest.mark.parametrize(
+        ("decimal_type", "message"),
+        [
+            (Latitude, "Invalid latitude value"),
+            (Longitude, "Invalid longitude value"),
+            (Degrees, "Invalid degrees value"),
+        ],
+    )
+    def test_non_finite_value_raises_value_error(
+        self, decimal_type: type[Decimal], message: str, value: str
+    ) -> None:
+        with pytest.raises(ValueError, match=message):
+            decimal_type(value)
+
+
+class TestYear:
+    """Tests for the Year type."""
+
+    @pytest.mark.parametrize(
+        ("value", "year", "timezone"),
+        [
+            ("2004", 2004, None),
+            ("2004Z", 2004, "Z"),
+            ("2004+02:00", 2004, "+02:00"),
+            ("2004-05:30", 2004, "-05:30"),
+            (" 2004 ", 2004, None),
+            ("-0044", -44, None),
+            ("12345", 12345, None),
+            (2004, 2004, None),
+        ],
+    )
+    def test_valid_year(
+        self, value: str | int, year: int, timezone: str | None
+    ) -> None:
+        """Test creating Year from integers and xsd:gYear text."""
+        result = Year(value)
+        assert result == year
+        assert result.timezone == timezone
+        assert isinstance(result, int)
+
+    @pytest.mark.parametrize(
+        "value", ["last year", "04", "2004z", "2004+2:00", "2004.0", "+2004", ""]
+    )
+    def test_invalid_year(self, value: str) -> None:
+        """Test that text that is not an xsd:gYear raises ValueError."""
+        with pytest.raises(ValueError, match="Invalid year value"):
+            Year(value)
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("2004Z", "2004Z"),
+            (" 2004+02:00 ", "2004+02:00"),
+            (999, "0999"),
+            ("-0044", "-0044"),
+            (12345, "12345"),
+        ],
+    )
+    def test_str_is_xsd_gyear(self, value: str | int, expected: str) -> None:
+        """Test that str() renders a valid xsd:gYear, including the timezone."""
+        assert str(Year(value)) == expected
+        assert f"{Year(value)}" == expected
+
+    def test_copies_preserve_timezone(self) -> None:
+        """Test that copying (or re-wrapping) a Year keeps its timezone."""
+        year = Year("2004Z")
+        assert copy.deepcopy(year).timezone == "Z"
+        assert Year(year).timezone == "Z"

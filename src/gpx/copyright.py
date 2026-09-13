@@ -9,6 +9,8 @@ from __future__ import annotations
 
 from dataclasses import KW_ONLY, dataclass
 
+from gpx.types import Year  # noqa: TC001
+
 from .base import GPXModel
 
 
@@ -21,7 +23,8 @@ class Copyright(GPXModel):
 
     Args:
         author: Copyright holder (e.g. TopoSoft, Inc.)
-        year: Year of copyright. Defaults to None.
+        year: Year of copyright (an ``xsd:gYear``, e.g. ``Year(2004)``). Defaults
+            to None.
         license: Link to external file containing license text. Defaults to None.
 
     """
@@ -30,5 +33,5 @@ class Copyright(GPXModel):
 
     author: str
     _: KW_ONLY
-    year: int | None = None
+    year: Year | None = None
     license: str | None = None

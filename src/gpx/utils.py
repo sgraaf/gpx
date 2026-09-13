@@ -13,14 +13,14 @@ This allows automatic determination of attributes vs elements based on type hint
 from __future__ import annotations
 
 import datetime as dt
-import re
 import xml.etree.ElementTree as ET
-from dataclasses import fields
+from dataclasses import dataclass, fields
+from decimal import Decimal
+from functools import cache
 from typing import (
     TYPE_CHECKING,
     Any,
-    SupportsFloat,
-    SupportsInt,
+    Literal,
     get_args,
     get_origin,
     get_type_hints,
@@ -28,6 +28,13 @@ from typing import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+#: Number of characters (or bytes) fed to the parser at a time when scanning for
+#: the root element's namespace declarations.
+_NAMESPACE_SCAN_CHUNK_SIZE = 8192
+
+#: Fields without a JSON representation, which are never GeoJSON properties.
+_NON_GEO_PROPERTY_FIELDS = frozenset({"extensions"})
 
 
 def _get_namespace(element: ET.Element) -> str:
@@ -45,34 +52,47 @@ def _get_namespace(element: ET.Element) -> str:
     return ""
 
 
-def extract_namespaces_from_string(xml_string: str) -> dict[str, str]:
-    """Extract namespace prefix mappings from an XML string.
+def extract_namespaces_from_string(xml_string: str | bytes) -> dict[str, str]:
+    """Extract the namespace prefix mappings declared on the root element.
 
-    This function extracts all namespace declarations (xmlns attributes) from
-    the XML string using regex, before ElementTree parsing which loses prefix info.
+    ElementTree parsing loses namespace prefix information, so the declarations
+    are collected with an incremental parser that stops at the root element.
+    Declarations on nested elements (e.g. a default namespace redeclared on an
+    extension element) are scoped to their own subtree and are not included.
 
     Args:
-        xml_string: The XML string to extract namespaces from.
+        xml_string: The XML document to extract namespaces from.
 
     Returns:
         A dictionary mapping namespace prefixes to URIs. The default namespace
         (if present) is mapped to the empty string key.
 
+    Raises:
+        xml.etree.ElementTree.ParseError: If the document has no root element, or
+            is not well-formed before the end of the root element's start tag.
+
     """
     namespaces: dict[str, str] = {}
+    parser = ET.XMLPullParser(events=("start-ns", "start"))
 
-    # Match xmlns declarations: xmlns="..." or xmlns:prefix="..."
-    # Pattern matches both default namespace and prefixed namespaces
-    xmlns_pattern = re.compile(r'xmlns(?::([a-zA-Z0-9_-]+))?=["\']([^"\']+)["\']')
+    def root_reached() -> bool:
+        for event in parser.read_events():
+            match event:
+                case ("start-ns", (str() as prefix, str() as uri)):
+                    namespaces[prefix] = uri
+                case _:  # The root element's "start" event
+                    return True
+        return False
 
-    for match in xmlns_pattern.finditer(xml_string):
-        prefix = match.group(1)  # None for default namespace
-        uri = match.group(2)
+    for offset in range(0, len(xml_string), _NAMESPACE_SCAN_CHUNK_SIZE):
+        parser.feed(xml_string[offset : offset + _NAMESPACE_SCAN_CHUNK_SIZE])
+        if root_reached():
+            return namespaces
 
-        # Use empty string for default namespace (xmlns="...")
-        key = prefix or ""
-        namespaces[key] = uri
-
+    # The parser may defer large tokens while it waits for more input; closing
+    # it processes the remainder (and raises if there is no root element).
+    parser.close()
+    root_reached()
     return namespaces
 
 
@@ -99,10 +119,18 @@ def from_isoformat(dt_str: str) -> dt.datetime:
 
 
 def to_isoformat(dt: dt.datetime) -> str:
-    """Convert a `datetime` object to a string in ISO 8601 format."""
-    return dt.isoformat(
-        timespec="milliseconds" if dt.microsecond else "seconds"
-    ).replace("+00:00", "Z")
+    """Convert a `datetime` object to a string in ISO 8601 format.
+
+    Fractional seconds are written with the fewest digits (none, milliseconds
+    or microseconds) that represent the time without loss.
+    """
+    if not dt.microsecond:
+        timespec = "seconds"
+    elif dt.microsecond % 1000 == 0:
+        timespec = "milliseconds"
+    else:
+        timespec = "microseconds"
+    return dt.isoformat(timespec=timespec).replace("+00:00", "Z")
 
 
 def is_optional(field_type: type) -> bool:
@@ -200,6 +228,56 @@ def has_to_xml(obj: Any) -> bool:  # noqa: ANN401
     return hasattr(obj, "to_xml") and callable(obj.to_xml)
 
 
+@dataclass(frozen=True, slots=True)
+class _FieldSpec:
+    """How a dataclass field maps to XML.
+
+    Args:
+        name: The field name (and XML attribute / child element name).
+        kind: ``"attribute"`` for required fields, ``"element"`` for optional
+            fields and ``"list"`` for list fields (repeated child elements).
+        type: The attribute type, the optional element's inner type, or the
+            list's item type.
+
+    """
+
+    name: str
+    kind: Literal["attribute", "element", "list"]
+    type: Any
+
+
+@cache
+def _field_specs(cls: type[Any]) -> tuple[_FieldSpec, ...]:
+    """Return the XML mapping of a dataclass's fields.
+
+    Resolving the (string) type annotations is expensive, so the result is
+    computed once per class instead of once per parsed or serialized element.
+
+    Args:
+        cls: The dataclass type.
+
+    Returns:
+        The field specs, in field definition order.
+
+    """
+    type_hints = get_type_hints(cls)
+    specs: list[_FieldSpec] = []
+    for field in fields(cls):
+        # Skip KW_ONLY marker
+        if field.name == "_":
+            continue
+        field_type = type_hints.get(field.name, field.type)
+        inner_type = get_inner_type(field_type)
+        # Lists are always treated as optional child elements (even without | None)
+        if is_list_type(inner_type):
+            specs.append(_FieldSpec(field.name, "list", get_list_item_type(inner_type)))
+        elif is_optional(field_type):
+            specs.append(_FieldSpec(field.name, "element", inner_type))
+        else:
+            specs.append(_FieldSpec(field.name, "attribute", field_type))
+    return tuple(specs)
+
+
 def _parse_list_elements(
     element: ET.Element,
     field_name: str,
@@ -254,7 +332,7 @@ def _parse_single_element(
         value_type: The type of the element value.
 
     Returns:
-        The parsed value, or None if the element is not found.
+        The parsed value, or None if the element is not found or empty.
 
     """
     child = element.find(_ns_tag(field_name, element))  # type: ignore[assignment]
@@ -262,9 +340,12 @@ def _parse_single_element(
         return None
     if has_from_xml(value_type):
         return value_type.from_xml(child)  # type: ignore[attr-defined, ty:unresolved-attribute]
-    if child.text is None:
+    # Non-string values (numbers, times, etc.) ignore surrounding whitespace,
+    # matching the XML Schema whitespace handling of their types.
+    text = child.text if value_type is str else (child.text or "").strip()
+    if not text:
         return None
-    return _parse_single_value(child.text, value_type)
+    return _parse_single_value(text, value_type)
 
 
 def parse_from_xml(cls: type[Any], element: ET.Element) -> dict[str, Any]:
@@ -291,49 +372,65 @@ def parse_from_xml(cls: type[Any], element: ET.Element) -> dict[str, Any]:
         ValueError: If a required attribute is missing.
 
     """
-    type_hints = get_type_hints(cls)
     result: dict[str, Any] = {}
 
-    for field in fields(cls):
-        # Skip KW_ONLY marker
-        if field.name == "_":
-            continue
-
-        field_type = type_hints.get(field.name, field.type)
-
-        # Lists are always treated as optional child elements (even without | None)
-        if is_list_type(field_type):
-            item_type = get_list_item_type(field_type)
-            result[field.name] = _parse_list_elements(element, field.name, item_type)
-        elif is_optional(field_type):
-            # Optional field → parse as XML child element
-            inner_type = get_inner_type(field_type)
-
-            # Check if it's a list of models (Optional[list[T]])
-            if is_list_type(inner_type):
-                item_type = get_list_item_type(inner_type)
-                result[field.name] = _parse_list_elements(
-                    element, field.name, item_type
-                )
-            else:
-                # Single optional element
-                result[field.name] = _parse_single_element(
-                    element, field.name, inner_type
-                )
+    for spec in _field_specs(cls):
+        if spec.kind == "list":
+            result[spec.name] = _parse_list_elements(element, spec.name, spec.type)
+        elif spec.kind == "element":
+            result[spec.name] = _parse_single_element(element, spec.name, spec.type)
         else:
-            # Required field → parse as XML attribute
-            value = element.get(field.name)
+            value = element.get(spec.name)
             if value is None:
-                msg = (
-                    f"{cls.__name__} element missing required '{field.name}' attribute"
-                )
+                msg = f"{cls.__name__} element missing required '{spec.name}' attribute"
                 raise ValueError(msg)
-            result[field.name] = field_type(value)
+            result[spec.name] = spec.type(value)
 
     return result
 
 
-def build_to_xml(  # noqa: C901, PLR0912
+def _to_xml_text(value: Any) -> str:  # noqa: ANN401
+    """Convert a simple value to its XML text representation.
+
+    Args:
+        value: The value to convert.
+
+    Returns:
+        The XML text. Datetimes are written in ISO 8601 format and decimals in
+        fixed-point notation, since ``xsd:decimal`` does not allow exponents
+        (``str(Decimal("0.00000001"))`` is ``"1E-8"``).
+
+    """
+    if isinstance(value, dt.datetime):
+        return to_isoformat(value)
+    if isinstance(value, Decimal):
+        return format(value, "f")
+    return str(value)
+
+
+def _append_child(
+    element: ET.Element,
+    tag: str,
+    value: Any,  # noqa: ANN401
+    nsmap: dict[str | None, str] | None,
+) -> None:
+    """Append ``value`` to ``element`` as a child element named ``tag``.
+
+    Args:
+        element: The parent XML element.
+        tag: The child element's tag name (without namespace).
+        value: A nested model (with a ``to_xml()`` method) or a simple value.
+        nsmap: Optional namespace mapping for nested models.
+
+    """
+    if has_to_xml(value):
+        element.append(value.to_xml(tag=tag, nsmap=nsmap))
+        return
+    child = ET.SubElement(element, _ns_tag(tag, element))
+    child.text = _to_xml_text(value)
+
+
+def build_to_xml(
     obj: Any,  # noqa: ANN401
     element: ET.Element,
     nsmap: dict[str | None, str] | None = None,
@@ -355,61 +452,22 @@ def build_to_xml(  # noqa: C901, PLR0912
         nsmap: Optional namespace mapping for child elements.
 
     """
-    type_hints = get_type_hints(obj.__class__)
-
-    for field in fields(obj):
-        # Skip KW_ONLY marker and nsmap field (used internally for namespace preservation)
-        if field.name in {"_", "nsmap"}:
+    for spec in _field_specs(type(obj)):
+        # Skip nsmap field (used internally for namespace preservation)
+        if spec.name == "nsmap":
             continue
 
-        field_type = type_hints.get(field.name, field.type)
-        value = getattr(obj, field.name)
-
+        value = getattr(obj, spec.name)
         if value is None:
-            continue  # Skip None values
+            continue
 
-        # Lists are always treated as optional child elements (even without | None)
-        if is_list_type(field_type) and isinstance(value, list):
-            # List of items
+        if spec.kind == "list":
             for item in value:
-                if has_to_xml(item):
-                    # Nested model with to_xml
-                    child = item.to_xml(tag=field.name, nsmap=nsmap)
-                    element.append(child)
-                else:
-                    # Simple type
-                    child = ET.SubElement(element, _ns_tag(field.name, element))
-                    child.text = str(item)
-        elif is_optional(field_type):
-            # Optional field → serialize as XML child element
-            inner_type = get_inner_type(field_type)
-
-            # Check if it's a list (Optional[list[T]])
-            if is_list_type(inner_type) and isinstance(value, list):
-                # List of items
-                for item in value:
-                    if has_to_xml(item):
-                        # Nested model with to_xml
-                        child = item.to_xml(tag=field.name, nsmap=nsmap)
-                        element.append(child)
-                    else:
-                        # Simple type
-                        child = ET.SubElement(element, _ns_tag(field.name, element))
-                        child.text = str(item)
-            elif has_to_xml(value):
-                # Single nested model
-                child = value.to_xml(tag=field.name, nsmap=nsmap)
-                element.append(child)
-            else:
-                # Simple type - handle datetime specially
-                child = ET.SubElement(element, _ns_tag(field.name, element))
-                if isinstance(value, dt.datetime):
-                    child.text = to_isoformat(value)
-                else:
-                    child.text = str(value)
+                _append_child(element, spec.name, item, nsmap)
+        elif spec.kind == "element":
+            _append_child(element, spec.name, value, nsmap)
         else:
-            # Required field → serialize as XML attribute
-            element.set(field.name, str(value))
+            element.set(spec.name, _to_xml_text(value))
 
 
 def has_geo_properties(obj: Any, exclude_fields: Iterable[str] | None = None) -> bool:  # noqa: ANN401
@@ -426,24 +484,19 @@ def has_geo_properties(obj: Any, exclude_fields: Iterable[str] | None = None) ->
         True if any optional fields (excluding specified ones) are set, False otherwise.
 
     """
-    exclude_fields = set() if exclude_fields is None else set(exclude_fields)
+    exclude_fields = _NON_GEO_PROPERTY_FIELDS.union(exclude_fields or ())
 
-    type_hints = get_type_hints(obj.__class__)
-
-    for field in fields(obj):
-        # Skip KW_ONLY marker and excluded fields
-        if field.name == "_" or field.name in exclude_fields:
+    for spec in _field_specs(type(obj)):
+        if spec.name in exclude_fields:
             continue
 
-        field_type = type_hints.get(field.name, field.type)
-        value = getattr(obj, field.name)
+        value = getattr(obj, spec.name)
 
-        # Check if this is an optional field with a value
         # Lists are considered optional and checked for non-empty
-        if is_list_type(field_type):
-            if value:  # Non-empty list
+        if spec.kind == "list":
+            if value:
                 return True
-        elif is_optional(field_type) and value is not None:
+        elif spec.kind == "element" and value is not None:
             return True
 
     return False
@@ -467,31 +520,28 @@ def build_geo_properties(
         A dictionary mapping field names to JSON-serializable values.
 
     """
-    exclude_fields = set() if exclude_fields is None else set(exclude_fields)
+    exclude_fields = _NON_GEO_PROPERTY_FIELDS.union(exclude_fields or ())
 
-    type_hints = get_type_hints(obj.__class__)
     properties: dict[str, Any] = {}
 
-    for field in fields(obj):
-        # Skip KW_ONLY marker and excluded fields
-        if field.name == "_" or field.name in exclude_fields:
+    for spec in _field_specs(type(obj)):
+        if spec.name in exclude_fields:
             continue
 
-        field_type = type_hints.get(field.name, field.type)
-        value = getattr(obj, field.name)
+        value = getattr(obj, spec.name)
 
         # Skip None values
         if value is None:
             continue
 
         # Handle lists
-        if is_list_type(field_type) and isinstance(value, list):
+        if spec.kind == "list":
             if not value:
                 continue  # Skip empty lists
 
             # Check if list items have __geo_interface__ property or to_dict-like behavior
             if hasattr(value[0], "href"):  # Link objects
-                properties[field.name] = [
+                properties[spec.name] = [
                     {
                         "href": item.href,
                         "text": item.text if hasattr(item, "text") else None,
@@ -501,12 +551,10 @@ def build_geo_properties(
                 ]
             else:
                 # Simple list - convert items to appropriate types
-                properties[field.name] = [
-                    _convert_value_to_json(item) for item in value
-                ]
-        elif is_optional(field_type):
+                properties[spec.name] = [_convert_value_to_json(item) for item in value]
+        elif spec.kind == "element":
             # Optional field with a value
-            properties[field.name] = _convert_value_to_json(value)
+            properties[spec.name] = _convert_value_to_json(value)
 
     return properties
 
@@ -520,18 +568,20 @@ def _convert_value_to_json(value: Any) -> Any:  # noqa: ANN401
     Returns:
         The JSON-serializable value.
 
+    Raises:
+        TypeError: If the value has no JSON representation.
+
     """
-    if isinstance(value, bool):
+    if isinstance(value, int):  # Includes bool
         return value
-    if isinstance(value, int):
-        return value
+    if isinstance(value, str):
+        return str(value)  # Plain str, also for str subclasses such as Fix
     if isinstance(value, dt.datetime):
         return to_isoformat(value)
-    if isinstance(value, SupportsFloat):  # Decimal, Latitude, etc.
+    if isinstance(value, Decimal | float):  # Includes Latitude, Longitude, etc.
         return float(value)
-    if isinstance(value, SupportsInt):
-        return int(value)
-    return str(value)
+    msg = f"Cannot convert {type(value).__name__} to a GeoJSON property value"
+    raise TypeError(msg)
 
 
 def build_geo_feature(

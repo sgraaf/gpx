@@ -18,7 +18,7 @@ from .track import Track
 from .track_segment import TrackSegment
 from .types import Latitude, Longitude, SupportsGeoInterface
 from .utils import extract_namespaces_from_string
-from .validation import InvalidGPXError, validate
+from .validation import InvalidGPXError, validate_text
 from .waypoint import Waypoint
 
 #: WKB geometry type codes
@@ -32,15 +32,25 @@ WKB_GEOMETRYCOLLECTION = 7
 
 #: Z dimension flag (add to base type for 3D)
 WKB_Z_FLAG = 1000
+#: M dimension flag (add to base type for measured geometries)
+WKB_M_FLAG = 2000
+#: ZM dimension flag (add to base type for measured 3D geometries)
+WKB_ZM_FLAG = 3000
 #: EWKB Z flag (high bit)
 EWKB_Z_FLAG = 0x80000000
+#: EWKB M flag
+EWKB_M_FLAG = 0x40000000
+#: EWKB SRID flag (a 4-byte SRID follows the geometry type)
+EWKB_SRID_FLAG = 0x20000000
 
 
-def from_string(gpx_str: str, *, strict: bool = False) -> GPX:
+def from_string(gpx_str: str | bytes, *, strict: bool = False) -> GPX:
     """Create a GPX instance from a string.
 
     Args:
-        gpx_str: The string containing the GPX data.
+        gpx_str: The string containing the GPX data. May also be the encoded
+            GPX data as bytes, which are decoded according to the XML
+            declaration (UTF-8 by default).
         strict: If True, validate the GPX against the GPX 1.1 schema before
             parsing and raise :class:`~gpx.validation.InvalidGPXError` if any
             errors are found. Defaults to False (lenient parsing).
@@ -62,7 +72,7 @@ def from_string(gpx_str: str, *, strict: bool = False) -> GPX:
 
     """
     if strict:
-        result = validate(gpx_str)
+        result = validate_text(gpx_str)
         if not result.is_valid:
             raise InvalidGPXError(result)
 
@@ -153,7 +163,12 @@ def from_wkb(wkb: bytes, *, creator: str | None = None) -> GPX:
     if creator:
         gpx_kwargs["creator"] = creator
 
-    geometry, _ = _parse_wkb_geometry(wkb, 0)
+    try:
+        geometry, _ = _parse_wkb_geometry(wkb, 0)
+    except struct.error as e:
+        # Raised when the data ends before a declared count or coordinate
+        msg = "Invalid WKB: unexpected end of data"
+        raise ValueError(msg) from e
     return _wkb_geometry_to_gpx(geometry, gpx_kwargs)
 
 
@@ -254,8 +269,9 @@ def _process_geojson_geometry(
     coords = geometry.get("coordinates", [])
 
     if geo_type == "Point":
-        waypoint = _coords_to_waypoint(coords, properties)
-        waypoints.append(waypoint)
+        # An empty Point (e.g. WKT "POINT EMPTY") has no position to convert
+        if coords:
+            waypoints.append(_coords_to_waypoint(coords, properties))
     elif geo_type == "MultiPoint":
         for coord in coords:
             waypoint = _coords_to_waypoint(coord, properties)
@@ -269,12 +285,19 @@ def _process_geojson_geometry(
     elif geo_type == "GeometryCollection":
         for geom in geometry.get("geometries", []):
             _process_geojson_geometry(geom, properties, waypoints, routes, tracks)
+    else:
+        # E.g. (Multi)Polygon, which has no GPX equivalent
+        msg = f"Unsupported GeoJSON type: {geo_type}"
+        raise ValueError(msg)
 
 
 def _coords_to_waypoint(
     coords: list[float], properties: dict[str, Any] | None
 ) -> Waypoint:
     """Convert GeoJSON coordinates to a Waypoint."""
+    if len(coords) < 2:  # noqa: PLR2004
+        msg = f"Invalid position: {coords!r} (expected at least 2 coordinates)"
+        raise ValueError(msg)
     lon, lat = coords[0], coords[1]
     ele = Decimal(str(coords[2])) if len(coords) > 2 else None  # noqa: PLR2004
 
@@ -368,72 +391,96 @@ def _parse_wkb_geometry(wkb: bytes, offset: int) -> tuple[dict[str, Any], int]:
     (geom_type,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
     offset += 4
 
-    # Check for Z flag (EWKB or ISO style)
-    # Check EWKB first since EWKB values (with high bit set) are always >= 1000
-    has_z = False
-    base_type = geom_type
+    # EWKB: dimensions and SRID are encoded as high-bit flags
+    has_z = bool(geom_type & EWKB_Z_FLAG)
+    has_m = bool(geom_type & EWKB_M_FLAG)
+    if geom_type & EWKB_SRID_FLAG:
+        offset += 4  # Skip the SRID
+    geom_type &= ~(EWKB_Z_FLAG | EWKB_M_FLAG | EWKB_SRID_FLAG)
 
-    if geom_type & EWKB_Z_FLAG:
-        # EWKB style: high bit set for Z
-        has_z = True
-        base_type = geom_type & 0x0FFFFFFF
-    elif geom_type >= WKB_Z_FLAG:
-        # ISO style: type + 1000 for Z
-        has_z = True
-        base_type = geom_type - WKB_Z_FLAG
+    # ISO WKB: dimensions are encoded as type + 1000 (Z), + 2000 (M) or + 3000 (ZM)
+    base_type = geom_type % WKB_Z_FLAG
+    iso_flags = geom_type - base_type
+    if iso_flags not in (0, WKB_Z_FLAG, WKB_M_FLAG, WKB_ZM_FLAG):
+        msg = f"Unsupported WKB geometry type: {geom_type}"
+        raise ValueError(msg)
+    has_z = has_z or iso_flags in (WKB_Z_FLAG, WKB_ZM_FLAG)
+    has_m = has_m or iso_flags in (WKB_M_FLAG, WKB_ZM_FLAG)
 
-    # Remove M flag if present (type + 2000 or 0x40000000)
-    if base_type >= 2000:  # noqa: PLR2004
-        base_type -= 2000
-
-    return _parse_wkb_by_type(wkb, offset, endian, base_type, has_z)
+    return _parse_wkb_by_type(wkb, offset, endian, base_type, has_z=has_z, has_m=has_m)
 
 
-def _parse_wkb_by_type(  # noqa: PLR0911
+def _parse_wkb_by_type(  # noqa: PLR0911, PLR0913
     wkb: bytes,
     offset: int,
     endian: str,
     base_type: int,
-    has_z: bool,  # noqa: FBT001
+    *,
+    has_z: bool,
+    has_m: bool,
 ) -> tuple[dict[str, Any], int]:
     """Parse WKB geometry by type."""
     if base_type == WKB_POINT:
-        return _parse_wkb_point(wkb, offset, endian, has_z)
+        return _parse_wkb_point(wkb, offset, endian, has_z=has_z, has_m=has_m)
     if base_type == WKB_LINESTRING:
-        return _parse_wkb_linestring(wkb, offset, endian, has_z)
+        return _parse_wkb_linestring(wkb, offset, endian, has_z=has_z, has_m=has_m)
     if base_type == WKB_MULTIPOINT:
-        return _parse_wkb_multipoint(wkb, offset, endian, has_z)
+        return _parse_wkb_collection(wkb, offset, endian, "MultiPoint")
     if base_type == WKB_MULTILINESTRING:
-        return _parse_wkb_multilinestring(wkb, offset, endian, has_z)
+        return _parse_wkb_collection(wkb, offset, endian, "MultiLineString")
     if base_type == WKB_GEOMETRYCOLLECTION:
         return _parse_wkb_geometrycollection(wkb, offset, endian)
     if base_type == WKB_POLYGON:
         # Skip polygon - not directly convertible to GPX
-        return _parse_wkb_polygon(wkb, offset, endian, has_z)
+        return _parse_wkb_polygon(wkb, offset, endian, has_z=has_z, has_m=has_m)
     if base_type == WKB_MULTIPOLYGON:
-        return _parse_wkb_multipolygon(wkb, offset, endian, has_z)
+        return _parse_wkb_collection(wkb, offset, endian, "MultiPolygon")
 
     msg = f"Unsupported WKB geometry type: {base_type}"
     raise ValueError(msg)
+
+
+def _parse_wkb_coordinates(  # noqa: PLR0913
+    wkb: bytes,
+    offset: int,
+    endian: str,
+    count: int,
+    *,
+    has_z: bool,
+    has_m: bool,
+) -> tuple[list[list[float]], int]:
+    """Parse ``count`` WKB coordinates, dropping M values.
+
+    Each coordinate is ``[x, y]``, or ``[x, y, z]`` when ``has_z`` is True.
+    """
+    dimensions = 2 + has_z + has_m
+    coord_format = f"{endian}{dimensions}d"
+    coord_size = 8 * dimensions
+
+    coords = []
+    for _ in range(count):
+        values = struct.unpack(coord_format, wkb[offset : offset + coord_size])
+        # M (if present) always comes last, so keep the first 2 or 3 values
+        coords.append(list(values[: 3 if has_z else 2]))
+        offset += coord_size
+    return coords, offset
 
 
 def _parse_wkb_point(
     wkb: bytes,
     offset: int,
     endian: str,
-    has_z: bool,  # noqa: FBT001
+    *,
+    has_z: bool,
+    has_m: bool,
 ) -> tuple[dict[str, Any], int]:
     """Parse WKB Point geometry."""
-    coord_size = 24 if has_z else 16
-
-    coords = struct.unpack(
-        f"{endian}{'ddd' if has_z else 'dd'}", wkb[offset : offset + coord_size]
+    coords, offset = _parse_wkb_coordinates(
+        wkb, offset, endian, 1, has_z=has_z, has_m=has_m
     )
-    offset += coord_size
-
     geometry = {
         "type": "Point",
-        "coordinates": list(coords),
+        "coordinates": coords[0],
     }
     return geometry, offset
 
@@ -442,21 +489,17 @@ def _parse_wkb_linestring(
     wkb: bytes,
     offset: int,
     endian: str,
-    has_z: bool,  # noqa: FBT001
+    *,
+    has_z: bool,
+    has_m: bool,
 ) -> tuple[dict[str, Any], int]:
     """Parse WKB LineString geometry."""
     (num_points,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
     offset += 4
 
-    coords = []
-    coord_format = f"{endian}{'ddd' if has_z else 'dd'}"
-    coord_size = 24 if has_z else 16
-
-    for _ in range(num_points):
-        point_coords = struct.unpack(coord_format, wkb[offset : offset + coord_size])
-        coords.append(list(point_coords))
-        offset += coord_size
-
+    coords, offset = _parse_wkb_coordinates(
+        wkb, offset, endian, num_points, has_z=has_z, has_m=has_m
+    )
     geometry = {
         "type": "LineString",
         "coordinates": coords,
@@ -468,27 +511,21 @@ def _parse_wkb_polygon(
     wkb: bytes,
     offset: int,
     endian: str,
-    has_z: bool,  # noqa: FBT001
+    *,
+    has_z: bool,
+    has_m: bool,
 ) -> tuple[dict[str, Any], int]:
     """Parse WKB Polygon geometry (skipped for GPX conversion)."""
     (num_rings,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
     offset += 4
 
     rings = []
-    coord_format = f"{endian}{'ddd' if has_z else 'dd'}"
-    coord_size = 24 if has_z else 16
-
     for _ in range(num_rings):
         (num_points,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
         offset += 4
-
-        ring_coords = []
-        for _ in range(num_points):
-            point_coords = struct.unpack(
-                coord_format, wkb[offset : offset + coord_size]
-            )
-            ring_coords.append(list(point_coords))
-            offset += coord_size
+        ring_coords, offset = _parse_wkb_coordinates(
+            wkb, offset, endian, num_points, has_z=has_z, has_m=has_m
+        )
         rings.append(ring_coords)
 
     geometry = {
@@ -498,67 +535,24 @@ def _parse_wkb_polygon(
     return geometry, offset
 
 
-def _parse_wkb_multipoint(
-    wkb: bytes,
-    offset: int,
-    endian: str,
-    has_z: bool,  # noqa: ARG001, FBT001
+def _parse_wkb_collection(
+    wkb: bytes, offset: int, endian: str, geojson_type: str
 ) -> tuple[dict[str, Any], int]:
-    """Parse WKB MultiPoint geometry."""
-    (num_points,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
+    """Parse a WKB MultiPoint, MultiLineString or MultiPolygon geometry.
+
+    Each member is a complete WKB geometry with its own header (and therefore
+    its own byte order and dimension flags).
+    """
+    (num_members,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
     offset += 4
 
     coords = []
-    for _ in range(num_points):
-        point_geom, offset = _parse_wkb_geometry(wkb, offset)
-        coords.append(point_geom["coordinates"])
+    for _ in range(num_members):
+        member, offset = _parse_wkb_geometry(wkb, offset)
+        coords.append(member["coordinates"])
 
     geometry = {
-        "type": "MultiPoint",
-        "coordinates": coords,
-    }
-    return geometry, offset
-
-
-def _parse_wkb_multilinestring(
-    wkb: bytes,
-    offset: int,
-    endian: str,
-    has_z: bool,  # noqa: ARG001, FBT001
-) -> tuple[dict[str, Any], int]:
-    """Parse WKB MultiLineString geometry."""
-    (num_lines,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
-    offset += 4
-
-    coords = []
-    for _ in range(num_lines):
-        line_geom, offset = _parse_wkb_geometry(wkb, offset)
-        coords.append(line_geom["coordinates"])
-
-    geometry = {
-        "type": "MultiLineString",
-        "coordinates": coords,
-    }
-    return geometry, offset
-
-
-def _parse_wkb_multipolygon(
-    wkb: bytes,
-    offset: int,
-    endian: str,
-    has_z: bool,  # noqa: ARG001, FBT001
-) -> tuple[dict[str, Any], int]:
-    """Parse WKB MultiPolygon geometry (skipped for GPX conversion)."""
-    (num_polys,) = struct.unpack(f"{endian}I", wkb[offset : offset + 4])
-    offset += 4
-
-    coords = []
-    for _ in range(num_polys):
-        poly_geom, offset = _parse_wkb_geometry(wkb, offset)
-        coords.append(poly_geom["coordinates"])
-
-    geometry = {
-        "type": "MultiPolygon",
+        "type": geojson_type,
         "coordinates": coords,
     }
     return geometry, offset
@@ -649,6 +643,9 @@ def _wkt_type_to_geojson(wkt_type: str) -> str:
 def _parse_wkt_coords(coords_str: str, has_z: bool) -> list[float]:  # noqa: FBT001
     """Parse a single coordinate tuple from WKT."""
     parts = coords_str.strip().split()
+    if len(parts) < 2:  # noqa: PLR2004
+        msg = f"Invalid WKT coordinate: {coords_str!r} (expected at least 2 values)"
+        raise ValueError(msg)
     coords = [float(parts[0]), float(parts[1])]
     if has_z and len(parts) > 2:  # noqa: PLR2004
         coords.append(float(parts[2]))

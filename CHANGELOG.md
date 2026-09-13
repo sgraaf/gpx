@@ -38,6 +38,7 @@ The **third number** is for emergencies when we need to start branches for older
   - Both are importable directly from the top-level package (e.g. `from gpx import convert_file`).
 - New `validation` module that validates GPX data against the GPX 1.1 schema (`gpx.xsd`) without any extra dependencies:
   - `validate()`: Validate a file path, a string of GPX content, or a `GPX` instance and return a `ValidationResult`.
+  - `validate_text()`: Validate a string that is always treated as GPX content (never as a file path), e.g. for untrusted input.
   - `ValidationResult`: Holds all issues, with `is_valid`, `errors` and `warnings` properties.
   - `ValidationIssue`: A single issue with a `severity`, `message`, `path` (e.g. `gpx > trk[0] > trkseg[2] > trkpt[14]`) and source `line` (when available).
   - `Severity`: Enum of `ERROR` and `WARNING`.
@@ -45,6 +46,7 @@ The **third number** is for emergencies when we need to start branches for older
   - Detects, among others: wrong root element / namespace (with a GPX 1.0 hint), missing required attributes, unknown elements (with "did you mean …?" suggestions), duplicate single-occurrence elements, out-of-order children, `<extensions>` children that are not in a foreign namespace (e.g. unprefixed elements that inherit the default GPX namespace), and invalid values (latitude/longitude/degrees ranges, `fix`, `dgpsid`, `sat`, copyright `year`, `time`).
   - All names are importable directly from the top-level package (e.g. `from gpx import validate`).
 - New `strict` keyword argument on `read_gpx()` and `from_string()`. When `strict=True`, the input is validated against the GPX 1.1 schema first and an `InvalidGPXError` is raised if any errors are found. The default (`strict=False`) keeps the existing lenient behavior.
+- New `Year` type (an `int` subclass) for `xsd:gYear` values such as `2004`, `2004Z` or `2004+02:00`. The optional timezone is kept in `Year.timezone`, and `str()` returns valid `xsd:gYear` text. It's importable from the top-level package (`from gpx import Year`).
 - New `gpx validate` CLI options:
   - `--strict`: Treat warnings as failures (non-zero exit code).
   - `--json`: Output a machine-readable validation report.
@@ -54,6 +56,31 @@ The **third number** is for emergencies when we need to start branches for older
 
 - The CLI (`gpx edit`, `gpx merge` and `gpx convert`) now uses the new `operations` module and `io` conversion functions internally (behavior is unchanged).
 - The `gpx validate` CLI command is now a real GPX 1.1 schema validator. It reports all errors and warnings (with source line numbers) instead of only checking whether the file can be parsed, and exits non-zero when errors are found (or, with `--strict`, when warnings are found).
+- `Copyright.year` is now typed as `Year | None` instead of `int | None`. `Year` is an `int` subclass, so existing code keeps working at runtime, but type checkers now expect `Year(2004)` instead of `2004`.
+- Parsing and serializing GPX data is ~20× faster: the type annotations of each model are now resolved once per class instead of once per XML element.
+
+### Fixed
+
+- Writing a parsed GPX file no longer moves the document into the wrong XML namespace when an element deeper in the file (e.g. a Garmin extension) redeclares the default namespace, or when text content contains `xmlns="..."`. Only the namespace declarations on the root element are now preserved.
+- `__geo_interface__`, `write_geojson()` and `gpx convert` to GeoJSON no longer crash on routes and tracks without any points. Their geometries are now written without a `bbox`.
+- `Track.max_speed` and `Track.min_speed` no longer raise when a track segment has fewer than two points. Such segments are now skipped.
+- `NaN` and `Infinity` values are now rejected with a `ValueError` by `Latitude`, `Longitude` and `Degrees` (instead of an unhelpful `decimal.InvalidOperation`). `validate()` now reports them as errors instead of crashing.
+- GeoJSON output (`__geo_interface__`, `write_geojson()` and `gpx convert`) no longer contains Python object representations (with memory addresses) for extensions. Extensions have no GeoJSON representation and are now left out of the properties.
+- GeoJSON Features created for waypoints, routes and tracks without any properties now have `"properties": null`, as required by RFC 7946. They previously had no `properties` member, which strict GeoJSON readers reject.
+- `from_wkb()` now correctly reads geometries with M values (ISO `M`/`ZM` types and EWKB M flag) and EWKB geometries with an embedded SRID (e.g. PostGIS `ST_AsEWKB` output). These previously produced wrong coordinates without any error.
+- `from_string(..., strict=True)` no longer treats content that doesn't start with `<` as a file path to read. Such content is now reported as not well-formed XML.
+- `read_kml()` and `gpx convert` now read KML files in the legacy Google Earth namespaces (`http://earth.google.com/kml/2.0`, `2.1` and `2.2`), which previously produced an empty GPX without any error. Documents whose root element is not `<kml>` in a supported namespace (or no namespace) now raise a `ValueError`.
+- `read_gpx()`, `validate()` and the CLI now decode GPX files according to the encoding in their XML declaration (e.g. `ISO-8859-1`). They previously always decoded files as UTF-8 and failed with a `UnicodeDecodeError` on other encodings. `from_string()` and `validate_text()` now also accept encoded `bytes`.
+- `from_geo_interface()`, `read_geojson()`, `from_wkt()` and `from_wkb()` now raise a `ValueError` for geometries without a GPX equivalent (e.g. `Polygon`), including ones nested in a `FeatureCollection` or `GeometryCollection`. They were previously dropped without any error, so e.g. `from_wkt("POLYGON (...)")` returned an empty GPX.
+- `from_wkb()`, `from_wkt()` and `from_geo_interface()` now raise a `ValueError`, as documented, for truncated WKB data and coordinates with fewer than two values. They previously raised `struct.error` or `IndexError`. An empty WKT point (`POINT EMPTY`) now produces no waypoint instead of raising.
+- Timestamps with sub-millisecond precision are no longer cut off at milliseconds when writing GPX files. For example, `12:00:00.123456` was written as `12:00:00.123`.
+- Decimal values (e.g. coordinates very close to the equator or prime meridian) are now always written in fixed-point notation. Values such as `lat="1E-8"` were not valid `xsd:decimal` values. `validate()` now also reports decimals in exponent notation as errors.
+- Parsing now ignores surrounding whitespace in non-string values (e.g. `<time> 2024-01-01T00:00:00Z </time>`), just like `validate()`. Such documents previously passed validation but then failed to parse. Whitespace-only values are now treated as missing.
+- `crop()`, `trim()`, `filter_points()`, `reduce_precision()`, `simplify()`, `smooth()` and `gpx edit` now recompute the metadata bounds (if present) from the remaining points. The bounds are removed if no points remain. The original, stale bounds were previously kept.
+- `reverse()` with `routes=False` or `tracks=False` no longer returns a GPX that shares its route or track list with the input. `strip_metadata()` on a GPX without metadata now returns a new instance instead of the input itself.
+- `in` checks on `Extensions` (e.g. `"hr" in extensions`) now return `True` for matching elements without text content.
+- Copyright years with a timezone (e.g. `<year>2004Z</year>`) are now parsed, and written back with their timezone. They previously passed `validate()` but then failed to parse. Years before 1000 are now written with four digits (e.g. `0999`), as `xsd:gYear` requires.
+- `gpx edit --start/--end` now accept any ISO 8601 datetime, including fractional seconds (e.g. `2024-01-01T10:00:00.5Z`). Datetimes without a timezone are still interpreted as UTC.
 
 ## [2026.3.0](https://github.com/sgraaf/gpx/compare/2026.2.0...2026.3.0) - 2026-05-17
 

@@ -8,6 +8,7 @@ on:
       # Test on any tag starting with the format "YYYY.N.N"
       - "[0-9][0-9][0-9][0-9].[0-9]+.[0-9]+*"
   pull_request:
+  workflow_call:
   workflow_dispatch:
 
 jobs:

@@ -143,6 +143,8 @@ class TestGeoJSONConversion:
         data = sample_gpx.__geo_interface__
         assert data["type"] == "FeatureCollection"
         assert len(data["features"]) == 3  # 1 waypoint + 1 route + 1 track
+        # RFC 7946: every Feature has a "properties" member
+        assert all("properties" in feature for feature in data["features"])
 
     def test_gpx_write_geojson(self, sample_gpx: GPX, tmp_path: Path) -> None:
         """Test writing GPX to GeoJSON file."""
@@ -228,6 +230,28 @@ class TestGeoJSONConversion:
         assert len(gpx2.rte) == len(sample_gpx.rte)
         assert len(gpx2.trk) == len(sample_gpx.trk)
 
+    def test_geo_interface_empty_route_and_track(self) -> None:
+        """Test that routes and tracks without points have no bbox."""
+        gpx = GPX(
+            rte=[Route()],
+            trk=[Track(), Track(trkseg=[TrackSegment()])],
+        )
+        features = gpx.__geo_interface__["features"]
+        assert all(feature["properties"] is None for feature in features)
+        assert [feature["geometry"] for feature in features] == [
+            {"type": "LineString", "coordinates": []},
+            {"type": "MultiLineString", "coordinates": []},
+            {"type": "MultiLineString", "coordinates": [[]]},
+        ]
+
+    def test_convert_empty_route_fixture_to_geojson(self, tmp_path: Path) -> None:
+        """Test converting a valid GPX file with an empty route to GeoJSON."""
+        fixture = Path(__file__).parent / "fixtures" / "valid" / "empty_route.gpx"
+        output_file = tmp_path / "output.geojson"
+        convert_file(fixture, output_file)
+        data = json.loads(output_file.read_text())
+        assert data["features"][0]["geometry"]["coordinates"] == []
+
 
 class TestKMLConversion:
     """Tests for KML conversion functionality."""
@@ -294,6 +318,38 @@ class TestKMLConversion:
         temp_file.write_text(sample_kml)
         gpx = read_kml(temp_file, creator="MyApp")
         assert gpx.creator == "MyApp"
+
+    @pytest.mark.parametrize(
+        "namespace",
+        [
+            "http://www.opengis.net/kml/2.2",
+            "http://earth.google.com/kml/2.2",
+            "http://earth.google.com/kml/2.1",
+            "http://earth.google.com/kml/2.0",
+            None,
+        ],
+    )
+    def test_read_kml_namespaces(
+        self, sample_kml: str, namespace: str | None, tmp_path: Path
+    ) -> None:
+        """Test reading KML in the OGC, legacy Google Earth, or no namespace."""
+        xmlns = f' xmlns="{namespace}"' if namespace else ""
+        temp_file = tmp_path / "input.kml"
+        temp_file.write_text(
+            sample_kml.replace(' xmlns="http://www.opengis.net/kml/2.2"', xmlns)
+        )
+        gpx = read_kml(temp_file)
+        assert gpx.metadata is not None
+        assert gpx.metadata.name == "Test KML"
+        assert [waypoint.name for waypoint in gpx.wpt] == ["Berlin"]
+        assert [route.name for route in gpx.rte] == ["City Tour"]
+
+    def test_read_kml_unsupported_root_raises(self, tmp_path: Path) -> None:
+        """Test that a document that is not KML raises instead of reading as empty."""
+        temp_file = tmp_path / "input.kml"
+        temp_file.write_text('<kml xmlns="http://example.com/not-kml"/>')
+        with pytest.raises(ValueError, match="Unsupported KML document"):
+            read_kml(temp_file)
 
     def test_kml_roundtrip(self, sample_gpx: GPX, tmp_path: Path) -> None:
         """Test KML roundtrip conversion."""
@@ -656,6 +712,62 @@ class TestErrorHandling:
         with pytest.raises(ValueError, match="Unsupported GeoJSON type"):
             from_geo_interface(geojson)
 
+    @pytest.mark.parametrize(
+        "geojson",
+        [
+            {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {"type": "Point", "coordinates": [4.0, 52.0]},
+                        "properties": None,
+                    },
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Polygon",
+                            "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]],
+                        },
+                        "properties": None,
+                    },
+                ],
+            },
+            {
+                "type": "GeometryCollection",
+                "geometries": [
+                    {"type": "MultiPolygon", "coordinates": []},
+                ],
+            },
+        ],
+    )
+    def test_from_geo_interface_nested_unsupported_type(
+        self, geojson: dict[str, Any]
+    ) -> None:
+        """Test that nested unsupported geometries raise instead of being dropped."""
+        with pytest.raises(ValueError, match="Unsupported GeoJSON type"):
+            from_geo_interface(geojson)
+
+    @pytest.mark.parametrize(
+        "wkt",
+        [
+            "POLYGON ((0 0, 1 0, 1 1, 0 0))",
+            "MULTIPOLYGON (((0 0, 1 0, 1 1, 0 0)))",
+            "GEOMETRYCOLLECTION (POINT (4 52), POLYGON ((0 0, 1 0, 1 1, 0 0)))",
+        ],
+    )
+    def test_from_wkt_polygon_raises(self, wkt: str) -> None:
+        """Test that WKT polygons raise instead of producing an empty GPX."""
+        with pytest.raises(ValueError, match="Unsupported GeoJSON type"):
+            from_wkt(wkt)
+
+    def test_from_wkb_polygon_raises(self) -> None:
+        """Test that WKB polygons raise instead of producing an empty GPX."""
+        wkb = b"\x01" + struct.pack("<III", 3, 1, 4)
+        wkb += struct.pack("<8d", 0, 0, 1, 0, 1, 1, 0, 0)
+        with pytest.raises(ValueError, match="Unsupported GeoJSON type"):
+            from_wkb(wkb)
+
     def test_from_wkt_invalid_format(self) -> None:
         """Test that invalid WKT raises ValueError."""
         with pytest.raises(ValueError, match="Invalid WKT"):
@@ -670,8 +782,36 @@ class TestErrorHandling:
     def test_from_wkb_unexpected_end(self) -> None:
         """Test that truncated WKB raises ValueError."""
         wkb = b"\x01"  # Only byte order, no geometry type
-        with pytest.raises((ValueError, struct.error)):  # pyrefly: ignore
+        with pytest.raises(ValueError, match="unexpected end of data"):
             from_wkb(wkb)
+
+    @pytest.mark.parametrize(
+        "wkb",
+        [
+            b"\x01\x01\x00",  # Truncated geometry type
+            b"\x01" + struct.pack("<I", 1) + struct.pack("<d", 4.0),  # Missing y
+            b"\x01" + struct.pack("<II", 2, 3) + struct.pack("<dd", 4.0, 52.0),
+        ],
+    )
+    def test_from_wkb_truncated_raises_value_error(self, wkb: bytes) -> None:
+        """Test that truncated WKB raises ValueError (not struct.error)."""
+        with pytest.raises(ValueError, match="unexpected end of data"):
+            from_wkb(wkb)
+
+    def test_from_wkt_point_empty(self) -> None:
+        """Test that an empty WKT point produces no waypoint."""
+        assert from_wkt("POINT EMPTY").wpt == []
+
+    @pytest.mark.parametrize("wkt", ["POINT (4)", "LINESTRING (4 52, 5)"])
+    def test_from_wkt_incomplete_coordinate_raises_value_error(self, wkt: str) -> None:
+        """Test that coordinates with fewer than 2 values raise ValueError."""
+        with pytest.raises(ValueError, match="Invalid WKT coordinate"):
+            from_wkt(wkt)
+
+    def test_from_geo_interface_incomplete_position_raises_value_error(self) -> None:
+        """Test that GeoJSON positions with fewer than 2 values raise ValueError."""
+        with pytest.raises(ValueError, match="Invalid position"):
+            from_geo_interface({"type": "LineString", "coordinates": [[4.0]]})
 
     def test_from_wkt_unsupported_geometry_type(self) -> None:
         """Test that unsupported WKT geometry types raise ValueError."""
@@ -841,6 +981,49 @@ class TestWKBEdgeCases:
         gpx = from_wkb(wkb)
         assert len(gpx.wpt) == 1
         assert len(gpx.rte) == 1
+
+    @pytest.mark.parametrize(
+        ("geom_type", "dimensions", "expected_ele"),
+        [
+            (2002, 3, None),  # ISO LineString M
+            (3002, 4, Decimal("10.0")),  # ISO LineString ZM
+            (2 | 0x40000000, 3, None),  # EWKB LineString M
+            (2 | 0x80000000 | 0x40000000, 4, Decimal("10.0")),  # EWKB LineString ZM
+        ],
+    )
+    def test_from_wkb_drops_m_values(
+        self, geom_type: int, dimensions: int, expected_ele: Decimal | None
+    ) -> None:
+        """Test that M values are skipped without misaligning later coordinates."""
+        points = [(4.0, 52.0, 10.0, 1.0), (4.1, 52.1, 10.0, 2.0)]
+        wkb = b"\x01" + struct.pack("<II", geom_type, len(points))
+        for x, y, z, m in points:
+            values = (x, y, z, m) if dimensions == 4 else (x, y, m)
+            wkb += struct.pack(f"<{dimensions}d", *values)
+
+        rtept = from_wkb(wkb).rte[0].rtept
+        assert [(p.lon, p.lat, p.ele) for p in rtept] == [
+            (Decimal("4.0"), Decimal("52.0"), expected_ele),
+            (Decimal("4.1"), Decimal("52.1"), expected_ele),
+        ]
+
+    def test_from_ewkb_with_srid(self) -> None:
+        """Test that the SRID of an EWKB geometry is skipped."""
+        wkb = b"\x01" + struct.pack("<II", 1 | 0x80000000 | 0x20000000, 4326)
+        wkb += struct.pack("<ddd", 4.0, 52.0, 10.0)
+
+        waypoint = from_wkb(wkb).wpt[0]
+        assert (waypoint.lon, waypoint.lat, waypoint.ele) == (
+            Decimal("4.0"),
+            Decimal("52.0"),
+            Decimal("10.0"),
+        )
+
+    def test_from_wkb_invalid_dimension_flags(self) -> None:
+        """Test that an unknown ISO dimension flag raises ValueError."""
+        wkb = b"\x01" + struct.pack("<I", 4001) + struct.pack("<dd", 4.0, 52.0)
+        with pytest.raises(ValueError, match="Unsupported WKB geometry type: 4001"):
+            from_wkb(wkb)
 
 
 class TestWKTEdgeCases:

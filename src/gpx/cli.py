@@ -29,6 +29,7 @@ from .operations import (
     trim,
 )
 from .operations import merge as merge_op
+from .utils import from_isoformat
 from .validation import InvalidGPXError, ValidationResult
 from .validation import validate as validate_gpx
 
@@ -191,8 +192,8 @@ def _validate_text_output(
         print()
 
     if result.is_valid:
-        # The document is schema-valid, so it is guaranteed to parse; guard the
-        # read anyway so the CLI reports cleanly instead of raising a traceback.
+        # The document is schema-valid, so it should parse; guard the read anyway
+        # so the CLI reports cleanly instead of raising a traceback.
         try:
             gpx = read_gpx(file_path)
         except Exception as e:  # noqa: BLE001
@@ -840,31 +841,17 @@ def _apply_strip_metadata(gpx: GPX, args: argparse.Namespace) -> GPX:
 
 
 def _parse_datetime(dt_str: str) -> dt.datetime:
-    """Parse an ISO 8601 datetime string."""
-    # Try various ISO 8601 formats
-    formats = [
-        "%Y-%m-%dT%H:%M:%S%z",
-        "%Y-%m-%dT%H:%M:%S",
-        "%Y-%m-%dT%H:%M",
-        "%Y-%m-%d",
-    ]
-
-    for fmt in formats:
-        try:
-            dt_ = dt.datetime.strptime(dt_str, fmt)  # noqa: DTZ007
-            # Add dt.UTC timezone if none specified
-            if dt_.tzinfo is None:
-                dt_ = dt_.replace(tzinfo=dt.UTC)
-        except ValueError:
-            continue
-        else:
-            return dt_
-
-    msg = (
-        f"Invalid datetime format: {dt_str}. "
-        "Use ISO 8601 format (e.g., 2024-01-01T10:00:00)"
-    )
-    raise ValueError(msg)
+    """Parse an ISO 8601 datetime string, assuming UTC if it has no timezone."""
+    try:
+        dt_ = from_isoformat(dt_str)
+    except ValueError as e:
+        # Replace the generic parser message with a hint for the CLI user
+        msg = (
+            f"Invalid datetime format: {dt_str}. "
+            "Use ISO 8601 format (e.g., 2024-01-01T10:00:00)"
+        )
+        raise ValueError(msg) from e
+    return dt_ if dt_.tzinfo is not None else dt_.replace(tzinfo=dt.UTC)
 
 
 def _add_merge_parser(

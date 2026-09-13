@@ -411,11 +411,15 @@ merged = merge([read_gpx("one.gpx"), read_gpx("two.gpx")])
 *gpx* can validate GPX data against the GPX 1.1 schema, catching problems that lenient parsing silently ignores (unknown/misspelled elements, duplicates, out-of-order children, out-of-range values, and more):
 
 ```python
-from gpx import read_gpx, validate
+from gpx import read_gpx, validate, validate_text
 
 
 # Validate a file path, a string of GPX content, or a GPX instance
 result = validate("path/to/file.gpx")
+
+# Validate a string that must be treated as GPX content, never as a file path
+# (e.g. untrusted input)
+result = validate_text(gpx_string)
 
 if not result.is_valid:
     for issue in result.errors:

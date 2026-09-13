@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any
 
-from gpx import GPX, Metadata, Route, Track, Waypoint, from_string, read_gpx
+from gpx import GPX, Metadata, Route, Track, Waypoint, from_string, read_gpx, validate
 
 
 class TestGPXParsing:
@@ -225,6 +225,35 @@ class TestGPXCreation:
         assert len(gpx2.wpt) == 1
         assert gpx2.wpt[0].name == sample_waypoint.name
 
+    def test_roundtrip_keeps_gpx_namespace_with_nested_default_namespace(
+        self,
+    ) -> None:
+        """Test that nested default namespace redeclarations don't leak into the root."""
+        gpx_str = """<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <metadata><desc>xmlns="urn:foo"</desc></metadata>
+  <trk><trkseg><trkpt lat="52.0" lon="4.0"><extensions>
+    <TrackPointExtension xmlns="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">
+      <hr>140</hr>
+    </TrackPointExtension>
+  </extensions></trkpt></trkseg></trk>
+</gpx>"""
+        output = from_string(gpx_str).to_string()
+
+        assert validate(output).is_valid
+        gpx = from_string(output)
+        assert gpx.metadata is not None
+        assert gpx.metadata.desc == 'xmlns="urn:foo"'
+        extensions = gpx.trk[0].trkseg[0].trkpt[0].extensions
+        assert extensions is not None
+        assert (
+            extensions.get_text(
+                "hr",
+                namespace="http://www.garmin.com/xmlschemas/TrackPointExtension/v1",
+            )
+            == "140"
+        )
+
 
 class TestGPXEncodingHandling:
     """Tests for GPX encoding handling."""
@@ -267,6 +296,26 @@ class TestGPXEncodingHandling:
 </gpx>"""
         gpx = from_string(gpx_str)
         assert gpx.wpt[0].name == "Cafe"
+
+    def test_read_gpx_honors_declared_encoding(self, tmp_path: Path) -> None:
+        """Test that files are decoded according to their XML declaration."""
+        gpx_str = """<?xml version="1.0" encoding="ISO-8859-1"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <wpt lat="47.3769" lon="8.5417"><name>Zürich</name></wpt>
+</gpx>"""
+        file_path = tmp_path / "latin1.gpx"
+        file_path.write_bytes(gpx_str.encode("iso-8859-1"))
+
+        assert read_gpx(file_path, strict=True).wpt[0].name == "Zürich"
+        assert validate(file_path).is_valid
+
+    def test_from_string_with_bytes(self) -> None:
+        """Test parsing encoded bytes, including a UTF-8 byte order mark."""
+        gpx_bytes = (
+            b"\xef\xbb\xbf"
+            + '<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Tést"/>'.encode()
+        )
+        assert from_string(gpx_bytes, strict=True).creator == "Tést"
 
 
 class TestGPXGeoInterface:
