@@ -782,8 +782,36 @@ class TestErrorHandling:
     def test_from_wkb_unexpected_end(self) -> None:
         """Test that truncated WKB raises ValueError."""
         wkb = b"\x01"  # Only byte order, no geometry type
-        with pytest.raises((ValueError, struct.error)):  # pyrefly: ignore
+        with pytest.raises(ValueError, match="unexpected end of data"):
             from_wkb(wkb)
+
+    @pytest.mark.parametrize(
+        "wkb",
+        [
+            b"\x01\x01\x00",  # Truncated geometry type
+            b"\x01" + struct.pack("<I", 1) + struct.pack("<d", 4.0),  # Missing y
+            b"\x01" + struct.pack("<II", 2, 3) + struct.pack("<dd", 4.0, 52.0),
+        ],
+    )
+    def test_from_wkb_truncated_raises_value_error(self, wkb: bytes) -> None:
+        """Test that truncated WKB raises ValueError (not struct.error)."""
+        with pytest.raises(ValueError, match="unexpected end of data"):
+            from_wkb(wkb)
+
+    def test_from_wkt_point_empty(self) -> None:
+        """Test that an empty WKT point produces no waypoint."""
+        assert from_wkt("POINT EMPTY").wpt == []
+
+    @pytest.mark.parametrize("wkt", ["POINT (4)", "LINESTRING (4 52, 5)"])
+    def test_from_wkt_incomplete_coordinate_raises_value_error(self, wkt: str) -> None:
+        """Test that coordinates with fewer than 2 values raise ValueError."""
+        with pytest.raises(ValueError, match="Invalid WKT coordinate"):
+            from_wkt(wkt)
+
+    def test_from_geo_interface_incomplete_position_raises_value_error(self) -> None:
+        """Test that GeoJSON positions with fewer than 2 values raise ValueError."""
+        with pytest.raises(ValueError, match="Invalid position"):
+            from_geo_interface({"type": "LineString", "coordinates": [[4.0]]})
 
     def test_from_wkt_unsupported_geometry_type(self) -> None:
         """Test that unsupported WKT geometry types raise ValueError."""

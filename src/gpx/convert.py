@@ -163,7 +163,12 @@ def from_wkb(wkb: bytes, *, creator: str | None = None) -> GPX:
     if creator:
         gpx_kwargs["creator"] = creator
 
-    geometry, _ = _parse_wkb_geometry(wkb, 0)
+    try:
+        geometry, _ = _parse_wkb_geometry(wkb, 0)
+    except struct.error as e:
+        # Raised when the data ends before a declared count or coordinate
+        msg = "Invalid WKB: unexpected end of data"
+        raise ValueError(msg) from e
     return _wkb_geometry_to_gpx(geometry, gpx_kwargs)
 
 
@@ -264,8 +269,9 @@ def _process_geojson_geometry(
     coords = geometry.get("coordinates", [])
 
     if geo_type == "Point":
-        waypoint = _coords_to_waypoint(coords, properties)
-        waypoints.append(waypoint)
+        # An empty Point (e.g. WKT "POINT EMPTY") has no position to convert
+        if coords:
+            waypoints.append(_coords_to_waypoint(coords, properties))
     elif geo_type == "MultiPoint":
         for coord in coords:
             waypoint = _coords_to_waypoint(coord, properties)
@@ -289,6 +295,9 @@ def _coords_to_waypoint(
     coords: list[float], properties: dict[str, Any] | None
 ) -> Waypoint:
     """Convert GeoJSON coordinates to a Waypoint."""
+    if len(coords) < 2:  # noqa: PLR2004
+        msg = f"Invalid position: {coords!r} (expected at least 2 coordinates)"
+        raise ValueError(msg)
     lon, lat = coords[0], coords[1]
     ele = Decimal(str(coords[2])) if len(coords) > 2 else None  # noqa: PLR2004
 
@@ -634,6 +643,9 @@ def _wkt_type_to_geojson(wkt_type: str) -> str:
 def _parse_wkt_coords(coords_str: str, has_z: bool) -> list[float]:  # noqa: FBT001
     """Parse a single coordinate tuple from WKT."""
     parts = coords_str.strip().split()
+    if len(parts) < 2:  # noqa: PLR2004
+        msg = f"Invalid WKT coordinate: {coords_str!r} (expected at least 2 values)"
+        raise ValueError(msg)
     coords = [float(parts[0]), float(parts[1])]
     if has_z and len(parts) > 2:  # noqa: PLR2004
         coords.append(float(parts[2]))
