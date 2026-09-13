@@ -44,11 +44,13 @@ EWKB_M_FLAG = 0x40000000
 EWKB_SRID_FLAG = 0x20000000
 
 
-def from_string(gpx_str: str, *, strict: bool = False) -> GPX:
+def from_string(gpx_str: str | bytes, *, strict: bool = False) -> GPX:
     """Create a GPX instance from a string.
 
     Args:
-        gpx_str: The string containing the GPX data.
+        gpx_str: The string containing the GPX data. May also be the encoded
+            GPX data as bytes, which are decoded according to the XML
+            declaration (UTF-8 by default).
         strict: If True, validate the GPX against the GPX 1.1 schema before
             parsing and raise :class:`~gpx.validation.InvalidGPXError` if any
             errors are found. Defaults to False (lenient parsing).

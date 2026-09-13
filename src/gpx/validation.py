@@ -409,11 +409,12 @@ def _split_tag(tag: str) -> tuple[str, str]:
     return "", tag
 
 
-def _parse_with_lines(text: str) -> tuple[ET.Element, dict[int, int]]:
+def _parse_with_lines(text: str | bytes) -> tuple[ET.Element, dict[int, int]]:
     """Parse XML into an element tree, recording each element's source line.
 
     Args:
-        text: The XML content.
+        text: The XML content, as a string or as bytes (decoded according to
+            the XML declaration).
 
     Returns:
         A tuple of the root element and a mapping from ``id(element)`` to the
@@ -657,24 +658,27 @@ class _Validator:
         return f"unknown element <{local}>"
 
 
-def _resolve_source(source: str | Path | Any) -> str:  # noqa: ANN401
-    """Resolve a validation source to a string of GPX XML content.
+def _resolve_source(source: str | Path | Any) -> str | bytes:  # noqa: ANN401
+    """Resolve a validation source to GPX XML content.
+
+    Files are read as bytes, so the parser honors the encoding in their XML
+    declaration.
 
     Args:
         source: A file path, a string of GPX content, or a GPX instance.
 
     Returns:
-        The GPX XML content as a string.
+        The GPX XML content as a string or as bytes.
 
     """
     if isinstance(source, Path):
-        return source.read_text("utf-8")
+        return source.read_bytes()
     if isinstance(source, str):
         # A string that looks like XML is treated as content; otherwise it is
         # treated as a file path.
         if source.lstrip().startswith("<"):
             return source
-        return Path(source).read_text("utf-8")
+        return Path(source).read_bytes()
     # Assume a GPX instance (or anything serializable to a GPX string).
     if hasattr(source, "to_string"):
         return source.to_string()
@@ -704,14 +708,16 @@ def validate(source: str | Path | Any) -> ValidationResult:  # noqa: ANN401
     return validate_text(_resolve_source(source))
 
 
-def validate_text(text: str) -> ValidationResult:
+def validate_text(text: str | bytes) -> ValidationResult:
     """Validate a string of GPX content against the GPX 1.1 schema.
 
     Unlike :func:`validate`, the string is always treated as GPX content, never
     as a file path.
 
     Args:
-        text: The GPX XML content to validate.
+        text: The GPX XML content to validate. May also be the encoded content
+            as bytes, which are decoded according to the XML declaration
+            (UTF-8 by default).
 
     Returns:
         A :class:`ValidationResult` holding all errors and warnings found.

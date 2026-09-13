@@ -52,7 +52,8 @@ def read_gpx(file_path: str | Path, *, strict: bool = False) -> GPX:
         >>> gpx = read_gpx("path/to/file.gpx")
 
     """
-    return from_string(Path(file_path).read_text("utf-8"), strict=strict)
+    # Pass bytes so the parser honors the encoding in the XML declaration
+    return from_string(Path(file_path).read_bytes(), strict=strict)
 
 
 def read_geojson(file_path: str | Path, *, creator: str | None = None) -> GPX:
