@@ -1,5 +1,5 @@
 [build-system]
-requires = ["uv_build>=0.9.11,<0.10.0"]
+requires = ["uv_build>=0.12.13,<0.13"]
 build-backend = "uv_build"
 
 [project]
@@ -8,11 +8,11 @@ version = "2026.3.0"
 description = "gpx is a zero-dependency, pure Python package for reading, manipulating, writing and converting GPX files."
 authors = [{name = "Steven van de Graaf", email = "steven@vandegraaf.xyz"}]
 readme = "README.md"
-license = {file = "LICENSE"}
+license = "GPL-3.0-or-later"
+license-files = ["LICENSE"]
 keywords = ["gpx", "gps", "xml", "geojson"]
 classifiers = [
     "Development Status :: 4 - Beta",
-    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
@@ -41,7 +41,9 @@ tests = [
 typing = [
     "mypy",
     "pyrefly",
+    "pyright[nodejs]",
     "ty",
+    "zuban",
 ]
 dev = [
     { include-group = "docs" },
@@ -64,6 +66,7 @@ Changelog = "https://gpx.readthedocs.io/en/stable/changelog.html"
 select = ["ALL"]
 ignore = [
     "COM812",  # missing-trailing-comma (flake8-commas), handled by the formatter
+    "CPY001",  # missing-copyright-notice (flake8-copyright)
     "D102",  # undocumented-public-method (pydocstyle)
     "D105",  # undocumented-magic-method (pydocstyle)
     "D107",  # undocumented-public-init (pydocstyle)
@@ -100,13 +103,26 @@ pydocstyle.convention = "google"
     "PLR2004",   # magic-value-comparison (Pylint)
 ]
 
+[tool.ty.src]
+include = ["src", "tests"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["tests"]
+
 [tool.pyrefly]
-search_path = ["src", "."]
+project-includes = ["tests"]
+search-path = ["tests"]
+
+[tool.pyright]
+include = ["tests"]
+pythonVersion = "3.11"
+
+[tool.zuban]
+python_version = "3.11"
+files = ["tests"]
 
 [tool.codespell]
 # "nmae" is an intentional misspelling used to demonstrate the validator's
 # "did you mean <name>?" suggestion.
 ignore-words-list = "nmae"
-
-[tool.mypy]
-python_version = "3.11"

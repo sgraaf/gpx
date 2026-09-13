@@ -8,7 +8,8 @@ from typing import Any, Protocol, Self, runtime_checkable
 
 @runtime_checkable
 class SupportsGeoInterface(Protocol):  # noqa: D101
-    __geo_interface__: dict[str, Any]
+    @property
+    def __geo_interface__(self) -> dict[str, Any]: ...
 
 
 class Latitude(Decimal):

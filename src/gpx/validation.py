@@ -164,8 +164,10 @@ def _longitude(text: str) -> tuple[Severity, str] | None:
     if value == 180:  # noqa: PLR2004
         return (
             Severity.WARNING,
-            f"longitude {text} equals 180.0 "
-            "(the GPX 1.1 schema upper bound is exclusive)",
+            (
+                f"longitude {text} equals 180.0 "
+                "(the GPX 1.1 schema upper bound is exclusive)"
+            ),
         )
     return None
 

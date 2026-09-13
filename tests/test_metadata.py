@@ -42,7 +42,6 @@ class TestMetadataParsing:
         gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         assert gpx.metadata.author is not None
-        assert gpx.metadata is not None
         assert gpx.metadata.author.name == "Test Author"
 
     def test_parse_metadata_copyright(self, gpx_with_metadata_string: str) -> None:
@@ -50,7 +49,6 @@ class TestMetadataParsing:
         gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         assert gpx.metadata.copyright is not None
-        assert gpx.metadata is not None
         assert gpx.metadata.copyright.author == "Test Author"
 
     def test_parse_metadata_links(self, gpx_with_metadata_string: str) -> None:
@@ -65,7 +63,6 @@ class TestMetadataParsing:
         gpx = from_string(gpx_with_metadata_string)
         assert gpx.metadata is not None
         assert gpx.metadata.bounds is not None
-        assert gpx.metadata is not None
         assert gpx.metadata.bounds.minlat == Latitude("52.5")
 
 

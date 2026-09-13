@@ -702,7 +702,7 @@ class TestGeoJSONEdgeCases:
                 return {"type": "Point", "coordinates": [13.405, 52.52]}
 
         mock_geom = MockGeometry()
-        gpx = from_geo_interface(mock_geom)  # type: ignore[arg-type]
+        gpx = from_geo_interface(mock_geom)
         assert len(gpx.wpt) == 1
 
     def test_from_geo_interface_feature(self) -> None:
