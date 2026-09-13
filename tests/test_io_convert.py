@@ -712,6 +712,62 @@ class TestErrorHandling:
         with pytest.raises(ValueError, match="Unsupported GeoJSON type"):
             from_geo_interface(geojson)
 
+    @pytest.mark.parametrize(
+        "geojson",
+        [
+            {
+                "type": "FeatureCollection",
+                "features": [
+                    {
+                        "type": "Feature",
+                        "geometry": {"type": "Point", "coordinates": [4.0, 52.0]},
+                        "properties": None,
+                    },
+                    {
+                        "type": "Feature",
+                        "geometry": {
+                            "type": "Polygon",
+                            "coordinates": [[[0, 0], [1, 0], [1, 1], [0, 0]]],
+                        },
+                        "properties": None,
+                    },
+                ],
+            },
+            {
+                "type": "GeometryCollection",
+                "geometries": [
+                    {"type": "MultiPolygon", "coordinates": []},
+                ],
+            },
+        ],
+    )
+    def test_from_geo_interface_nested_unsupported_type(
+        self, geojson: dict[str, Any]
+    ) -> None:
+        """Test that nested unsupported geometries raise instead of being dropped."""
+        with pytest.raises(ValueError, match="Unsupported GeoJSON type"):
+            from_geo_interface(geojson)
+
+    @pytest.mark.parametrize(
+        "wkt",
+        [
+            "POLYGON ((0 0, 1 0, 1 1, 0 0))",
+            "MULTIPOLYGON (((0 0, 1 0, 1 1, 0 0)))",
+            "GEOMETRYCOLLECTION (POINT (4 52), POLYGON ((0 0, 1 0, 1 1, 0 0)))",
+        ],
+    )
+    def test_from_wkt_polygon_raises(self, wkt: str) -> None:
+        """Test that WKT polygons raise instead of producing an empty GPX."""
+        with pytest.raises(ValueError, match="Unsupported GeoJSON type"):
+            from_wkt(wkt)
+
+    def test_from_wkb_polygon_raises(self) -> None:
+        """Test that WKB polygons raise instead of producing an empty GPX."""
+        wkb = b"\x01" + struct.pack("<III", 3, 1, 4)
+        wkb += struct.pack("<8d", 0, 0, 1, 0, 1, 1, 0, 0)
+        with pytest.raises(ValueError, match="Unsupported GeoJSON type"):
+            from_wkb(wkb)
+
     def test_from_wkt_invalid_format(self) -> None:
         """Test that invalid WKT raises ValueError."""
         with pytest.raises(ValueError, match="Invalid WKT"):

@@ -279,6 +279,10 @@ def _process_geojson_geometry(
     elif geo_type == "GeometryCollection":
         for geom in geometry.get("geometries", []):
             _process_geojson_geometry(geom, properties, waypoints, routes, tracks)
+    else:
+        # E.g. (Multi)Polygon, which has no GPX equivalent
+        msg = f"Unsupported GeoJSON type: {geo_type}"
+        raise ValueError(msg)
 
 
 def _coords_to_waypoint(
