@@ -7,7 +7,17 @@ on:
       - "[0-9][0-9][0-9][0-9].[0-9]+.[0-9]+*"
 
 jobs:
+  # Only publish when the full test suite and the pre-commit hooks pass
+  ci:
+    uses: ./.github/workflows/ci.yml
+    permissions:
+      contents: read
+
+  test:
+    uses: ./.github/workflows/test.yml
+
   publish:
+    needs: [ci, test]
     runs-on: ubuntu-latest
     environment:
       name: pypi
