@@ -386,6 +386,25 @@ def parse_from_xml(cls: type[Any], element: ET.Element) -> dict[str, Any]:
     return result
 
 
+def _to_xml_text(value: Any) -> str:  # noqa: ANN401
+    """Convert a simple value to its XML text representation.
+
+    Args:
+        value: The value to convert.
+
+    Returns:
+        The XML text. Datetimes are written in ISO 8601 format and decimals in
+        fixed-point notation, since ``xsd:decimal`` does not allow exponents
+        (``str(Decimal("0.00000001"))`` is ``"1E-8"``).
+
+    """
+    if isinstance(value, dt.datetime):
+        return to_isoformat(value)
+    if isinstance(value, Decimal):
+        return format(value, "f")
+    return str(value)
+
+
 def _append_child(
     element: ET.Element,
     tag: str,
@@ -405,7 +424,7 @@ def _append_child(
         element.append(value.to_xml(tag=tag, nsmap=nsmap))
         return
     child = ET.SubElement(element, _ns_tag(tag, element))
-    child.text = to_isoformat(value) if isinstance(value, dt.datetime) else str(value)
+    child.text = _to_xml_text(value)
 
 
 def build_to_xml(
@@ -445,7 +464,7 @@ def build_to_xml(
         elif spec.kind == "element":
             _append_child(element, spec.name, value, nsmap)
         else:
-            element.set(spec.name, str(value))
+            element.set(spec.name, _to_xml_text(value))
 
 
 def has_geo_properties(obj: Any, exclude_fields: Iterable[str] | None = None) -> bool:  # noqa: ANN401

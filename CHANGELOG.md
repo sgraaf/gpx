@@ -72,6 +72,7 @@ The **third number** is for emergencies when we need to start branches for older
 - `from_geo_interface()`, `read_geojson()`, `from_wkt()` and `from_wkb()` now raise a `ValueError` for geometries without a GPX equivalent (e.g. `Polygon`), including ones nested in a `FeatureCollection` or `GeometryCollection`. They were previously dropped without any error, so e.g. `from_wkt("POLYGON (...)")` returned an empty GPX.
 - `from_wkb()`, `from_wkt()` and `from_geo_interface()` now raise a `ValueError`, as documented, for truncated WKB data and coordinates with fewer than two values. They previously raised `struct.error` or `IndexError`. An empty WKT point (`POINT EMPTY`) now produces no waypoint instead of raising.
 - Timestamps with sub-millisecond precision are no longer cut off at milliseconds when writing GPX files. For example, `12:00:00.123456` was written as `12:00:00.123`.
+- Decimal values (e.g. coordinates very close to the equator or prime meridian) are now always written in fixed-point notation. Values such as `lat="1E-8"` were not valid `xsd:decimal` values. `validate()` now also reports decimals in exponent notation as errors.
 
 ## [2026.3.0](https://github.com/sgraaf/gpx/compare/2026.2.0...2026.3.0) - 2026-05-17
 

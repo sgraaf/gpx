@@ -28,7 +28,7 @@ import re
 import xml.etree.ElementTree as ET
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from decimal import Decimal, InvalidOperation
+from decimal import Decimal
 from enum import StrEnum
 from pathlib import Path
 from typing import Any
@@ -136,27 +136,27 @@ class InvalidGPXError(ValueError):
         super().__init__(f"Invalid GPX ({count} {noun}):\n{summary}")
 
 
-def _finite_decimal(text: str) -> Decimal | None:
-    """Parse ``text`` as a finite decimal, or return None if it isn't one.
+#: The lexical space of ``xsd:decimal``: fixed-point notation only, so no
+#: exponents, ``NaN`` or ``Infinity``.
+_XSD_DECIMAL_PATTERN = re.compile(r"[+-]?(?:\d+(?:\.\d*)?|\.\d+)")
 
-    ``NaN`` and ``Infinity`` are rejected: they are not valid ``xsd:decimal``
-    values, and comparing NaN raises ``decimal.InvalidOperation``.
-    """
-    try:
-        value = Decimal(text)
-    except InvalidOperation:
+
+def _xsd_decimal(text: str) -> Decimal | None:
+    """Parse ``text`` as an ``xsd:decimal``, or return None if it isn't one."""
+    text = text.strip()
+    if not _XSD_DECIMAL_PATTERN.fullmatch(text):
         return None
-    return value if value.is_finite() else None
+    return Decimal(text)
 
 
 def _decimal(text: str) -> tuple[Severity, str] | None:
-    if _finite_decimal(text) is None:
+    if _xsd_decimal(text) is None:
         return Severity.ERROR, f"'{text}' is not a valid decimal number"
     return None
 
 
 def _latitude(text: str) -> tuple[Severity, str] | None:
-    value = _finite_decimal(text)
+    value = _xsd_decimal(text)
     if value is None:
         return Severity.ERROR, f"invalid latitude '{text}' (not a number)"
     if not -90 <= value <= 90:  # noqa: PLR2004
@@ -165,7 +165,7 @@ def _latitude(text: str) -> tuple[Severity, str] | None:
 
 
 def _longitude(text: str) -> tuple[Severity, str] | None:
-    value = _finite_decimal(text)
+    value = _xsd_decimal(text)
     if value is None:
         return Severity.ERROR, f"invalid longitude '{text}' (not a number)"
     if not -180 <= value <= 180:  # noqa: PLR2004
@@ -182,7 +182,7 @@ def _longitude(text: str) -> tuple[Severity, str] | None:
 
 
 def _degrees(text: str) -> tuple[Severity, str] | None:
-    value = _finite_decimal(text)
+    value = _xsd_decimal(text)
     if value is None:
         return Severity.ERROR, f"invalid degrees value '{text}' (not a number)"
     if not 0 <= value < 360:  # noqa: PLR2004

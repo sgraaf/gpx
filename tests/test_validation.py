@@ -207,6 +207,46 @@ class TestContentValidation:
         assert not result.is_valid
         assert "not a" in _messages(result.errors)
 
+    @pytest.mark.parametrize(
+        "wpt",
+        [
+            '<wpt lat="1E-8" lon="4"/>',
+            '<wpt lat="52" lon="4"><ele>1e3</ele></wpt>',
+            '<wpt lat="52" lon="4"><hdop>1_0</hdop></wpt>',
+        ],
+    )
+    def test_decimal_with_exponent_is_error(self, wpt: str) -> None:
+        # xsd:decimal only allows fixed-point notation
+        result = validate(
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="t">'
+            f"{wpt}</gpx>"
+        )
+        assert not result.is_valid
+
+    def test_small_decimals_round_trip_as_valid_xsd_decimals(self) -> None:
+        gpx = GPX(
+            wpt=[
+                Waypoint(
+                    lat=Latitude("0.00000001"),
+                    lon=Longitude("-0.0000005"),
+                    ele=Decimal("1E+2"),
+                )
+            ]
+        )
+        output = gpx.to_string()
+        assert 'lat="0.00000001"' in output
+        assert 'lon="-0.0000005"' in output
+        assert "<ele>100</ele>" in output
+        assert validate(output).is_valid
+
+    def test_decimal_with_surrounding_whitespace_is_valid(self) -> None:
+        # xsd:decimal collapses whitespace
+        result = validate(
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="t">'
+            '<wpt lat=" 52.0 " lon="4"><ele>\n  10.5\n</ele></wpt></gpx>'
+        )
+        assert result.is_valid, _messages(result.errors)
+
     def test_invalid_sat_path_points_at_element(self) -> None:
         result = validate(INVALID_FIXTURES_DIR / "non_integer_sat.gpx")
         sat_errors = [i for i in result.errors if i.path.endswith("> sat")]
