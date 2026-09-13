@@ -55,6 +55,10 @@ The **third number** is for emergencies when we need to start branches for older
 - The CLI (`gpx edit`, `gpx merge` and `gpx convert`) now uses the new `operations` module and `io` conversion functions internally (behavior is unchanged).
 - The `gpx validate` CLI command is now a real GPX 1.1 schema validator. It reports all errors and warnings (with source line numbers) instead of only checking whether the file can be parsed, and exits non-zero when errors are found (or, with `--strict`, when warnings are found).
 
+### Fixed
+
+- Writing a parsed GPX file no longer moves the document into the wrong XML namespace when an element deeper in the file (e.g. a Garmin extension) redeclares the default namespace, or when text content contains `xmlns="..."`. Only the namespace declarations on the root element are now preserved.
+
 ## [2026.3.0](https://github.com/sgraaf/gpx/compare/2026.2.0...2026.3.0) - 2026-05-17
 
 This third release in the year 2026 adds a new `GeoGPXModel` base class for GPX models that carry geometric data.

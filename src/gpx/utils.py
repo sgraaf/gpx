@@ -13,7 +13,6 @@ This allows automatic determination of attributes vs elements based on type hint
 from __future__ import annotations
 
 import datetime as dt
-import re
 import xml.etree.ElementTree as ET
 from dataclasses import fields
 from typing import (
@@ -28,6 +27,10 @@ from typing import (
 
 if TYPE_CHECKING:
     from collections.abc import Iterable
+
+#: Number of characters (or bytes) fed to the parser at a time when scanning for
+#: the root element's namespace declarations.
+_NAMESPACE_SCAN_CHUNK_SIZE = 8192
 
 
 def _get_namespace(element: ET.Element) -> str:
@@ -45,34 +48,47 @@ def _get_namespace(element: ET.Element) -> str:
     return ""
 
 
-def extract_namespaces_from_string(xml_string: str) -> dict[str, str]:
-    """Extract namespace prefix mappings from an XML string.
+def extract_namespaces_from_string(xml_string: str | bytes) -> dict[str, str]:
+    """Extract the namespace prefix mappings declared on the root element.
 
-    This function extracts all namespace declarations (xmlns attributes) from
-    the XML string using regex, before ElementTree parsing which loses prefix info.
+    ElementTree parsing loses namespace prefix information, so the declarations
+    are collected with an incremental parser that stops at the root element.
+    Declarations on nested elements (e.g. a default namespace redeclared on an
+    extension element) are scoped to their own subtree and are not included.
 
     Args:
-        xml_string: The XML string to extract namespaces from.
+        xml_string: The XML document to extract namespaces from.
 
     Returns:
         A dictionary mapping namespace prefixes to URIs. The default namespace
         (if present) is mapped to the empty string key.
 
+    Raises:
+        xml.etree.ElementTree.ParseError: If the document has no root element, or
+            is not well-formed before the end of the root element's start tag.
+
     """
     namespaces: dict[str, str] = {}
+    parser = ET.XMLPullParser(events=("start-ns", "start"))
 
-    # Match xmlns declarations: xmlns="..." or xmlns:prefix="..."
-    # Pattern matches both default namespace and prefixed namespaces
-    xmlns_pattern = re.compile(r'xmlns(?::([a-zA-Z0-9_-]+))?=["\']([^"\']+)["\']')
+    def root_reached() -> bool:
+        for event in parser.read_events():
+            match event:
+                case ("start-ns", (str() as prefix, str() as uri)):
+                    namespaces[prefix] = uri
+                case _:  # The root element's "start" event
+                    return True
+        return False
 
-    for match in xmlns_pattern.finditer(xml_string):
-        prefix = match.group(1)  # None for default namespace
-        uri = match.group(2)
+    for offset in range(0, len(xml_string), _NAMESPACE_SCAN_CHUNK_SIZE):
+        parser.feed(xml_string[offset : offset + _NAMESPACE_SCAN_CHUNK_SIZE])
+        if root_reached():
+            return namespaces
 
-        # Use empty string for default namespace (xmlns="...")
-        key = prefix or ""
-        namespaces[key] = uri
-
+    # The parser may defer large tokens while it waits for more input; closing
+    # it processes the remainder (and raises if there is no root element).
+    parser.close()
+    root_reached()
     return namespaces
 
 

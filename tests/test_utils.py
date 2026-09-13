@@ -6,6 +6,8 @@ from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
 
+import pytest
+
 from gpx.link import Link
 from gpx.utils import (
     build_geo_properties,
@@ -40,9 +42,35 @@ class TestNamespaceExtraction:
         assert namespaces["foo"] == "http://example.com/foo"
 
     def test_extract_namespaces_empty_string(self) -> None:
-        """Test extracting namespaces from empty string."""
-        namespaces = extract_namespaces_from_string("")
-        assert namespaces == {}
+        """Test that extracting namespaces from an empty string raises."""
+        with pytest.raises(ET.ParseError):
+            extract_namespaces_from_string("")
+
+    def test_extract_namespaces_ignores_nested_declarations(self) -> None:
+        """Test that namespaces redeclared on nested elements are not extracted."""
+        xml_str = (
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1">'
+            '<extensions><hr xmlns="http://example.com/ext" xmlns:foo="http://example.com/foo"/>'
+            "</extensions></gpx>"
+        )
+        namespaces = extract_namespaces_from_string(xml_str)
+        assert namespaces == {"": "http://www.topografix.com/GPX/1/1"}
+
+    def test_extract_namespaces_ignores_text_content(self) -> None:
+        """Test that xmlns-like text content is not mistaken for a declaration."""
+        xml_str = (
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1">'
+            '<desc>set xmlns="urn:foo" here</desc><!-- xmlns:bar="urn:bar" --></gpx>'
+        )
+        namespaces = extract_namespaces_from_string(xml_str)
+        assert namespaces == {"": "http://www.topografix.com/GPX/1/1"}
+
+    def test_extract_namespaces_from_bytes(self) -> None:
+        """Test extracting namespaces from a bytes document with a long prolog."""
+        comment = "<!-- " + "x" * 20_000 + " -->"
+        xml_bytes = f'<?xml version="1.0"?>{comment}<root xmlns:foo="http://example.com/foo"/>'.encode()
+        namespaces = extract_namespaces_from_string(xml_bytes)
+        assert namespaces == {"foo": "http://example.com/foo"}
 
 
 class TestTypeIntrospection:

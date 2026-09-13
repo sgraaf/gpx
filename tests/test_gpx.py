@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Any
 
-from gpx import GPX, Metadata, Route, Track, Waypoint, from_string, read_gpx
+from gpx import GPX, Metadata, Route, Track, Waypoint, from_string, read_gpx, validate
 
 
 class TestGPXParsing:
@@ -224,6 +224,35 @@ class TestGPXCreation:
         assert gpx2.metadata.name == sample_metadata.name
         assert len(gpx2.wpt) == 1
         assert gpx2.wpt[0].name == sample_waypoint.name
+
+    def test_roundtrip_keeps_gpx_namespace_with_nested_default_namespace(
+        self,
+    ) -> None:
+        """Test that nested default namespace redeclarations don't leak into the root."""
+        gpx_str = """<?xml version="1.0" encoding="UTF-8"?>
+<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="Test">
+  <metadata><desc>xmlns="urn:foo"</desc></metadata>
+  <trk><trkseg><trkpt lat="52.0" lon="4.0"><extensions>
+    <TrackPointExtension xmlns="http://www.garmin.com/xmlschemas/TrackPointExtension/v1">
+      <hr>140</hr>
+    </TrackPointExtension>
+  </extensions></trkpt></trkseg></trk>
+</gpx>"""
+        output = from_string(gpx_str).to_string()
+
+        assert validate(output).is_valid
+        gpx = from_string(output)
+        assert gpx.metadata is not None
+        assert gpx.metadata.desc == 'xmlns="urn:foo"'
+        extensions = gpx.trk[0].trkseg[0].trkpt[0].extensions
+        assert extensions is not None
+        assert (
+            extensions.get_text(
+                "hr",
+                namespace="http://www.garmin.com/xmlschemas/TrackPointExtension/v1",
+            )
+            == "140"
+        )
 
 
 class TestGPXEncodingHandling:
