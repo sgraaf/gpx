@@ -4,10 +4,12 @@ import datetime as dt
 import xml.etree.ElementTree as ET
 from dataclasses import dataclass, field
 from decimal import Decimal
-from typing import Any
+from typing import Any, get_type_hints
 
 import pytest
 
+import gpx.utils
+from gpx import GPX, Waypoint, from_string
 from gpx.link import Link
 from gpx.utils import (
     build_geo_properties,
@@ -156,6 +158,30 @@ class TestDatetimeFormatting:
 
 class TestXMLParsing:
     """Tests for XML parsing utilities."""
+
+    def test_type_hints_resolved_once_per_class(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Test that type hints are resolved once per class, not once per element."""
+        calls: list[type] = []
+
+        def counting_get_type_hints(cls: type) -> dict[str, Any]:
+            calls.append(cls)
+            return get_type_hints(cls)
+
+        monkeypatch.setattr(gpx.utils, "get_type_hints", counting_get_type_hints)
+        gpx.utils._field_specs.cache_clear()
+
+        gpx_str = (
+            '<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1" creator="t">'
+            + '<wpt lat="1" lon="1"><name>a</name></wpt>' * 100
+            + "</gpx>"
+        )
+        output = from_string(gpx_str).to_string()
+        from_string(output)
+
+        assert calls.count(Waypoint) == 1
+        assert calls.count(GPX) == 1
 
     def test_parse_from_xml_with_kw_only_field(self) -> None:
         """Test parse_from_xml skips KW_ONLY marker."""

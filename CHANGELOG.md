@@ -54,6 +54,7 @@ The **third number** is for emergencies when we need to start branches for older
 
 - The CLI (`gpx edit`, `gpx merge` and `gpx convert`) now uses the new `operations` module and `io` conversion functions internally (behavior is unchanged).
 - The `gpx validate` CLI command is now a real GPX 1.1 schema validator. It reports all errors and warnings (with source line numbers) instead of only checking whether the file can be parsed, and exits non-zero when errors are found (or, with `--strict`, when warnings are found).
+- Parsing and serializing GPX data is ~20× faster: the type annotations of each model are now resolved once per class instead of once per XML element.
 
 ### Fixed
 
