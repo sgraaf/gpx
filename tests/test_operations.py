@@ -224,6 +224,19 @@ class TestReverse:
         assert new_first_lat == pytest.approx(original_last_lat, rel=1e-3)
         assert new_last_lat == pytest.approx(original_first_lat, rel=1e-3)
 
+    @pytest.mark.parametrize(("routes", "tracks"), [(False, True), (True, False)])
+    def test_reverse_does_not_share_lists_with_input(
+        self, sample_gpx: GPX, *, routes: bool, tracks: bool
+    ) -> None:
+        """Mutating the result's route/track lists leaves the input unchanged."""
+        reversed_gpx = reverse(sample_gpx, routes=routes, tracks=tracks)
+        assert reversed_gpx.rte is not sample_gpx.rte
+        assert reversed_gpx.trk is not sample_gpx.trk
+
+        original_rte_count = len(sample_gpx.rte)
+        reversed_gpx.rte.append(Route())
+        assert len(sample_gpx.rte) == original_rte_count
+
     def test_reverse_defaults_to_both(self, sample_gpx: GPX) -> None:
         """By default, both routes and tracks are reversed."""
         reversed_gpx = reverse(sample_gpx)
@@ -277,6 +290,7 @@ class TestStripMetadata:
         gpx = GPX()
         stripped = strip_metadata(gpx, name=True)
         assert stripped.metadata is None
+        assert stripped is not gpx
 
     def test_strip_all_metadata_preserves_nsmap(self, sample_gpx: GPX) -> None:
         """Stripping all metadata preserves the namespace mappings."""

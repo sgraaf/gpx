@@ -4,8 +4,9 @@ This module provides the operations behind the ``gpx edit`` and ``gpx merge``
 CLI commands as a reusable, importable API.
 
 All operations are pure: they never mutate the input, but return a new
-:class:`~gpx.gpx.GPX` instance instead. Namespace mappings (``nsmap``) and
-extensions are preserved.
+:class:`~gpx.gpx.GPX` instance (with new point, route and track lists) instead.
+Unchanged waypoints, routes, tracks and extensions are shared with the input
+rather than copied. Namespace mappings (``nsmap``) and extensions are preserved.
 """
 
 from __future__ import annotations
@@ -231,8 +232,8 @@ def reverse(gpx: GPX, *, routes: bool = True, tracks: bool = True) -> GPX:
         >>> reversed_gpx = reverse(gpx)
 
     """
-    new_rte = gpx.rte
-    new_trk = gpx.trk
+    new_rte = list(gpx.rte)
+    new_trk = list(gpx.trk)
 
     if routes:
         new_rte = [
@@ -295,7 +296,7 @@ def strip_metadata(  # noqa: PLR0913
 
     metadata = gpx.metadata
     if metadata is None:
-        return gpx
+        return replace(gpx)
 
     if name:
         metadata = replace(metadata, name=None)
