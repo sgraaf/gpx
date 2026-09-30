@@ -25,8 +25,6 @@ uv add gpx
 
 <!-- end docs-include-installation -->
 
-`simplify()` also supports short tracks and routes crossing the antimeridian (±180° longitude), using the same tolerance in metres.
-
 ## Documentation
 
 Check out the [*gpx* documentation](https://gpx.readthedocs.io/en/stable/) for the [User's Guide](https://gpx.readthedocs.io/en/stable/usage.html), [API Reference](https://gpx.readthedocs.io/en/stable/api.html) and [CLI Reference](https://gpx.readthedocs.io/en/stable/cli.html).
@@ -392,7 +390,7 @@ with_elevation = filter_points(gpx, lambda point: point.ele is not None)
 # Split track segments at time and/or distance gaps
 split_gpx = split(gpx, time_gap=dt.timedelta(minutes=10))
 
-# Simplify tracks and routes (Ramer-Douglas-Peucker, tolerance in metres)
+# Simplify tracks and routes (Ramer-Douglas-Peucker, tolerance in metres; handles antimeridian crossings)
 simplified = simplify(gpx, tolerance=10.0)
 
 # Smooth track and route coordinates and elevations (moving average)
