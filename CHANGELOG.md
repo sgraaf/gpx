@@ -10,6 +10,10 @@ The **third number** is for emergencies when we need to start branches for older
 
 ## [Unreleased](https://github.com/sgraaf/gpx/compare/2026.4.0...HEAD)
 
+### Fixed
+
+- Simplify short tracks and routes crossing the antimeridian using the local longitude displacement, so collinear points near ±180° are removed correctly while significant bends are preserved.
+
 ## [2026.4.0](https://github.com/sgraaf/gpx/compare/2026.3.0...2026.4.0) - 2026-09-13
 
 This fourth major release in the year 2026 adds [**GPX 1.1 schema validation**](https://www.topografix.com/GPX/1/1/gpx.xsd) and a public **operations API** for editing and merging GPX data, including new operations to split, simplify and smooth tracks. It also makes parsing and serializing GPX data ~20× faster, and includes a range of bug fixes and robustness improvements.

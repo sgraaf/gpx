@@ -623,6 +623,37 @@ class TestSimplify:
         assert str(points[0].lat) == "52.000"
         assert str(points[-1].lat) == "52.002"
 
+    @pytest.mark.parametrize(
+        "longitudes",
+        [
+            ("179.9", "180", "-179.9"),
+            ("179.9", "-180", "-179.9"),
+            ("-179.9", "180", "179.9"),
+            ("-179.9", "-180", "179.9"),
+        ],
+    )
+    def test_simplify_drops_collinear_points_across_antimeridian(
+        self, longitudes: tuple[str, str, str]
+    ) -> None:
+        """A straight dateline crossing is simplified in both directions."""
+        points = make_points([("0", lon) for lon in longitudes])
+        gpx = make_track_gpx(points)
+        simplified = simplify(gpx, tolerance=5.0)
+        assert simplified.trk[0].trkseg[0].trkpt == [points[0], points[-1]]
+        assert gpx.trk[0].trkseg[0].trkpt == points
+
+    @pytest.mark.parametrize("middle_longitude", ["180", "-180"])
+    def test_simplify_preserves_deviation_across_antimeridian(
+        self, middle_longitude: str
+    ) -> None:
+        """A dateline crossing still retains a bend above the tolerance."""
+        points = make_points(
+            [("0", "179.9"), ("0.001", middle_longitude), ("0", "-179.9")]
+        )
+        gpx = GPX(rte=[Route(rtept=points)])
+        simplified = simplify(gpx, tolerance=10.0)
+        assert simplified.rte[0].rtept == points
+
     def test_simplify_keeps_significant_points(self) -> None:
         """Points deviating more than the tolerance are kept."""
         # Middle point deviates ~68 m east of the line
