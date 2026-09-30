@@ -13,7 +13,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from decimal import Decimal
-from math import cos, radians, sqrt
+from math import cos, pi, radians, sqrt
 from statistics import fmean
 from typing import TYPE_CHECKING
 
@@ -443,14 +443,18 @@ def _perpendicular_distance(point: Waypoint, start: Waypoint, end: Waypoint) -> 
     """Return the distance (in metres) from ``point`` to the ``start``-``end`` segment.
 
     Uses a local equirectangular projection centered on ``start``, which is
-    accurate for the small extents typical of GPS tracks.
+    accurate for the small extents typical of GPS tracks, including tracks
+    crossing the antimeridian.
     """
     lat0 = radians(float(start.lat))
     lon0 = radians(float(start.lon))
     cos_lat0 = cos(lat0)
 
     def project(p: Waypoint) -> tuple[float, float]:
-        x = (radians(float(p.lon)) - lon0) * cos_lat0 * _EARTH_RADIUS
+        # Use the local longitude displacement across the +/-180 degree seam,
+        # not a nearly full-circle displacement for a short dateline crossing.
+        delta_lon = (radians(float(p.lon)) - lon0 + pi) % (2 * pi) - pi
+        x = delta_lon * cos_lat0 * _EARTH_RADIUS
         y = (radians(float(p.lat)) - lat0) * _EARTH_RADIUS
         return x, y
 
