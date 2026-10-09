@@ -127,7 +127,7 @@ class TestGeoGPXModelAbstractness:
             _tag = "incomplete"
 
         with pytest.raises(TypeError, match="abstract"):
-            Incomplete()  # type: ignore[abstract] # pyrefly: ignore
+            Incomplete()  # type: ignore[abstract, ty:call-non-callable] # pyrefly: ignore
 
     def test_subclass_with_geo_interface_is_instantiable(self) -> None:
         """A subclass that implements __geo_interface__ can be instantiated."""

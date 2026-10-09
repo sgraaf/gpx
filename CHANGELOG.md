@@ -10,6 +10,10 @@ The **third number** is for emergencies when we need to start branches for older
 
 ## [Unreleased](https://github.com/sgraaf/gpx/compare/2026.4.0...HEAD)
 
+### Added
+
+- Support for Python 3.15.
+
 ### Fixed
 
 - Simplify short tracks and routes crossing the antimeridian using the local longitude displacement, so collinear points near ±180° are removed correctly while significant bends are preserved.

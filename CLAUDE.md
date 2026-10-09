@@ -8,7 +8,7 @@ This file provides guidance for AI assistants working with the *gpx* codebase.
 
 - **Package name**: `gpx` (on PyPI)
 - **Current version**: 2026.1.0
-- **Python support**: 3.11+ (including 3.14)
+- **Python support**: 3.11+ (including 3.15)
 - **License**: GPL-3.0+
 - **Documentation**: https://gpx.readthedocs.io/
 
@@ -76,7 +76,7 @@ gpx/
 └── .github/
     └── workflows/
         ├── publish.yml   # PyPI publishing workflow
-        └── test.yml      # Python test workflow (3.11-3.14)
+        └── test.yml      # Python test workflow (3.11-3.15)
 ```
 
 ### Key Configuration Files
