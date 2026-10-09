@@ -3,6 +3,7 @@
 The `gpx` command-line interface (CLI) provides tools for validating, inspecting, editing, merging, and converting GPX files. This page shows the `--help` for the `gpx` CLI and all of its sub-commands.
 
 <!--[[[cog
+import os
 import subprocess
 
 import cog
@@ -14,6 +15,8 @@ def help_output(args):
         ["gpx"] + args,
         capture_output=True,
         text=True,
+        # Disable colored help output (e.g., argparse on Python 3.14+ with FORCE_COLOR set)
+        env={**os.environ, "NO_COLOR": "1", "PYTHON_COLORS": "0"},
     )
     output = result.stdout or result.stderr
     cog.out(f"\nRunning `gpx {' '.join(args)}` or `python -m gpx {' '.join(args)}` shows a list of all of the available options and arguments:\n")
