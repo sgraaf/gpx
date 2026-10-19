@@ -12,9 +12,8 @@ rather than copied. Namespace mappings (``nsmap``) and extensions are preserved.
 from __future__ import annotations
 
 from dataclasses import replace
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from math import cos, pi, radians, sqrt
-from statistics import fmean
 from typing import TYPE_CHECKING
 
 from .bounds import Bounds
@@ -23,12 +22,58 @@ from .types import Latitude, Longitude
 
 if TYPE_CHECKING:
     import datetime as dt
-    from collections.abc import Callable, Iterable
+    from collections.abc import Callable, Iterable, Sequence
 
     from .route import Route
     from .track import Track
     from .track_segment import TrackSegment
     from .waypoint import Waypoint
+
+
+def _decimal_mean(values: Sequence[Decimal]) -> Decimal:
+    """Return the arithmetic mean of ``values``, computed in decimal arithmetic.
+
+    Averaging in binary floating point would introduce rounding artifacts into
+    the result, because most decimal fractions cannot be represented exactly
+    as a float.
+
+    Args:
+        values: The values to average. Must not be empty.
+
+    Returns:
+        The arithmetic mean of the values.
+
+    """
+    return sum(values, Decimal(0)) / len(values)
+
+
+def _round_decimal(value: Decimal, places: int) -> Decimal:
+    """Round a decimal value to ``places`` decimal places.
+
+    The rounding is done in decimal arithmetic, so a value that is exactly
+    halfway between two results is rounded based on its decimal value and not
+    on the binary float it would be converted to. Trailing zeros are dropped,
+    so the result keeps the shortest representation that is still exact.
+
+    Args:
+        value: The value to round.
+        places: The number of decimal places to keep. Negative values round to
+            tens, hundreds and so on.
+
+    Returns:
+        The rounded value.
+
+    """
+    with localcontext() as context:
+        # Rounding to more decimal places than the context precision holds
+        # raises, so give it enough room for the scaled result.
+        context.prec = max(context.prec, len(value.as_tuple().digits) + abs(places) + 2)
+        rounded = format(round(value, places), "f")
+    if "." in rounded:
+        rounded = rounded.rstrip("0")
+        if rounded.endswith("."):
+            rounded += "0"
+    return Decimal(rounded)
 
 
 def _refresh_bounds(gpx: GPX) -> GPX:
@@ -344,17 +389,17 @@ def reduce_precision(
         if coordinate_precision is None and elevation_precision is None:
             return point
         new_lat = (
-            Latitude(str(round(float(point.lat), coordinate_precision)))
+            Latitude(str(_round_decimal(point.lat, coordinate_precision)))
             if coordinate_precision is not None
             else point.lat
         )
         new_lon = (
-            Longitude(str(round(float(point.lon), coordinate_precision)))
+            Longitude(str(_round_decimal(point.lon, coordinate_precision)))
             if coordinate_precision is not None
             else point.lon
         )
         new_ele = (
-            Decimal(str(round(float(point.ele), elevation_precision)))
+            _round_decimal(point.ele, elevation_precision)
             if elevation_precision is not None and point.ele is not None
             else point.ele
         )
@@ -603,12 +648,12 @@ def smooth(
             neighbors = points[i - k : i + k + 1]
             new_lat, new_lon = point.lat, point.lon
             if coordinates:
-                new_lat = Latitude(str(fmean(float(p.lat) for p in neighbors)))
-                new_lon = Longitude(str(fmean(float(p.lon) for p in neighbors)))
+                new_lat = Latitude(str(_decimal_mean([p.lat for p in neighbors])))
+                new_lon = Longitude(str(_decimal_mean([p.lon for p in neighbors])))
             new_ele = point.ele
             if elevations and point.ele is not None:
-                ele_values = [float(p.ele) for p in neighbors if p.ele is not None]
-                new_ele = Decimal(str(fmean(ele_values)))
+                ele_values = [ele for p in neighbors if (ele := p.ele) is not None]
+                new_ele = _decimal_mean(ele_values)
             new_points.append(replace(point, lat=new_lat, lon=new_lon, ele=new_ele))
         return new_points
 

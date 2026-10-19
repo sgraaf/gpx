@@ -351,6 +351,16 @@ class TestReducePrecision:
         assert str(waypoint.lon) == "2.68"
         assert waypoint.ele == Decimal("2.68")
 
+    def test_reduce_precision_keeps_more_places_than_the_value_has(self) -> None:
+        """Requesting more decimal places than the value has is not an error."""
+        gpx = GPX(
+            wpt=[Waypoint(lat=Latitude("52.5200123"), lon=Longitude("13.4050456"))]
+        )
+
+        reduced = reduce_precision(gpx, coordinate_precision=40)
+        assert str(reduced.wpt[0].lat) == "52.5200123"
+        assert str(reduced.wpt[0].lon) == "13.4050456"
+
 
 class TestNsmapPreservation:
     """Tests that the edit operations preserve namespace mappings."""
