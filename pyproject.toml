@@ -63,6 +63,11 @@ Changelog = "https://gpx.readthedocs.io/en/stable/changelog.html"
 "Source Code" = "https://github.com/sgraaf/gpx"
 "Issue Tracker" = "https://github.com/sgraaf/gpx/issues"
 
+[tool.uv]
+constraint-dependencies = [
+    "certifi>=2026.10.18",  # GHSA-6q48-6c7w-9gw2
+]
+
 [tool.ruff.lint]
 select = ["ALL"]
 ignore = [
