@@ -17,6 +17,8 @@ The **third number** is for emergencies when we need to start branches for older
 ### Fixed
 
 - Simplify short tracks and routes crossing the antimeridian using the local longitude displacement, so collinear points near ±180° are removed correctly while significant bends are preserved.
+- Round the coordinates and elevations of `reduce_precision()` in decimal arithmetic, so values that are exactly halfway between two results are rounded based on their decimal value and not on the binary float they are converted to.
+- Average the coordinates and elevations of `smooth()` in decimal arithmetic, so smoothed points are the exact decimal mean of their neighbours instead of a value with binary floating point artifacts.
 
 ## [2026.4.0](https://github.com/sgraaf/gpx/compare/2026.3.0...2026.4.0) - 2026-09-13
 

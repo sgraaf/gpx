@@ -330,6 +330,37 @@ class TestReducePrecision:
         lat_str = str(reduced.wpt[0].lat)
         assert lat_str == "52.52"
 
+    def test_reduce_precision_rounds_halfway_values_in_decimal(self) -> None:
+        """Values exactly halfway are rounded as decimals, not as binary floats."""
+        gpx = GPX(
+            wpt=[
+                Waypoint(
+                    lat=Latitude("2.675"),
+                    lon=Longitude("2.675"),
+                    ele=Decimal("2.675"),
+                )
+            ]
+        )
+
+        reduced = reduce_precision(gpx, coordinate_precision=2, elevation_precision=2)
+        waypoint = reduced.wpt[0]
+        # 2.675 is exactly halfway between 2.67 and 2.68. Rounding the binary
+        # float closest to it gives 2.67, because that float is actually
+        # 2.67499999999999982...; rounding the decimal value gives 2.68.
+        assert str(waypoint.lat) == "2.68"
+        assert str(waypoint.lon) == "2.68"
+        assert waypoint.ele == Decimal("2.68")
+
+    def test_reduce_precision_keeps_more_places_than_the_value_has(self) -> None:
+        """Requesting more decimal places than the value has is not an error."""
+        gpx = GPX(
+            wpt=[Waypoint(lat=Latitude("52.5200123"), lon=Longitude("13.4050456"))]
+        )
+
+        reduced = reduce_precision(gpx, coordinate_precision=40)
+        assert str(reduced.wpt[0].lat) == "52.5200123"
+        assert str(reduced.wpt[0].lon) == "13.4050456"
+
 
 class TestNsmapPreservation:
     """Tests that the edit operations preserve namespace mappings."""
@@ -776,6 +807,34 @@ class TestSmooth:
         assert middle.time == gpx_with_extensions.trk[0].trkseg[0].trkpt[1].time
         assert middle.extensions is not None
         assert middle.extensions.get_text("hr", namespace=GARMIN_TPX_NS) == "145"
+
+    def test_smooth_averages_coordinates_in_decimal(self) -> None:
+        """Smoothed coordinates are the exact decimal mean of their neighbours."""
+        coords = [("52.1234568", "4.0"), ("52.1235568", "4.1"), ("52.1236568", "4.2")]
+        gpx = make_track_gpx(make_points(coords))
+
+        smoothed = smooth(gpx, window=3)
+        middle = smoothed.trk[0].trkseg[0].trkpt[1]
+        # The mean of 4.0, 4.1 and 4.2 is exactly 4.1. Averaging them as
+        # binary floats gives 4.1000000000000005 instead, and the mean of the
+        # latitudes becomes 52.123556799999996 instead of 52.1235568.
+        assert str(middle.lon) == "4.1"
+        assert str(middle.lat) == "52.1235568"
+
+    def test_smooth_averages_elevations_in_decimal(self) -> None:
+        """Smoothed elevations are the exact decimal mean of their neighbours."""
+        points = make_points([("52.000", "4.000")] * 3)
+        points = [
+            Waypoint(lat=p.lat, lon=p.lon, time=p.time, ele=Decimal(ele))
+            for p, ele in zip(points, ("0.1", "0.2", "0.3"), strict=True)
+        ]
+        gpx = make_track_gpx(points)
+
+        smoothed = smooth(gpx, window=3)
+        middle = smoothed.trk[0].trkseg[0].trkpt[1]
+        # The mean of 0.1, 0.2 and 0.3 is exactly 0.2; averaging them as binary
+        # floats gives 0.19999999999999998 instead.
+        assert middle.ele == Decimal("0.2")
 
 
 class TestShiftTime:
